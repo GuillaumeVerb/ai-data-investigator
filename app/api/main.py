@@ -6,6 +6,10 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.core.config import get_settings
 from app.core.schemas import (
+    ActionRequest,
+    ActionResponse,
+    InvestigationPathRequest,
+    InvestigationPathResponse,
     InvestigateRequest,
     InvestigateResponse,
     ProfileRequest,
@@ -18,7 +22,9 @@ from app.core.schemas import (
     TrainResponse,
     UploadResponse,
 )
+from app.services.action_engine import recommend_actions
 from app.services.ingestion import load_sample_dataset, load_upload
+from app.services.investigation_agent import investigate_path
 from app.services.insights import investigate_dataset
 from app.services.llm_engine import generate_summary
 from app.services.ml_engine import train_model
@@ -64,6 +70,14 @@ def investigate(request: InvestigateRequest) -> InvestigateResponse:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
 
+@app.post("/investigate-path", response_model=InvestigationPathResponse)
+def investigate_single_path(request: InvestigationPathRequest) -> InvestigationPathResponse:
+    try:
+        return investigate_path(request.dataset_id, request.suggestion_id, request.payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
 @app.post("/train", response_model=TrainResponse)
 def train(request: TrainRequest) -> TrainResponse:
     try:
@@ -82,11 +96,24 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
             model_id=request.model_id,
             changes=request.changes,
             reference_index=request.reference_index,
+            comparison_changes=request.comparison_changes,
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/actions", response_model=ActionResponse)
+def actions(request: ActionRequest) -> ActionResponse:
+    return ActionResponse(
+        dataset_id=request.dataset_id,
+        recommended_actions=recommend_actions(
+            investigation=request.investigation.model_dump(),
+            training=request.training.model_dump() if request.training else None,
+            simulation=request.simulation.model_dump() if request.simulation else None,
+        ),
+    )
 
 
 @app.post("/summary", response_model=SummaryResponse)

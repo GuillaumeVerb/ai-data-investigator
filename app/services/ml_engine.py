@@ -15,6 +15,8 @@ from sklearn.preprocessing import OneHotEncoder
 
 from app.core.schemas import TrainResponse
 from app.core.state import ModelRecord, store
+from app.services.charts import build_feature_importance_chart
+from app.services.feature_engineering import build_derived_features
 
 
 def _infer_task_type(series: pd.Series) -> str:
@@ -77,8 +79,9 @@ def train_model(dataset_id: str, target: str) -> TrainResponse:
     if target not in df.columns:
         raise ValueError(f"Target column '{target}' not found.")
 
-    y = df[target]
-    X = df.drop(columns=[target])
+    enriched_df, derived_features = build_derived_features(df)
+    y = enriched_df[target]
+    X = enriched_df.drop(columns=[target])
     X = X.astype(object).where(pd.notnull(X), np.nan)
 
     task_type = _infer_task_type(y)
@@ -135,6 +138,11 @@ def train_model(dataset_id: str, target: str) -> TrainResponse:
         }
 
     reference_row = X.iloc[0].astype(object).where(pd.notnull(X.iloc[0]), None).to_dict()
+    feature_importance = _extract_importance(pipeline, X.columns.tolist())
+    primary_metric_name = "r2" if task_type == "regression" else "accuracy"
+    primary_metric_value = metrics[primary_metric_name]
+    confidence_level = "high" if primary_metric_value >= 0.75 else "medium" if primary_metric_value >= 0.5 else "low"
+    data_coverage_pct = round(float(100 - enriched_df.isna().mean().mean() * 100), 1)
     model_id = str(uuid4())
     store.save_model(
         ModelRecord(
@@ -147,6 +155,7 @@ def train_model(dataset_id: str, target: str) -> TrainResponse:
             reference_row=reference_row,
         )
     )
+    record.metadata["derived_features"] = derived_features
 
     model_name = type(model).__name__
     return TrainResponse(
@@ -156,7 +165,13 @@ def train_model(dataset_id: str, target: str) -> TrainResponse:
         target=target,
         model_name=model_name,
         metrics=metrics,
-        feature_importance=_extract_importance(pipeline, X.columns.tolist()),
+        feature_importance=feature_importance,
+        top_drivers=[str(item["feature"]) for item in feature_importance[:5]],
         baseline_metrics=baseline_metrics,
+        primary_metric_name=primary_metric_name,
+        primary_metric_value=round(float(primary_metric_value), 4),
+        confidence_level=confidence_level,
+        data_coverage_pct=data_coverage_pct,
+        feature_importance_chart=build_feature_importance_chart(feature_importance),
         reference_row=reference_row,
     )

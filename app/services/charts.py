@@ -74,3 +74,30 @@ def build_chart_specs(df: pd.DataFrame) -> list[dict]:
         chart_specs.append(_json_safe_figure(fig))
 
     return chart_specs[:3]
+
+
+def build_feature_importance_chart(feature_importance: list[dict]) -> dict:
+    if not feature_importance:
+        fig = go.Figure()
+        fig.update_layout(title="No feature importance available")
+        return _json_safe_figure(fig)
+
+    top_items = feature_importance[:5]
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=[item["importance"] for item in reversed(top_items)],
+                y=[item["feature"] for item in reversed(top_items)],
+                orientation="h",
+                marker_color="#306844",
+            )
+        ]
+    )
+    fig.update_layout(title="Top feature drivers", xaxis_title="importance", yaxis_title="feature")
+    return _json_safe_figure(fig)
+
+
+def build_scenario_comparison_chart(labels: list[str], values: list[float]) -> dict:
+    fig = go.Figure(data=[go.Bar(x=labels, y=values, marker_color=["#123524", "#d78332", "#306844"][: len(labels)])])
+    fig.update_layout(title="Scenario comparison", xaxis_title="scenario", yaxis_title="prediction")
+    return _json_safe_figure(fig)

@@ -10,7 +10,7 @@ from app.api.main import app
 client = TestClient(app)
 
 
-def test_sample_upload_and_profile_flow() -> None:
+def test_sample_upload_profile_and_investigation_flow() -> None:
     upload_response = client.post("/upload/sample")
     assert upload_response.status_code == 200
     dataset = upload_response.json()
@@ -19,13 +19,32 @@ def test_sample_upload_and_profile_flow() -> None:
     profile_response = client.post("/profile", json={"dataset_id": dataset["dataset_id"]})
     assert profile_response.status_code == 200
     profile = profile_response.json()
-    assert "target_candidates" in profile
-    assert profile["shape"]["columns"] >= 5
+    assert profile["data_coverage_pct"] > 0
+    assert "derived_features" in profile
+
+    investigation_response = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]})
+    assert investigation_response.status_code == 200
+    investigation = investigation_response.json()
+    assert investigation["investigation_suggestions"]
+    assert investigation["recommended_actions"]
+    assert investigation["insights"][0]["insight_type"] in {"anomaly", "trend", "correlation"}
 
 
-def test_end_to_end_train_simulate_summary() -> None:
-    upload_response = client.post("/upload/sample")
-    dataset = upload_response.json()
+def test_investigation_path_train_simulate_actions_summary_flow() -> None:
+    dataset = client.post("/upload/sample").json()
+    investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]}).json()
+
+    suggestion = investigation["investigation_suggestions"][0]
+    path_response = client.post(
+        "/investigate-path",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "suggestion_id": suggestion["suggestion_id"],
+            "payload": {**suggestion["payload"], "investigation_type": suggestion["investigation_type"]},
+        },
+    )
+    assert path_response.status_code == 200
+    assert "analysis" in path_response.json()
 
     training_response = client.post(
         "/train",
@@ -34,21 +53,37 @@ def test_end_to_end_train_simulate_summary() -> None:
     assert training_response.status_code == 200
     training = training_response.json()
     assert training["task_type"] == "regression"
+    assert len(training["top_drivers"]) <= 5
+    assert training["feature_importance_chart"]
 
     simulate_response = client.post(
         "/simulate",
         json={
             "dataset_id": dataset["dataset_id"],
             "model_id": training["model_id"],
-            "changes": {"price": 125, "marketing_spend": 7200},
+            "changes": {"price": 125, "marketing_spend": 7200, "discount_pct": 6},
+            "comparison_changes": {"price": 118, "marketing_spend": 7600, "discount_pct": 4},
         },
     )
     assert simulate_response.status_code == 200
     simulation = simulate_response.json()
-    assert "narrative" in simulation
+    assert simulation["confidence_level"] in {"high", "medium", "low"}
+    assert simulation["comparison_prediction_after"] is not None
+
+    actions_response = client.post(
+        "/actions",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "investigation": investigation,
+            "training": training,
+            "simulation": simulation,
+        },
+    )
+    assert actions_response.status_code == 200
+    actions = actions_response.json()
+    assert actions["recommended_actions"]
 
     profile = client.post("/profile", json={"dataset_id": dataset["dataset_id"]}).json()
-    investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]}).json()
     summary_response = client.post(
         "/summary",
         json={
@@ -61,7 +96,9 @@ def test_end_to_end_train_simulate_summary() -> None:
     )
     assert summary_response.status_code == 200
     summary = summary_response.json()
-    assert summary["recommendations"]
+    assert summary["key_findings"]
+    assert summary["opportunities"]
+    assert summary["risks"]
 
 
 def test_csv_upload_endpoint() -> None:

@@ -4,6 +4,7 @@ import pandas as pd
 
 from app.core.schemas import ProfileResponse
 from app.core.state import store
+from app.services.feature_engineering import build_derived_features
 
 
 def _find_target_candidates(df: pd.DataFrame) -> list[str]:
@@ -20,6 +21,8 @@ def _find_target_candidates(df: pd.DataFrame) -> list[str]:
 def build_profile(dataset_id: str) -> ProfileResponse:
     record = store.get_dataset(dataset_id)
     df = record.dataframe
+    enriched_df, derived_features = build_derived_features(df)
+    record.metadata["derived_features"] = derived_features
 
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
     temporal_columns = df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist()
@@ -28,6 +31,7 @@ def build_profile(dataset_id: str) -> ProfileResponse:
     ]
     missing_pct = ((df.isna().mean() * 100).round(2)).to_dict()
     quality_score = round(max(0.0, 100 - float(df.isna().mean().mean() * 100) - len(df.columns) * 0.5), 1)
+    data_coverage_pct = round(float(100 - df.isna().mean().mean() * 100), 1)
 
     headline_findings = [
         f"{df.shape[0]} rows and {df.shape[1]} columns available for analysis.",
@@ -53,4 +57,6 @@ def build_profile(dataset_id: str) -> ProfileResponse:
         target_candidates=_find_target_candidates(df),
         quality_score=quality_score,
         headline_findings=headline_findings,
+        data_coverage_pct=data_coverage_pct,
+        derived_features=[feature for feature in derived_features if feature in enriched_df.columns][:12],
     )

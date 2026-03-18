@@ -1,16 +1,44 @@
 from __future__ import annotations
 
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
 from app.core.config import get_settings
 from app.core.schemas import InsightItem, InvestigateResponse
 from app.core.state import store
+from app.services.action_engine import recommend_actions
 from app.services.charts import build_chart_specs
+from app.services.investigation_agent import build_investigation_suggestions
 from app.services.llm_engine import narrate_investigation
 
 
-def _top_correlation_insight(df: pd.DataFrame) -> InsightItem | None:
+def _build_insight(
+    title: str,
+    description: str,
+    insight_type: str,
+    signal_strength: float,
+    business_relevance: float,
+    data_coverage: float,
+) -> InsightItem:
+    rank_score = round(signal_strength * 0.45 + business_relevance * 0.35 + data_coverage * 0.20, 2)
+    impact_level = "high" if rank_score >= 0.75 else "medium" if rank_score >= 0.45 else "low"
+    icon = {"anomaly": "alert", "trend": "trend_up", "correlation": "hub"}.get(insight_type, "insight")
+    return InsightItem(
+        title=title,
+        description=description,
+        severity=impact_level,
+        confidence=min(0.99, rank_score),
+        impact_level=impact_level,
+        confidence_pct=int(round(rank_score * 100)),
+        insight_type=insight_type,  # type: ignore[arg-type]
+        rank_score=rank_score,
+        icon=icon,
+    )
+
+
+def _top_correlation_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]:
     numeric_df = df.select_dtypes(include=["number"])
     if numeric_df.shape[1] < 2:
         return None
@@ -21,59 +49,78 @@ def _top_correlation_insight(df: pd.DataFrame) -> InsightItem | None:
         return None
 
     (left, right), score = upper.index[0], float(upper.iloc[0])
-    severity = "high" if score >= 0.7 else "medium"
-    return InsightItem(
-        title=f"Strong relationship between {left} and {right}",
-        description=f"The absolute correlation is {score:.2f}, which makes this pair useful for segmentation and prediction.",
-        severity=severity,
-        confidence=min(0.95, round(score, 2)),
+    return _build_insight(
+        title=f"Strong correlation between {left} and {right}",
+        description=f"The absolute correlation is {score:.2f}, suggesting a meaningful relationship worth deeper analysis.",
+        insight_type="correlation",
+        signal_strength=min(1.0, score),
+        business_relevance=0.84,
+        data_coverage=coverage,
     )
 
 
-def _segment_insight(df: pd.DataFrame) -> InsightItem | None:
+def _segment_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]:
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
     categorical_columns = df.select_dtypes(exclude=["number", "datetime", "datetimetz"]).columns.tolist()
     if not numeric_columns or not categorical_columns:
         return None
 
     grouped = df.groupby(categorical_columns[0], dropna=False)[numeric_columns[0]].mean().sort_values(ascending=False)
-    if grouped.empty:
+    if grouped.empty or len(grouped) < 2:
         return None
-    top_segment = grouped.index[0]
-    top_value = grouped.iloc[0]
 
-    return InsightItem(
-        title=f"{top_segment} is the strongest segment on {numeric_columns[0]}",
-        description=f"This segment leads with an average {numeric_columns[0]} of {top_value:.2f}, making it a strong candidate for targeted actions.",
-        severity="medium",
-        confidence=0.74,
+    top_segment = grouped.index[0]
+    gap = float(grouped.iloc[0] - grouped.iloc[-1])
+    normalized_gap = min(1.0, abs(gap) / max(1.0, abs(float(grouped.iloc[0]))))
+    return _build_insight(
+        title=f"{top_segment} behaves differently from the rest",
+        description=f"Average {numeric_columns[0]} differs materially across {categorical_columns[0]} groups, with a top-to-bottom gap of {gap:.2f}.",
+        insight_type="trend",
+        signal_strength=max(0.45, normalized_gap),
+        business_relevance=0.76,
+        data_coverage=coverage,
     )
 
 
-def _temporal_insight(df: pd.DataFrame) -> InsightItem | None:
+def _temporal_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]:
     datetime_columns = df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist()
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
     if not datetime_columns or not numeric_columns:
         return None
 
     dt_col = datetime_columns[0]
-    value_col = numeric_columns[0]
+    value_col = "revenue" if "revenue" in numeric_columns else numeric_columns[0]
     ordered = df.sort_values(dt_col)
     recent_window = ordered.tail(max(3, len(ordered) // 4))
     early_window = ordered.head(max(3, len(ordered) // 4))
-    delta = recent_window[value_col].mean() - early_window[value_col].mean()
-    pct = 0.0 if early_window[value_col].mean() == 0 else (delta / early_window[value_col].mean()) * 100
-    severity = "high" if abs(pct) >= 10 else "low"
-
-    return InsightItem(
-        title=f"Recent shift detected on {value_col}",
-        description=f"The latest period differs by {delta:.2f} ({pct:.1f}%) versus the earliest period in the dataset.",
-        severity=severity,
-        confidence=0.7,
+    early_mean = early_window[value_col].mean()
+    recent_mean = recent_window[value_col].mean()
+    pct = 0.0 if early_mean == 0 else ((recent_mean - early_mean) / early_mean) * 100
+    return _build_insight(
+        title=f"{value_col.capitalize()} shifted across the observed period",
+        description=f"The latest period differs by {pct:.1f}% versus the earliest period in the dataset.",
+        insight_type="trend",
+        signal_strength=min(1.0, abs(pct) / 20),
+        business_relevance=0.88,
+        data_coverage=coverage,
     )
 
 
-def _detect_anomalies(df: pd.DataFrame) -> list[dict]:
+def _anomaly_insight(anomalies: List[Dict], coverage: float) -> Optional[InsightItem]:
+    if not anomalies:
+        return None
+    anomaly_share = len(anomalies) / max(len(anomalies), 5)
+    return _build_insight(
+        title="Anomalous rows require business review",
+        description=f"{len(anomalies)} unusual records were flagged and may reflect risks, exceptions, or data quality issues.",
+        insight_type="anomaly",
+        signal_strength=min(1.0, anomaly_share),
+        business_relevance=0.8,
+        data_coverage=coverage,
+    )
+
+
+def _detect_anomalies(df: pd.DataFrame) -> List[Dict]:
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
     if not numeric_columns:
         return []
@@ -92,40 +139,49 @@ def _detect_anomalies(df: pd.DataFrame) -> list[dict]:
 def investigate_dataset(dataset_id: str) -> InvestigateResponse:
     record = store.get_dataset(dataset_id)
     df = record.dataframe
+    anomalies = _detect_anomalies(df)
+    coverage = max(0.0, 1.0 - float(df.isna().mean().mean()))
 
     insight_candidates = [
-        _top_correlation_insight(df),
-        _segment_insight(df),
-        _temporal_insight(df),
+        _top_correlation_insight(df, coverage),
+        _segment_insight(df, coverage),
+        _temporal_insight(df, coverage),
+        _anomaly_insight(anomalies, coverage),
     ]
     insights = [item for item in insight_candidates if item is not None]
+    insights = sorted(insights, key=lambda item: item.rank_score, reverse=True)[:5]
 
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
-    key_stats: dict[str, float | int] = {
+    key_stats: Dict[str, float | int] = {
         "rows": int(df.shape[0]),
         "columns": int(df.shape[1]),
         "numeric_columns": len(numeric_columns),
+        "data_coverage_pct": round(coverage * 100, 1),
     }
     if numeric_columns:
-        key_stats["avg_primary_metric"] = float(df[numeric_columns[0]].mean())
+        primary = "revenue" if "revenue" in numeric_columns else numeric_columns[0]
+        key_stats["avg_primary_metric"] = float(df[primary].mean())
 
-    anomalies = _detect_anomalies(df)
+    suggestions = build_investigation_suggestions(df)
     narration = narrate_investigation(
         {
             "dataset_id": dataset_id,
-            "insights": [item.model_dump() for item in insights[:5]],
+            "insights": [item.model_dump() for item in insights],
             "anomalies": anomalies,
             "key_stats": key_stats,
         }
     )
+    actions = recommend_actions({"insights": [item.model_dump() for item in insights]})
 
     return InvestigateResponse(
         dataset_id=dataset_id,
-        insights=insights[:5],
+        insights=insights,
+        investigation_suggestions=suggestions,
         anomalies=anomalies,
         key_stats=key_stats,
         chart_specs=build_chart_specs(df),
         executive_brief=narration["executive_brief"],
         opportunity_areas=narration["opportunity_areas"],
         anomaly_narrative=narration["anomaly_narrative"],
+        recommended_actions=actions,
     )
