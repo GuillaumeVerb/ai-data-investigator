@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.core.schemas import InsightItem, InvestigateResponse
 from app.core.state import store
 from app.services.charts import build_chart_specs
+from app.services.llm_engine import narrate_investigation
 
 
 def _top_correlation_insight(df: pd.DataFrame) -> InsightItem | None:
@@ -108,10 +109,23 @@ def investigate_dataset(dataset_id: str) -> InvestigateResponse:
     if numeric_columns:
         key_stats["avg_primary_metric"] = float(df[numeric_columns[0]].mean())
 
+    anomalies = _detect_anomalies(df)
+    narration = narrate_investigation(
+        {
+            "dataset_id": dataset_id,
+            "insights": [item.model_dump() for item in insights[:5]],
+            "anomalies": anomalies,
+            "key_stats": key_stats,
+        }
+    )
+
     return InvestigateResponse(
         dataset_id=dataset_id,
         insights=insights[:5],
-        anomalies=_detect_anomalies(df),
+        anomalies=anomalies,
         key_stats=key_stats,
         chart_specs=build_chart_specs(df),
+        executive_brief=narration["executive_brief"],
+        opportunity_areas=narration["opportunity_areas"],
+        anomaly_narrative=narration["anomaly_narrative"],
     )

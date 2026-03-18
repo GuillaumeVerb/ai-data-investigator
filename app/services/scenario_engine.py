@@ -6,6 +6,7 @@ import pandas as pd
 
 from app.core.schemas import SimulationResponse
 from app.core.state import store
+from app.services.llm_engine import narrate_simulation
 
 
 def _serialize_prediction(value: object) -> float | str:
@@ -64,6 +65,19 @@ def simulate_scenario(
         delta = f"{before} -> {after}"
         narrative = f"The simulated scenario changes the predicted class from {before} to {after}."
 
+    narration = narrate_simulation(
+        {
+            "prediction_before": before,
+            "prediction_after": after,
+            "delta": delta,
+            "delta_pct": delta_pct,
+            "narrative": narrative,
+            "changes": changes,
+            "reference_index": index,
+            "target": model_record.target,
+        }
+    )
+
     base_row_dict = base_row.astype(object).where(pd.notnull(base_row), None).to_dict()
     simulated_row_dict = simulated_row.astype(object).where(pd.notnull(simulated_row), None).to_dict()
 
@@ -72,7 +86,9 @@ def simulate_scenario(
         prediction_after=after,
         delta=delta,
         delta_pct=delta_pct,
-        narrative=narrative,
+        narrative=narration["narrative"],
+        impact_summary=narration["impact_summary"],
+        guardrail_note=narration["guardrail_note"],
         reference_row=base_row_dict,
         simulated_row=simulated_row_dict,
     )

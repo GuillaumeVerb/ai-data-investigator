@@ -52,6 +52,9 @@ class InvestigateResponse(AppBaseModel):
     anomalies: List[Dict[str, Any]]
     key_stats: Dict[str, Union[float, int]]
     chart_specs: List[Dict[str, Any]]
+    executive_brief: str
+    opportunity_areas: List[str]
+    anomaly_narrative: str
 
 
 class TrainRequest(AppBaseModel):
@@ -84,6 +87,8 @@ class SimulationResponse(AppBaseModel):
     delta: Union[float, str]
     delta_pct: Optional[float]
     narrative: str
+    impact_summary: str
+    guardrail_note: str
     reference_row: Dict[str, Any]
     simulated_row: Dict[str, Any]
 
@@ -98,6 +103,7 @@ class SummaryRequest(AppBaseModel):
 
 class SummaryResponse(AppBaseModel):
     dataset_id: str
+    headline: str
     executive_summary: str
     recommendations: List[str]
     limitations: List[str]
