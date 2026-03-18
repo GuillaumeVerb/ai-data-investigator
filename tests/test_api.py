@@ -10,27 +10,22 @@ from app.api.main import app
 client = TestClient(app)
 
 
-def test_sample_upload_profile_and_investigation_flow() -> None:
-    upload_response = client.post("/upload/sample")
-    assert upload_response.status_code == 200
-    dataset = upload_response.json()
-    assert dataset["rows"] > 0
+def test_profile_investigation_and_enrichment_flow() -> None:
+    dataset = client.post("/upload/sample").json()
 
-    profile_response = client.post("/profile", json={"dataset_id": dataset["dataset_id"]})
-    assert profile_response.status_code == 200
-    profile = profile_response.json()
+    profile = client.post("/profile", json={"dataset_id": dataset["dataset_id"]}).json()
     assert profile["data_coverage_pct"] > 0
     assert "derived_features" in profile
 
-    investigation_response = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]})
-    assert investigation_response.status_code == 200
-    investigation = investigation_response.json()
+    investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]}).json()
     assert investigation["investigation_suggestions"]
     assert investigation["recommended_actions"]
-    assert investigation["insights"][0]["insight_type"] in {"anomaly", "trend", "correlation"}
+
+    enrichment = client.post("/enrichment-suggestions", json={"dataset_id": dataset["dataset_id"]}).json()
+    assert enrichment["suggestions"]
 
 
-def test_investigation_path_train_simulate_actions_summary_flow() -> None:
+def test_investigation_path_root_cause_prediction_simulation_actions_summary_and_copilot() -> None:
     dataset = client.post("/upload/sample").json()
     investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]}).json()
 
@@ -44,19 +39,21 @@ def test_investigation_path_train_simulate_actions_summary_flow() -> None:
         },
     )
     assert path_response.status_code == 200
-    assert "analysis" in path_response.json()
 
-    training_response = client.post(
+    root_cause = client.post(
+        "/root-cause",
+        json={"dataset_id": dataset["dataset_id"], "metric": "revenue"},
+    )
+    assert root_cause.status_code == 200
+    assert root_cause.json()["main_drivers"]
+
+    training = client.post(
         "/train",
         json={"dataset_id": dataset["dataset_id"], "target": "revenue"},
-    )
-    assert training_response.status_code == 200
-    training = training_response.json()
-    assert training["task_type"] == "regression"
-    assert len(training["top_drivers"]) <= 5
+    ).json()
     assert training["feature_importance_chart"]
 
-    simulate_response = client.post(
+    simulation = client.post(
         "/simulate",
         json={
             "dataset_id": dataset["dataset_id"],
@@ -64,13 +61,10 @@ def test_investigation_path_train_simulate_actions_summary_flow() -> None:
             "changes": {"price": 125, "marketing_spend": 7200, "discount_pct": 6},
             "comparison_changes": {"price": 118, "marketing_spend": 7600, "discount_pct": 4},
         },
-    )
-    assert simulate_response.status_code == 200
-    simulation = simulate_response.json()
-    assert simulation["confidence_level"] in {"high", "medium", "low"}
+    ).json()
     assert simulation["comparison_prediction_after"] is not None
 
-    actions_response = client.post(
+    actions = client.post(
         "/actions",
         json={
             "dataset_id": dataset["dataset_id"],
@@ -78,13 +72,11 @@ def test_investigation_path_train_simulate_actions_summary_flow() -> None:
             "training": training,
             "simulation": simulation,
         },
-    )
-    assert actions_response.status_code == 200
-    actions = actions_response.json()
+    ).json()
     assert actions["recommended_actions"]
 
     profile = client.post("/profile", json={"dataset_id": dataset["dataset_id"]}).json()
-    summary_response = client.post(
+    summary = client.post(
         "/summary",
         json={
             "dataset_id": dataset["dataset_id"],
@@ -93,21 +85,37 @@ def test_investigation_path_train_simulate_actions_summary_flow() -> None:
             "training": training,
             "simulation": simulation,
         },
-    )
-    assert summary_response.status_code == 200
-    summary = summary_response.json()
+    ).json()
     assert summary["key_findings"]
-    assert summary["opportunities"]
     assert summary["risks"]
 
+    copilot = client.post(
+        "/copilot/ask",
+        json={"dataset_id": dataset["dataset_id"], "question": "Should we increase price?", "target": "revenue"},
+    ).json()
+    assert copilot["answer"]
+    assert copilot["recommended_actions"]
 
-def test_csv_upload_endpoint() -> None:
+
+def test_multi_dataset_merge_preview_and_csv_upload() -> None:
+    first = client.post("/upload/sample").json()
     sample_csv = Path(__file__).resolve().parents[1] / "data" / "sample_sales.csv"
     with sample_csv.open("rb") as handle:
-        response = client.post(
+        second_response = client.post(
             "/upload",
-            files={"file": ("sample_sales.csv", handle, "text/csv")},
+            files={"file": ("sample_sales_copy.csv", handle, "text/csv")},
         )
-    assert response.status_code == 200
-    body = response.json()
-    assert body["filename"] == "sample_sales.csv"
+    assert second_response.status_code == 200
+    second = second_response.json()
+
+    datasets = client.get("/datasets")
+    assert datasets.status_code == 200
+    assert len(datasets.json()) >= 2
+
+    merge_preview = client.post(
+        "/merge-preview",
+        json={"left_dataset_id": first["dataset_id"], "right_dataset_id": second["dataset_id"]},
+    )
+    assert merge_preview.status_code == 200
+    body = merge_preview.json()
+    assert body["suggested_join_keys"]

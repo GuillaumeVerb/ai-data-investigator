@@ -5,6 +5,8 @@ from typing import Any
 
 import pandas as pd
 
+from app.core.schemas import DatasetListItem
+
 
 @dataclass
 class DatasetRecord:
@@ -35,6 +37,17 @@ class InMemoryStore:
 
     def get_dataset(self, dataset_id: str) -> DatasetRecord:
         return self.datasets[dataset_id]
+
+    def list_datasets(self) -> list[DatasetListItem]:
+        return [
+            DatasetListItem(
+                dataset_id=record.dataset_id,
+                filename=record.filename,
+                rows=int(record.dataframe.shape[0]),
+                columns=int(record.dataframe.shape[1]),
+            )
+            for record in self.datasets.values()
+        ]
 
     def save_model(self, record: ModelRecord) -> None:
         self.models[record.model_id] = record

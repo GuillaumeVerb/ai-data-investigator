@@ -8,12 +8,21 @@ from app.core.config import get_settings
 from app.core.schemas import (
     ActionRequest,
     ActionResponse,
+    CopilotAskRequest,
+    CopilotAskResponse,
+    DatasetListItem,
+    EnrichmentRequest,
+    EnrichmentResponse,
     InvestigationPathRequest,
     InvestigationPathResponse,
     InvestigateRequest,
     InvestigateResponse,
+    MergePreviewRequest,
+    MergePreviewResponse,
     ProfileRequest,
     ProfileResponse,
+    RootCauseRequest,
+    RootCauseResponse,
     SimulationRequest,
     SimulationResponse,
     SummaryRequest,
@@ -22,6 +31,9 @@ from app.core.schemas import (
     TrainResponse,
     UploadResponse,
 )
+from app.services.copilot_agent import answer_business_question
+from app.services.dataset_merge import preview_merge
+from app.services.enrichment_agent import suggest_enrichment
 from app.services.action_engine import recommend_actions
 from app.services.ingestion import load_sample_dataset, load_upload
 from app.services.investigation_agent import investigate_path
@@ -29,7 +41,9 @@ from app.services.insights import investigate_dataset
 from app.services.llm_engine import generate_summary
 from app.services.ml_engine import train_model
 from app.services.profiling import build_profile
+from app.services.root_cause import explain_root_cause
 from app.services.scenario_engine import simulate_scenario
+from app.core.state import store
 
 
 app = FastAPI(title=get_settings().app_name)
@@ -38,6 +52,11 @@ app = FastAPI(title=get_settings().app_name)
 @app.get("/health")
 def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/datasets", response_model=list[DatasetListItem])
+def list_datasets() -> list[DatasetListItem]:
+    return store.list_datasets()
 
 
 @app.post("/upload", response_model=UploadResponse)
@@ -74,6 +93,32 @@ def investigate(request: InvestigateRequest) -> InvestigateResponse:
 def investigate_single_path(request: InvestigationPathRequest) -> InvestigationPathResponse:
     try:
         return investigate_path(request.dataset_id, request.suggestion_id, request.payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/root-cause", response_model=RootCauseResponse)
+def root_cause(request: RootCauseRequest) -> RootCauseResponse:
+    try:
+        return explain_root_cause(request.dataset_id, request.metric, request.focus, request.model_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/enrichment-suggestions", response_model=EnrichmentResponse)
+def enrichment_suggestions(request: EnrichmentRequest) -> EnrichmentResponse:
+    try:
+        return suggest_enrichment(request.dataset_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/merge-preview", response_model=MergePreviewResponse)
+def merge_preview(request: MergePreviewRequest) -> MergePreviewResponse:
+    try:
+        return preview_merge(request.left_dataset_id, request.right_dataset_id, request.join_keys)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -119,3 +164,13 @@ def actions(request: ActionRequest) -> ActionResponse:
 @app.post("/summary", response_model=SummaryResponse)
 def summary(request: SummaryRequest) -> SummaryResponse:
     return generate_summary(request.model_dump())
+
+
+@app.post("/copilot/ask", response_model=CopilotAskResponse)
+def copilot_ask(request: CopilotAskRequest) -> CopilotAskResponse:
+    try:
+        return answer_business_question(request.dataset_id, request.question, request.target, request.model_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

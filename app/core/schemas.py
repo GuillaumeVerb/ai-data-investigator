@@ -17,6 +17,13 @@ class UploadResponse(AppBaseModel):
     preview: List[Dict[str, Any]]
 
 
+class DatasetListItem(AppBaseModel):
+    dataset_id: str
+    filename: str
+    rows: int
+    columns: int
+
+
 class ProfileRequest(AppBaseModel):
     dataset_id: str
 
@@ -35,6 +42,22 @@ class ProfileResponse(AppBaseModel):
     headline_findings: List[str]
     data_coverage_pct: float
     derived_features: List[str]
+
+
+class EnrichmentSuggestion(AppBaseModel):
+    dataset_name: str
+    why_it_matters: str
+    integration_hint: str
+    expected_value: str
+
+
+class EnrichmentRequest(AppBaseModel):
+    dataset_id: str
+
+
+class EnrichmentResponse(AppBaseModel):
+    dataset_id: str
+    suggestions: List[EnrichmentSuggestion]
 
 
 class InsightItem(AppBaseModel):
@@ -71,6 +94,28 @@ class InvestigationPathResponse(AppBaseModel):
     analysis: str
     business_implication: str
     supporting_stats: Dict[str, Union[float, int, str]]
+    chart_spec: Optional[Dict[str, Any]] = None
+
+
+class RootCauseRequest(AppBaseModel):
+    dataset_id: str
+    metric: str
+    focus: Optional[str] = None
+    model_id: Optional[str] = None
+
+
+class RootCauseDriver(AppBaseModel):
+    driver: str
+    impact_estimate: str
+    explanation: str
+
+
+class RootCauseResponse(AppBaseModel):
+    dataset_id: str
+    metric: str
+    explanation: str
+    main_drivers: List[RootCauseDriver]
+    evidence: List[str]
     chart_spec: Optional[Dict[str, Any]] = None
 
 
@@ -158,6 +203,43 @@ class ActionRequest(AppBaseModel):
 class ActionResponse(AppBaseModel):
     dataset_id: str
     recommended_actions: List[RecommendedAction]
+
+
+class MergePreviewRequest(AppBaseModel):
+    left_dataset_id: str
+    right_dataset_id: str
+    join_keys: Optional[List[str]] = None
+
+
+class MergePreviewResponse(AppBaseModel):
+    left_dataset_id: str
+    right_dataset_id: str
+    suggested_join_keys: List[str]
+    available_shared_columns: List[str]
+    estimated_overlap_rows: int
+    left_rows: int
+    right_rows: int
+    merge_readiness: Literal["high", "medium", "low"]
+    explanation: str
+    preview: List[Dict[str, Any]]
+
+
+class CopilotAskRequest(AppBaseModel):
+    dataset_id: str
+    question: str
+    target: Optional[str] = None
+    model_id: Optional[str] = None
+
+
+class CopilotAskResponse(AppBaseModel):
+    dataset_id: str
+    intent: Literal["diagnosis", "prediction", "simulation", "allocation"]
+    answer: str
+    key_drivers: List[str]
+    evidence: List[str]
+    simulation_result: Optional[str] = None
+    confidence_level: Literal["high", "medium", "low"]
+    recommended_actions: List[str]
 
 
 class SummaryRequest(AppBaseModel):
