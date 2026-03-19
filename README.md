@@ -1,33 +1,40 @@
-# AI Data Investigator
+# AI Decision Copilot
 
-AI Data Investigator is a demo-first analytics agent that turns a flat dataset into a business-facing workflow:
+AI Decision Copilot is a premium analytics product that turns a dataset into an investigation, prediction, simulation, and reporting workflow:
 
-`upload -> diagnostic -> investigation -> prediction -> simulation -> synthesis`
+`upload -> diagnose -> investigate -> explain -> simulate -> recommend -> export`
 
-It is designed to work well as:
+It is designed for:
 
-- a strong portfolio project
-- a Malt/freelance showcase
-- a foundation for a future analytics SaaS
+- portfolio and freelance positioning
+- short product demos
+- business-facing AI storytelling
+- future SaaS evolution
 
-## Why This Project
+## Product Positioning
 
-This MVP goes beyond a simple "chat with your CSV" experience. It:
+This is not just a "chat with CSV" app. It behaves like an AI business analyst that can:
 
-- profiles a dataset automatically
-- highlights patterns and anomalies without waiting for a prompt
-- trains a baseline predictive model on a chosen business target
-- simulates what-if scenarios
-- generates an executive-ready summary with guardrails
+- profile and score insights automatically
+- suggest investigation paths
+- train explainable predictive models
+- compare scenarios before decisions
+- surface root-cause hypotheses
+- recommend business actions
+- export a consulting-style HTML report
 
-## Stack
+## Core Capabilities
 
-- UI: Streamlit
-- API: FastAPI + Pydantic
-- Analysis: pandas + numpy
-- ML: scikit-learn
-- Visuals: Plotly
-- Narrative layer: OpenAI with a safe fallback summary
+- CSV upload and sample dataset
+- automatic profiling and derived features
+- ranked investigation suggestions
+- root-cause analysis
+- prediction engine with explainability
+- scenario comparison
+- enrichment suggestions
+- multi-dataset merge preview
+- memory-enabled decision copilot
+- executive report export in HTML
 
 ## Architecture
 
@@ -35,89 +42,75 @@ This MVP goes beyond a simple "chat with your CSV" experience. It:
 User -> Streamlit UI -> FastAPI API
                       -> ingestion
                       -> profiling
-                      -> insights
+                      -> investigation_agent
+                      -> root_cause
                       -> ml_engine
                       -> scenario_engine
-                      -> llm_engine
+                      -> action_engine
+                      -> enrichment_agent
+                      -> copilot_agent
+                      -> report_export
 ```
 
-## Features
+## Quick Demo Flow
 
-- CSV upload and built-in demo dataset
-- automatic data profiling and target suggestions
-- 3 to 5 generated insights
-- simple anomaly detection
-- automatic charts
-- baseline model training for regression or classification
-- feature importance
-- what-if simulation
-- executive summary with recommendations and limitations
+1. Load the sample dataset.
+2. Review investigation suggestions.
+3. Train the prediction engine on `revenue`.
+4. Compare scenario A vs B.
+5. Ask the Decision Copilot a business question.
+6. Export the HTML executive report.
 
 ## Quickstart
-
-1. Create a virtual environment and install dependencies.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-2. Copy the environment template and optionally add an OpenAI API key.
-
-```bash
 cp .env.example .env
-```
-
-3. Start the API.
-
-```bash
 uvicorn app.api.main:app --reload
-```
-
-4. In another terminal, start the UI.
-
-```bash
 streamlit run app/ui/streamlit_app.py
 ```
 
-## Demo Dataset
-
-The repo ships with [`data/sample_sales.csv`](/Users/guillaumeverbiguie/Desktop/AI Data Investigator/data/sample_sales.csv), a compact e-commerce dataset with:
-
-- product, region, channel, and segment dimensions
-- pricing and marketing inputs
-- revenue and churn-oriented targets
-
-## API Endpoints
+## Key API Endpoints
 
 - `POST /upload`
 - `POST /upload/sample`
+- `GET /datasets`
 - `POST /profile`
 - `POST /investigate`
+- `POST /investigate-path`
+- `POST /root-cause`
 - `POST /train`
 - `POST /simulate`
+- `POST /actions`
+- `POST /enrichment-suggestions`
+- `POST /merge-preview`
+- `POST /copilot/ask`
+- `GET /copilot/session/{session_id}`
+- `POST /copilot/session/{session_id}/reset`
 - `POST /summary`
+- `POST /report/export`
+
+## Screenshots To Capture
+
+- landing hero
+- investigation suggestions
+- prediction engine with top drivers
+- scenario comparison
+- copilot reasoning panel
+- exported executive report
 
 ## Guardrails
 
-- Insights are statistical signals, not business truth by default.
-- Simulation reflects model behavior on observed data, not causal proof.
-- The MVP optimizes for clarity and explainability over advanced model complexity.
+- Outputs are based on statistical patterns and model behavior.
+- Simulations are directional guidance, not causal evidence.
+- Confidence depends on model quality and data coverage.
 
-## Portfolio Angle
+## Next Product Steps
 
-The project is intentionally polished for short demos:
-
-- clear user journey in six screens
-- visible business framing
-- readable metrics and simulation output
-- executive summary that a decision-maker can understand quickly
-
-## Next Steps
-
-- SQL connectors
-- model comparison
-- exportable PDF/HTML reports
-- run history
-- domain templates for churn, pricing, revenue, and marketing
+- richer copilot planning and memory
+- persistent run history
+- SQL connectors and merged analysis
+- PDF export after HTML validation
+- templates for pricing, churn, and revenue use cases

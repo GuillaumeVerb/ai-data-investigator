@@ -10,6 +10,7 @@ from app.core.schemas import (
     ActionResponse,
     CopilotAskRequest,
     CopilotAskResponse,
+    CopilotSessionState,
     DatasetListItem,
     EnrichmentRequest,
     EnrichmentResponse,
@@ -23,6 +24,8 @@ from app.core.schemas import (
     ProfileResponse,
     RootCauseRequest,
     RootCauseResponse,
+    ReportExportRequest,
+    ReportExportResponse,
     SimulationRequest,
     SimulationResponse,
     SummaryRequest,
@@ -41,6 +44,7 @@ from app.services.insights import investigate_dataset
 from app.services.llm_engine import generate_summary
 from app.services.ml_engine import train_model
 from app.services.profiling import build_profile
+from app.services.report_export import export_html_report
 from app.services.root_cause import explain_root_cause
 from app.services.scenario_engine import simulate_scenario
 from app.core.state import store
@@ -57,6 +61,16 @@ def healthcheck() -> dict[str, str]:
 @app.get("/datasets", response_model=list[DatasetListItem])
 def list_datasets() -> list[DatasetListItem]:
     return store.list_datasets()
+
+
+@app.get("/copilot/session/{session_id}", response_model=CopilotSessionState)
+def get_copilot_session(session_id: str) -> CopilotSessionState:
+    return store.get_or_create_session(session_id).to_schema()
+
+
+@app.post("/copilot/session/{session_id}/reset", response_model=CopilotSessionState)
+def reset_copilot_session(session_id: str) -> CopilotSessionState:
+    return store.reset_session(session_id)
 
 
 @app.post("/upload", response_model=UploadResponse)
@@ -169,8 +183,20 @@ def summary(request: SummaryRequest) -> SummaryResponse:
 @app.post("/copilot/ask", response_model=CopilotAskResponse)
 def copilot_ask(request: CopilotAskRequest) -> CopilotAskResponse:
     try:
-        return answer_business_question(request.dataset_id, request.question, request.target, request.model_id)
+        response, _session = answer_business_question(
+            request.dataset_id,
+            request.question,
+            request.target,
+            request.model_id,
+            request.session_id,
+        )
+        return response
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/report/export", response_model=ReportExportResponse)
+def report_export(request: ReportExportRequest) -> ReportExportResponse:
+    return export_html_report(request)

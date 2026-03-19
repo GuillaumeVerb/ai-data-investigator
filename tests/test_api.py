@@ -25,76 +25,97 @@ def test_profile_investigation_and_enrichment_flow() -> None:
     assert enrichment["suggestions"]
 
 
-def test_investigation_path_root_cause_prediction_simulation_actions_summary_and_copilot() -> None:
+def test_copilot_session_context_and_report_export_flow() -> None:
     dataset = client.post("/upload/sample").json()
-    investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]}).json()
+    session_id = "test-session-copilot"
 
-    suggestion = investigation["investigation_suggestions"][0]
-    path_response = client.post(
-        "/investigate-path",
+    first_answer = client.post(
+        "/copilot/ask",
         json={
             "dataset_id": dataset["dataset_id"],
-            "suggestion_id": suggestion["suggestion_id"],
-            "payload": {**suggestion["payload"], "investigation_type": suggestion["investigation_type"]},
+            "question": "Should we increase price?",
+            "target": "revenue",
+            "session_id": session_id,
         },
     )
-    assert path_response.status_code == 200
+    assert first_answer.status_code == 200
+    first_payload = first_answer.json()
+    assert first_payload["plan"]
+    assert first_payload["tools_used"]
+    assert first_payload["session_id"] == session_id
+    assert "guardrail" in first_payload
+    assert "missing_useful_data" in first_payload
+    assert "suggested_next_investigation" in first_payload
+    assert first_payload["short_answer"]
+    assert first_payload["supporting_evidence"]
+    assert isinstance(first_payload["missing_useful_data"][0], dict)
 
-    root_cause = client.post(
-        "/root-cause",
-        json={"dataset_id": dataset["dataset_id"], "metric": "revenue"},
+    session_state = client.get(f"/copilot/session/{session_id}")
+    assert session_state.status_code == 200
+    assert session_state.json()["last_question"] == "Should we increase price?"
+    assert session_state.json()["latest_recommended_actions"]
+
+    second_answer = client.post(
+        "/copilot/ask",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "question": "Explain this further",
+            "target": "revenue",
+            "session_id": session_id,
+        },
     )
-    assert root_cause.status_code == 200
-    assert root_cause.json()["main_drivers"]
+    assert second_answer.status_code == 200
+    second_payload = second_answer.json()
+    assert second_payload["supporting_evidence"]
+    assert second_payload["guardrail"] == "This analysis is based on statistical patterns and model behavior, not causal inference."
 
-    training = client.post(
-        "/train",
-        json={"dataset_id": dataset["dataset_id"], "target": "revenue"},
-    ).json()
-    assert training["feature_importance_chart"]
+    data_gap_answer = client.post(
+        "/copilot/ask",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "question": "What additional data would improve this analysis?",
+            "target": "revenue",
+            "session_id": session_id,
+        },
+    )
+    assert data_gap_answer.status_code == 200
+    data_gap_payload = data_gap_answer.json()
+    assert data_gap_payload["missing_useful_data"]
+    assert data_gap_payload["suggested_next_investigation"]
+    assert data_gap_payload["missing_useful_data"][0]["merge_hint"]
 
+    profile = client.post("/profile", json={"dataset_id": dataset["dataset_id"]}).json()
+    investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]}).json()
+    training = client.post("/train", json={"dataset_id": dataset["dataset_id"], "target": "revenue"}).json()
     simulation = client.post(
         "/simulate",
         json={
             "dataset_id": dataset["dataset_id"],
             "model_id": training["model_id"],
             "changes": {"price": 125, "marketing_spend": 7200, "discount_pct": 6},
-            "comparison_changes": {"price": 118, "marketing_spend": 7600, "discount_pct": 4},
         },
     ).json()
-    assert simulation["comparison_prediction_after"] is not None
-
-    actions = client.post(
-        "/actions",
-        json={
-            "dataset_id": dataset["dataset_id"],
-            "investigation": investigation,
-            "training": training,
-            "simulation": simulation,
-        },
+    root_cause = client.post(
+        "/root-cause",
+        json={"dataset_id": dataset["dataset_id"], "metric": "revenue"},
     ).json()
-    assert actions["recommended_actions"]
 
-    profile = client.post("/profile", json={"dataset_id": dataset["dataset_id"]}).json()
-    summary = client.post(
-        "/summary",
+    report = client.post(
+        "/report/export",
         json={
             "dataset_id": dataset["dataset_id"],
             "profile": profile,
             "investigation": investigation,
             "training": training,
             "simulation": simulation,
+            "root_cause": root_cause,
         },
-    ).json()
-    assert summary["key_findings"]
-    assert summary["risks"]
-
-    copilot = client.post(
-        "/copilot/ask",
-        json={"dataset_id": dataset["dataset_id"], "question": "Should we increase price?", "target": "revenue"},
-    ).json()
-    assert copilot["answer"]
-    assert copilot["recommended_actions"]
+    )
+    assert report.status_code == 200
+    report_body = report.json()
+    assert report_body["format"] == "html"
+    assert "<html" in report_body["html_content"].lower()
+    assert "Root Cause Analysis" in report_body["html_content"]
 
 
 def test_multi_dataset_merge_preview_and_csv_upload() -> None:

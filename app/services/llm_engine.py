@@ -182,3 +182,38 @@ def generate_summary(payload: Dict[str, Any]) -> SummaryResponse:
         risks=response.get("risks", fallback.risks)[:3],
         opportunities=response.get("opportunities", fallback.opportunities)[:3],
     )
+
+
+def narrate_copilot_answer(payload: Dict[str, Any]) -> Dict[str, Any]:
+    fallback = {
+        "short_answer": payload["short_answer"],
+        "key_drivers": payload.get("key_drivers", [])[:4],
+        "supporting_evidence": payload.get("supporting_evidence", [])[:5],
+        "confidence_level": payload.get("confidence_level", "medium"),
+        "recommended_actions": payload.get("recommended_actions", [])[:4],
+        "suggested_next_investigation": payload.get("suggested_next_investigation", [])[:3],
+        "missing_useful_data": payload.get("missing_useful_data", [])[:4],
+    }
+    response = _safe_completion(
+        (
+            "You are a senior AI business analyst inside an AI Decision Copilot. "
+            "Write the final answer for a business stakeholder. "
+            "Return JSON with keys: short_answer, key_drivers, supporting_evidence, confidence_level, "
+            "recommended_actions, suggested_next_investigation, missing_useful_data. "
+            "Keep the answer short, concrete, business-oriented, and explicitly non-causal."
+        ),
+        payload,
+    )
+    if not response:
+        return fallback
+    return {
+        "short_answer": response.get("short_answer", fallback["short_answer"]),
+        "key_drivers": response.get("key_drivers", fallback["key_drivers"])[:4],
+        "supporting_evidence": response.get("supporting_evidence", fallback["supporting_evidence"])[:5],
+        "confidence_level": response.get("confidence_level", fallback["confidence_level"]),
+        "recommended_actions": response.get("recommended_actions", fallback["recommended_actions"])[:4],
+        "suggested_next_investigation": response.get(
+            "suggested_next_investigation", fallback["suggested_next_investigation"]
+        )[:3],
+        "missing_useful_data": response.get("missing_useful_data", fallback["missing_useful_data"])[:4],
+    }

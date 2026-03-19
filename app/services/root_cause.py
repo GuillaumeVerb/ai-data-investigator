@@ -3,11 +3,9 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pandas as pd
-import plotly.graph_objects as go
-
 from app.core.schemas import RootCauseDriver, RootCauseResponse
 from app.core.state import store
-from app.services.charts import _json_safe_figure
+from app.services.charts import build_root_cause_driver_chart
 
 
 def explain_root_cause(dataset_id: str, metric: str, focus: Optional[str] = None, model_id: Optional[str] = None) -> RootCauseResponse:
@@ -67,21 +65,7 @@ def explain_root_cause(dataset_id: str, metric: str, focus: Optional[str] = None
         "and potential time effects visible in the current dataset."
     )
 
-    chart_spec = None
-    if drivers:
-        fig = go.Figure(
-            data=[
-                go.Bar(
-                    x=[driver.driver for driver in drivers],
-                    y=list(range(len(drivers), 0, -1)),
-                    text=[driver.impact_estimate for driver in drivers],
-                    textposition="auto",
-                    marker_color="#b44747",
-                )
-            ]
-        )
-        fig.update_layout(title=f"Root-cause drivers for {metric}", xaxis_title="driver", yaxis_title="relative weight")
-        chart_spec = _json_safe_figure(fig)
+    chart_spec = build_root_cause_driver_chart([driver.model_dump() for driver in drivers], metric) if drivers else None
 
     return RootCauseResponse(
         dataset_id=dataset_id,

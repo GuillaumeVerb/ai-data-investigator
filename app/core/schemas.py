@@ -76,6 +76,7 @@ class InvestigationSuggestion(AppBaseModel):
     suggestion_id: str
     title: str
     explanation: str
+    expected_impact: str
     investigation_type: Literal["trend", "correlation", "segment", "anomaly"]
     priority_score: float = Field(ge=0.0, le=1.0)
     button_label: str = "Investigate"
@@ -229,17 +230,77 @@ class CopilotAskRequest(AppBaseModel):
     question: str
     target: Optional[str] = None
     model_id: Optional[str] = None
+    session_id: Optional[str] = None
+
+
+class CopilotPlanStep(AppBaseModel):
+    step: str
+    purpose: str
+    tool_name: str
+
+
+class CopilotToolCall(AppBaseModel):
+    tool_name: str
+    status: Literal["completed", "skipped"]
+    output_summary: str
+
+
+class CopilotSessionState(AppBaseModel):
+    session_id: str
+    active_dataset_id: Optional[str] = None
+    active_model_id: Optional[str] = None
+    last_question: Optional[str] = None
+    last_intent: Optional[str] = None
+    last_summary: Optional[str] = None
+    last_simulation: Optional[str] = None
+    latest_investigation_titles: List[str] = []
+    latest_recommended_actions: List[str] = []
+    message_history: List[str]
+
+
+class MissingDataRecommendation(AppBaseModel):
+    dataset_name: str
+    why_it_matters: str
+    what_it_improves: str
+    merge_hint: str
 
 
 class CopilotAskResponse(AppBaseModel):
     dataset_id: str
-    intent: Literal["diagnosis", "prediction", "simulation", "allocation"]
-    answer: str
+    session_id: str
+    intent: Literal["diagnosis", "root_cause", "prediction", "simulation", "prioritization", "data_gap", "merge"]
+    short_answer: str
+    plan: List[CopilotPlanStep]
+    tools_used: List[CopilotToolCall]
     key_drivers: List[str]
-    evidence: List[str]
+    supporting_evidence: List[str]
     simulation_result: Optional[str] = None
     confidence_level: Literal["high", "medium", "low"]
+    confidence_score: int = Field(ge=0, le=100)
+    data_coverage_pct: Optional[float] = None
+    model_reliability: Optional[str] = None
     recommended_actions: List[str]
+    suggested_next_investigation: List[str]
+    missing_useful_data: List[MissingDataRecommendation]
+    guardrail: str
+    follow_up_questions: List[str]
+
+
+class ReportExportRequest(AppBaseModel):
+    dataset_id: str
+    profile: ProfileResponse
+    investigation: InvestigateResponse
+    training: Optional[TrainResponse] = None
+    simulation: Optional[SimulationResponse] = None
+    root_cause: Optional[RootCauseResponse] = None
+
+
+class ReportExportResponse(AppBaseModel):
+    report_id: str
+    dataset_id: str
+    format: Literal["html"]
+    title: str
+    html_content: str
 
 
 class SummaryRequest(AppBaseModel):
