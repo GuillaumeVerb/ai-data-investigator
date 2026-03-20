@@ -140,3 +140,47 @@ def test_multi_dataset_merge_preview_and_csv_upload() -> None:
     assert merge_preview.status_code == 200
     body = merge_preview.json()
     assert body["suggested_join_keys"]
+
+
+def test_decision_engine_reference_and_average_modes() -> None:
+    dataset = client.post("/upload/sample").json()
+    training = client.post("/train", json={"dataset_id": dataset["dataset_id"], "target": "revenue"}).json()
+
+    reference_response = client.post(
+        "/decision-engine",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "model_id": training["model_id"],
+            "baseline_mode": "reference_row",
+            "reference_index": 0,
+            "scenario_a": {"price": 125, "marketing_spend": 7200, "discount": 6, "region": "South", "product_mix": "Beta"},
+            "scenario_b": {"price": 100, "marketing_spend": 4800, "discount": 4, "region": "North", "product_mix": "Gamma"},
+        },
+    )
+    assert reference_response.status_code == 200
+    reference_body = reference_response.json()
+    assert reference_body["recommended_decision"] in {"baseline", "scenario_a", "scenario_b"}
+    assert reference_body["comparison"]["winner"] in {"baseline", "scenario_a", "scenario_b"}
+    assert reference_body["available_inputs"]
+    assert reference_body["scenario_rows"]["scenario_a"]["discount_pct"] == 6
+    assert reference_body["scenario_rows"]["scenario_a"]["region"] == "South"
+    assert reference_body["scenario_rows"]["scenario_a"]["product"] == "Beta"
+    assert reference_body["recommended_actions"]
+    assert reference_body["confidence"]["disclaimer"]
+
+    average_response = client.post(
+        "/decision-engine",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "model_id": training["model_id"],
+            "baseline_mode": "dataset_average",
+            "scenario_a": {"price": 130, "marketing_spend": 6500, "discount": 9},
+        },
+    )
+    assert average_response.status_code == 200
+    average_body = average_response.json()
+    assert average_body["baseline_prediction"] is not None
+    assert average_body["scenario_a_prediction"] is not None
+    assert average_body["data_size"] in {"small", "medium", "large"}
+    assert average_body["model_reliability"] in {"low", "medium", "high"}
+    assert average_body["comparison"]["scenarios"][0]["scenario_key"] == "baseline"

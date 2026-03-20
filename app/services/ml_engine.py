@@ -153,6 +153,12 @@ def train_model(dataset_id: str, target: str) -> TrainResponse:
             pipeline=pipeline,
             feature_columns=X.columns.tolist(),
             reference_row=reference_row,
+            metrics=metrics,
+            primary_metric_name=primary_metric_name,
+            primary_metric_value=round(float(primary_metric_value), 4),
+            confidence_level=confidence_level,
+            data_coverage_pct=data_coverage_pct,
+            top_drivers=[str(item["feature"]) for item in feature_importance[:5]],
         )
     )
     record.metadata["derived_features"] = derived_features

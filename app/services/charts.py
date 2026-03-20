@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -20,6 +21,15 @@ PLOT_BG = "rgba(255,252,247,0.82)"
 
 def _json_safe_figure(fig: go.Figure) -> dict:
     return json.loads(json.dumps(fig.to_plotly_json(), cls=PlotlyJSONEncoder))
+
+
+def _clean_feature_name(value: str) -> str:
+    return str(value).replace("num__", "").replace("cat__", "").replace("_", " ")
+
+
+def _parse_magnitude(value: object) -> float:
+    match = re.search(r"-?\d+(?:\.\d+)?", str(value))
+    return abs(float(match.group(0))) if match else 0.0
 
 
 def _apply_premium_layout(fig: go.Figure, title: str, subtitle: Optional[str] = None) -> go.Figure:
@@ -83,6 +93,10 @@ def _format_pct(value: float) -> str:
     return f"{value:.1f}%"
 
 
+def _format_value(value: float) -> str:
+    return f"{value:,.2f}" if abs(value) >= 100 else f"{value:.2f}"
+
+
 def build_data_quality_chart(profile: Dict[str, Any]) -> dict[str, Any]:
     missing_pct = profile["missing_pct"]
     ordered = (
@@ -117,12 +131,25 @@ def build_data_quality_chart(profile: Dict[str, Any]) -> dict[str, Any]:
         fig.add_annotation(
             x=float(top_column["missing_pct"]),
             y=str(top_column["column"]),
-            text="Highest missing-value risk",
+            text="Coverage risk concentrates here",
             showarrow=True,
             arrowcolor=RISK_RED,
             font={"color": RISK_RED},
             bgcolor="rgba(255,252,247,0.9)",
         )
+        if len(ordered) > 1:
+            second = ordered.iloc[1]
+            fig.add_annotation(
+                x=float(second["missing_pct"]),
+                y=str(second["column"]),
+                text="Next cleanup priority",
+                showarrow=True,
+                arrowcolor=BASELINE_BLUE,
+                font={"color": BASELINE_BLUE},
+                bgcolor="rgba(255,252,247,0.9)",
+                ax=35,
+                ay=-25,
+            )
     insight = (
         f"Data coverage is {profile['data_coverage_pct']}%, with the biggest risk concentrated in "
         f"{ordered.iloc[0]['column']}." if not ordered.empty else "No material missing-value risk was detected."
@@ -183,6 +210,17 @@ def _build_trend_anomaly_chart(df: pd.DataFrame) -> Optional[dict[str, Any]]:
                 name="Anomalies",
             )
         )
+        first_anomaly = anomaly_points.iloc[0]
+        fig.add_annotation(
+            x=first_anomaly[time_col],
+            y=float(first_anomaly[value_col]),
+            text="Anomaly detected",
+            showarrow=True,
+            arrowcolor=RISK_RED,
+            bgcolor="rgba(255,252,247,0.95)",
+            font={"color": RISK_RED},
+            ay=-45,
+        )
 
     drop_row = aggregated.iloc[largest_drop_idx]
     jump_row = aggregated.iloc[largest_jump_idx]
@@ -209,6 +247,12 @@ def _build_trend_anomaly_chart(df: pd.DataFrame) -> Optional[dict[str, Any]]:
         f"{value_col.capitalize()} Trend With Turning Points",
         "Peaks, drops, and unusual periods are emphasized to speed diagnosis.",
     )
+    fig.add_vline(
+        x=drop_row[time_col],
+        line_dash="dot",
+        line_color=RISK_RED,
+        opacity=0.45,
+    )
     pct_change = 0.0 if aggregated[value_col].iloc[0] == 0 else ((aggregated[value_col].iloc[-1] - aggregated[value_col].iloc[0]) / aggregated[value_col].iloc[0]) * 100
     insight = f"{value_col.capitalize()} changed by {_format_pct(float(pct_change))} across the observed period, with a clear downside break and rebound points."
     why = "This chart helps decision-makers see when performance changed, not just that it changed."
@@ -232,6 +276,9 @@ def _build_correlation_heatmap(df: pd.DataFrame) -> Optional[dict[str, Any]]:
     corr = numeric_df.corr().round(2)
     upper = corr.abs().where(np.triu(np.ones(corr.shape), k=1).astype(bool)).stack().sort_values(ascending=False)
     strongest_pair = upper.index[0] if not upper.empty else None
+    upper_signed = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool)).stack().sort_values()
+    strongest_negative = upper_signed.index[0] if not upper_signed.empty else None
+    strongest_positive = upper_signed.index[-1] if not upper_signed.empty else None
 
     fig = go.Figure(
         data=[
@@ -262,7 +309,7 @@ def _build_correlation_heatmap(df: pd.DataFrame) -> Optional[dict[str, Any]]:
         fig.add_annotation(
             x=x_name,
             y=y_name,
-            text="Strongest signal",
+            text="Strongest overall signal",
             showarrow=False,
             font={"color": "#163828", "size": 12},
             bgcolor="rgba(255,252,247,0.95)",
@@ -271,6 +318,31 @@ def _build_correlation_heatmap(df: pd.DataFrame) -> Optional[dict[str, Any]]:
         insight = f"The strongest statistical relationship appears between {x_name} and {y_name}."
     else:
         insight = "Several numeric variables move together, but no single relationship dominates."
+    if strongest_positive:
+        pos_x, pos_y = strongest_positive
+        fig.add_annotation(
+            x=pos_x,
+            y=pos_y,
+            text="Opportunity cluster",
+            showarrow=False,
+            font={"color": OPPORTUNITY_GREEN, "size": 11},
+            bgcolor="rgba(255,252,247,0.95)",
+            bordercolor=OPPORTUNITY_GREEN,
+            yshift=-18,
+        )
+    if strongest_negative:
+        neg_x, neg_y = strongest_negative
+        neg_text = "Price increase -> demand drop" if {str(neg_x).lower(), str(neg_y).lower()} & {"price", "units_sold"} == {"price", "units_sold"} else "Risk trade-off"
+        fig.add_annotation(
+            x=neg_x,
+            y=neg_y,
+            text=neg_text,
+            showarrow=False,
+            font={"color": RISK_RED, "size": 11},
+            bgcolor="rgba(255,252,247,0.95)",
+            bordercolor=RISK_RED,
+            yshift=18,
+        )
     why = "This chart quickly surfaces which variables may deserve deeper business investigation, feature engineering, or simulation."
     return _chart_card(
         title="Correlation Heatmap",
@@ -399,6 +471,17 @@ def _build_segment_comparison_chart(df: pd.DataFrame) -> Optional[dict[str, Any]
         font={"color": RISK_RED},
         bgcolor="rgba(255,252,247,0.95)",
     )
+    overall_mean = float(grouped[metric].mean())
+    fig.add_vline(x=overall_mean, line_dash="dash", line_color=BASELINE_BLUE, opacity=0.35)
+    fig.add_annotation(
+        x=overall_mean,
+        y=1.02,
+        yref="paper",
+        text="Portfolio average",
+        showarrow=False,
+        font={"color": BASELINE_BLUE},
+        bgcolor="rgba(255,252,247,0.95)",
+    )
     gap = float(best[metric] - worst[metric])
     insight = f"{best[segment_col]} leads while {worst[segment_col]} trails, creating an average {metric} gap of {gap:.2f}."
     why = "Segment comparison turns broad performance noise into a prioritization conversation about where to protect, fix, or invest."
@@ -433,11 +516,13 @@ def build_feature_importance_chart(feature_importance: list[dict]) -> dict:
         return _json_safe_figure(fig)
 
     top_items = list(reversed(feature_importance[:7]))
+    top_values = [float(item["importance"]) for item in feature_importance[:3]]
+    top_share = (sum(top_values) / sum(float(item["importance"]) for item in feature_importance)) * 100 if feature_importance else 0.0
     fig = go.Figure(
         data=[
             go.Bar(
                 x=[float(item["importance"]) for item in top_items],
-                y=[str(item["feature"]).replace("num__", "").replace("cat__", "") for item in top_items],
+                y=[_clean_feature_name(str(item["feature"])) for item in top_items],
                 orientation="h",
                 marker_color=[OPPORTUNITY_GREEN if idx == len(top_items) - 1 else BASELINE_BLUE for idx, _ in enumerate(top_items)],
                 text=[round(float(item["importance"]), 3) for item in top_items],
@@ -445,7 +530,7 @@ def build_feature_importance_chart(feature_importance: list[dict]) -> dict:
             )
         ]
     )
-    top_driver = str(feature_importance[0]["feature"]).replace("num__", "").replace("cat__", "")
+    top_driver = _clean_feature_name(str(feature_importance[0]["feature"]))
     fig = _apply_premium_layout(
         fig,
         "Ranked Model Drivers",
@@ -460,11 +545,24 @@ def build_feature_importance_chart(feature_importance: list[dict]) -> dict:
         font={"color": OPPORTUNITY_GREEN},
         bgcolor="rgba(255,252,247,0.95)",
     )
+    fig.add_annotation(
+        x=float(top_items[0]["importance"]),
+        y=_clean_feature_name(str(top_items[0]["feature"])),
+        text=f"Top 3 explain {top_share:.0f}% of model signal",
+        showarrow=False,
+        xanchor="left",
+        xshift=12,
+        font={"color": BASELINE_BLUE},
+        bgcolor="rgba(255,252,247,0.95)",
+    )
     return _json_safe_figure(fig)
 
 
 def build_scenario_comparison_chart(labels: list[str], values: list[float], delta_pcts: Optional[list[Optional[float]]] = None) -> dict:
-    colors = [BASELINE_BLUE, WARN_ORANGE, OPPORTUNITY_GREEN][: len(labels)]
+    colors = [BASELINE_BLUE]
+    for idx in range(1, len(labels)):
+        pct = delta_pcts[idx] if delta_pcts and idx < len(delta_pcts) else None
+        colors.append(OPPORTUNITY_GREEN if pct is not None and pct >= 0 else RISK_RED)
     fig = go.Figure(
         data=[
             go.Bar(
@@ -493,6 +591,26 @@ def build_scenario_comparison_chart(labels: list[str], values: list[float], delt
                     font={"color": OPPORTUNITY_GREEN if pct >= 0 else RISK_RED, "size": 13},
                     bgcolor="rgba(255,252,247,0.95)",
                 )
+                fig.add_annotation(
+                    x=labels[idx],
+                    y=values[idx] / 2 if values[idx] else 0,
+                    text="Opportunity scenario" if pct >= 0 else "Risk scenario",
+                    showarrow=False,
+                    font={"color": OPPORTUNITY_GREEN if pct >= 0 else RISK_RED, "size": 11},
+                )
+    if len(values) >= 2:
+        baseline = values[0]
+        first_scenario = values[1]
+        fig.add_annotation(
+            x=labels[1],
+            y=max(baseline, first_scenario),
+            text=f"Baseline vs scenario: {_format_value(first_scenario - baseline)} delta",
+            showarrow=True,
+            arrowcolor=BASELINE_BLUE,
+            bgcolor="rgba(255,252,247,0.95)",
+            font={"color": BASELINE_BLUE},
+            ay=-40,
+        )
     return _json_safe_figure(fig)
 
 
@@ -500,8 +618,10 @@ def build_root_cause_driver_chart(drivers: list[dict[str, str]], metric: str) ->
     if not drivers:
         return _json_safe_figure(_apply_premium_layout(go.Figure(), f"Root-Cause Drivers for {metric}"))
 
-    y_labels = [driver["driver"] for driver in reversed(drivers)]
-    scores = list(range(1, len(drivers) + 1))
+    ranked = sorted(drivers, key=lambda driver: _parse_magnitude(driver.get("impact_estimate")), reverse=True)
+    ordered = list(reversed(ranked))
+    y_labels = [driver["driver"] for driver in ordered]
+    scores = [_parse_magnitude(driver["impact_estimate"]) for driver in ordered]
     colors = [RISK_RED if "trend" in label.lower() else WARN_ORANGE if "segment" in label.lower() else BASELINE_BLUE for label in y_labels]
     fig = go.Figure(
         data=[
@@ -510,7 +630,7 @@ def build_root_cause_driver_chart(drivers: list[dict[str, str]], metric: str) ->
                 y=y_labels,
                 orientation="h",
                 marker_color=colors,
-                text=[driver["impact_estimate"] for driver in reversed(drivers)],
+                text=[driver["impact_estimate"] for driver in ordered],
                 textposition="outside",
             )
         ]
@@ -518,12 +638,12 @@ def build_root_cause_driver_chart(drivers: list[dict[str, str]], metric: str) ->
     fig = _apply_premium_layout(
         fig,
         f"Root-Cause Driver View For {metric}",
-        "This chart ranks the most plausible contributors without claiming causality.",
+        "Top drivers are ranked by contribution strength to focus validation effort.",
     )
     fig.add_annotation(
         x=scores[-1],
         y=y_labels[-1],
-        text="Strongest driver",
+        text="Top driver",
         showarrow=True,
         arrowcolor=RISK_RED,
         font={"color": RISK_RED},

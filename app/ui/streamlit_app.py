@@ -98,6 +98,9 @@ def reset_analysis_state() -> None:
         "investigation",
         "training",
         "simulation",
+        "decision_engine",
+        "decision_engine_meta",
+        "decision_engine_meta_signature",
         "summary",
         "actions",
         "focused_analysis",
@@ -134,7 +137,7 @@ def render_insight_panel(title: str, summary: str, why_it_matters: str, impact_l
     st.markdown(
         (
             '<div class="card" style="border-left:8px solid {impact_color};">'
-            '<div class="meta">Insight Summary</div>'
+            '<div class="meta">Key Message</div>'
             "<strong>{title}</strong>"
             '<div style="margin-top:.45rem;">{summary}</div>'
             '<div style="margin-top:.7rem;"><strong>Why it matters:</strong> {why}</div>'
@@ -157,6 +160,10 @@ def to_float_if_possible(value: object) -> float | None:
         return float(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return None
+
+
+def labelize_decision(value: str) -> str:
+    return value.replace("_", " ").title()
 
 
 def ensure_actions(dataset_id: str) -> dict:
@@ -423,7 +430,7 @@ with tabs[3]:
                 "Top Model Drivers",
                 f"The model is currently most influenced by {training['top_drivers'][0] if training['top_drivers'] else 'available features'}.",
                 "This matters because the top-ranked drivers are the best place to pressure-test the model before acting on it.",
-                training["confidence_level"],
+                "high" if training["top_drivers"] else "medium",
                 training["confidence_level"],
             )
             render_card(
@@ -441,6 +448,7 @@ with tabs[3]:
             st.caption("Baseline comparison")
             st.json(training["baseline_metrics"])
         with cols[1]:
+            st.caption("Annotated feature importance view with ranked contribution.")
             st.plotly_chart(go.Figure(training["feature_importance_chart"]), use_container_width=True)
             st.dataframe(pd.DataFrame(training["feature_importance"][:5]), use_container_width=True, hide_index=True)
     else:
@@ -451,73 +459,175 @@ with tabs[4]:
     if not training:
         st.info("Train a model first.")
     else:
-        reference = training["reference_row"]
-        slider_candidates = [col for col in ["price", "marketing_spend", "discount_pct"] if col in reference]
+        st.markdown("### Decision Engine")
+        baseline_mode = st.radio(
+            "Baseline mode",
+            options=["reference_row", "dataset_average"],
+            format_func=lambda value: "Reference row" if value == "reference_row" else "Average case",
+            horizontal=True,
+        )
+        reference_index = None
+        if baseline_mode == "reference_row":
+            reference_index = int(
+                st.number_input(
+                    "Reference row index",
+                    min_value=0,
+                    max_value=max(0, dataset["rows"] - 1),
+                    value=0,
+                    step=1,
+                )
+            )
+
+        meta_signature = (training["model_id"], baseline_mode, reference_index)
+        if st.session_state.get("decision_engine_meta_signature") != meta_signature:
+            st.session_state.decision_engine_meta = api_post(
+                "/decision-engine",
+                json={
+                    "dataset_id": dataset_id,
+                    "model_id": training["model_id"],
+                    "baseline_mode": baseline_mode,
+                    "reference_index": reference_index,
+                    "scenario_a": {},
+                    "scenario_b": {},
+                },
+            )
+            st.session_state.decision_engine_meta_signature = meta_signature
+
+        decision_meta = st.session_state.get("decision_engine_meta") or {}
+        available_inputs = [item for item in decision_meta.get("available_inputs", []) if item.get("available", True)]
+        unavailable_inputs = [item for item in decision_meta.get("available_inputs", []) if not item.get("available", True)]
         a_col, b_col = st.columns(2, vertical_alignment="top")
         scenario_a: dict[str, object] = {}
         scenario_b: dict[str, object] = {}
+
         with a_col:
             st.markdown("**Scenario A**")
-            for col in slider_candidates:
-                scenario_a[col] = st.slider(
-                    f"A - {col}",
-                    min_value=float(reference[col]) * 0.5,
-                    max_value=float(reference[col]) * 1.5 + 1,
-                    value=float(reference[col]),
-                )
+            for control in available_inputs:
+                if control["control_type"] == "slider":
+                    scenario_a[control["key"]] = st.slider(
+                        f"A - {control['label']}",
+                        min_value=float(control["min_value"]),
+                        max_value=float(control["max_value"]),
+                        value=float(control["default_value"]),
+                    )
+                else:
+                    options = control.get("options", [])
+                    default_index = options.index(control["default_value"]) if control.get("default_value") in options else 0
+                    scenario_a[control["key"]] = st.selectbox(
+                        f"A - {control['label']}",
+                        options,
+                        index=default_index,
+                    )
+
         with b_col:
             st.markdown("**Scenario B**")
-            for col in slider_candidates:
-                scenario_b[col] = st.slider(
-                    f"B - {col}",
-                    min_value=float(reference[col]) * 0.5,
-                    max_value=float(reference[col]) * 1.5 + 1,
-                    value=float(reference[col]),
-                )
-        if st.button("Compare scenarios", type="primary"):
-            st.session_state.simulation = api_post(
-                "/simulate",
-                json={"dataset_id": dataset_id, "model_id": training["model_id"], "changes": scenario_a, "comparison_changes": scenario_b},
+            for control in available_inputs:
+                if control["control_type"] == "slider":
+                    scenario_b[control["key"]] = st.slider(
+                        f"B - {control['label']}",
+                        min_value=float(control["min_value"]),
+                        max_value=float(control["max_value"]),
+                        value=float(control["default_value"]),
+                    )
+                else:
+                    options = control.get("options", [])
+                    default_index = options.index(control["default_value"]) if control.get("default_value") in options else 0
+                    scenario_b[control["key"]] = st.selectbox(
+                        f"B - {control['label']}",
+                        options,
+                        index=default_index,
+                        key=f"b_{control['key']}",
+                    )
+
+        if unavailable_inputs:
+            render_card(
+                "Unavailable Inputs",
+                "<br>".join(f"{item['label']}: {item.get('reason', 'Not available for this dataset/model.')}" for item in unavailable_inputs),
             )
+
+        if st.button("Run Decision Engine", type="primary"):
+            st.session_state.decision_engine = api_post(
+                "/decision-engine",
+                json={
+                    "dataset_id": dataset_id,
+                    "model_id": training["model_id"],
+                    "baseline_mode": baseline_mode,
+                    "reference_index": reference_index,
+                    "scenario_a": scenario_a,
+                    "scenario_b": scenario_b,
+                },
+            )
+            st.session_state.simulation = None
             st.session_state.actions = None
-        simulation = st.session_state.get("simulation")
-        if simulation:
-            metrics = st.columns(4)
-            metrics[0].metric("Baseline", simulation["prediction_before"])
-            metrics[1].metric("Scenario A", simulation["prediction_after"])
-            metrics[2].metric("Delta", simulation["delta"])
-            metrics[3].metric("Delta %", simulation["delta_pct"] if simulation["delta_pct"] is not None else "N/A")
+
+        decision = st.session_state.get("decision_engine")
+        if decision:
+            delta_pct_value = decision.get("delta_pct")
+            scenario_impact = "high" if isinstance(delta_pct_value, (int, float)) and abs(delta_pct_value) >= 10 else "medium"
+            metrics = st.columns(5)
+            metrics[0].metric("Baseline", decision["baseline_prediction"])
+            metrics[1].metric("Scenario A", decision["scenario_a_prediction"])
+            metrics[2].metric("Scenario B", decision.get("scenario_b_prediction") or "N/A")
+            metrics[3].metric("Winner", labelize_decision(decision["recommended_decision"]))
+            metrics[4].metric("Delta %", decision["delta_pct"] if decision["delta_pct"] is not None else "N/A")
             render_insight_panel(
-                "Scenario Trade-Off",
-                simulation["impact_summary"],
-                "This matters because the scenario view turns a model output into a concrete before-versus-after business decision.",
-                simulation["confidence_level"],
-                simulation["confidence_level"],
+                "Recommended Decision",
+                f"Recommend {labelize_decision(decision['recommended_decision'])} based on the current modeled trade-off.",
+                "This matters because the decision engine converts multiple scenario outputs into a single action-oriented recommendation with guardrails.",
+                scenario_impact,
+                decision["confidence"]["level"],
             )
-            baseline_value = to_float_if_possible(simulation["prediction_before"])
-            scenario_a_value = to_float_if_possible(simulation["prediction_after"])
-            comparison_value = to_float_if_possible(simulation.get("comparison_prediction_after"))
+            baseline_value = to_float_if_possible(decision["baseline_prediction"])
+            scenario_a_value = to_float_if_possible(decision["scenario_a_prediction"])
+            scenario_b_value = to_float_if_possible(decision.get("scenario_b_prediction"))
             if baseline_value is not None and scenario_a_value is not None:
                 chart_labels = ["Baseline", "Scenario A"]
                 chart_values = [baseline_value, scenario_a_value]
-                delta_pcts: list[float | None] = [None, simulation.get("delta_pct")]
-                if comparison_value is not None:
+                delta_pcts: list[float | None] = [0.0, decision["comparison"]["scenarios"][1]["delta_pct"]]
+                if scenario_b_value is not None:
                     chart_labels.append("Scenario B")
-                    chart_values.append(comparison_value)
-                    delta_pcts.append(simulation.get("comparison_delta_pct"))
+                    chart_values.append(scenario_b_value)
+                    scenario_b_delta_pct = next(
+                        (item["delta_pct"] for item in decision["comparison"]["scenarios"] if item["scenario_key"] == "scenario_b"),
+                        None,
+                    )
+                    delta_pcts.append(scenario_b_delta_pct)
                 scenario_chart = build_scenario_comparison_chart(chart_labels, chart_values, delta_pcts)
+                st.caption(f"Before/after view with {labelize_decision(decision['comparison']['winner'])} currently leading.")
                 st.plotly_chart(go.Figure(scenario_chart), use_container_width=True)
-            render_card("Scenario A Summary", simulation["impact_summary"])
-            if simulation.get("comparison_prediction_after") is not None:
-                render_card("Scenario B Summary", simulation["comparison_summary"] or f"Scenario B prediction: {simulation['comparison_prediction_after']}")
-            render_card(
-                "Confidence & Guardrails",
-                (
-                    f"Confidence level: <strong>{simulation['confidence_level']}</strong><br>"
-                    f"Data coverage: <strong>{simulation['data_coverage_pct']}%</strong><br>"
-                    f"{simulation['guardrail_note']}"
-                ),
-            )
+
+            summary_cols = st.columns(2, vertical_alignment="top")
+            with summary_cols[0]:
+                render_card("Recommended decision", labelize_decision(decision["recommended_decision"]))
+                render_card("Main risk", decision["main_risk"])
+                render_card("Next best analysis", decision["next_best_analysis"])
+            with summary_cols[1]:
+                render_card(
+                    "Confidence",
+                    (
+                        f"Level: <strong>{decision['confidence']['level']}</strong><br>"
+                        f"Model reliability: <strong>{decision['model_reliability']}</strong><br>"
+                        f"Data size: <strong>{decision['data_size']}</strong><br>"
+                        f"Row coverage: <strong>{decision['confidence']['row_coverage_pct']}%</strong><br>"
+                        f"{decision['disclaimer']}"
+                    ),
+                )
+                render_card(
+                    "Scenario outputs",
+                    (
+                        f"Before: <strong>{decision['prediction_before']}</strong><br>"
+                        f"After: <strong>{decision['prediction_after']}</strong><br>"
+                        f"Delta: <strong>{decision['delta']}</strong><br>"
+                        f"Delta %: <strong>{decision['delta_pct'] if decision['delta_pct'] is not None else 'N/A'}</strong>"
+                    ),
+                )
+
+            st.markdown("### Recommended Actions")
+            for action in decision["recommended_actions"]:
+                render_card(
+                    action["title"],
+                    f"{action['rationale']}<br><br><strong>Expected effect:</strong> {action['expected_effect']}<br><strong>Priority:</strong> {action['priority']}",
+                )
 
 with tabs[5]:
     root_metric = st.selectbox("Metric to explain", [col for col in profile["columns"] if col in profile["numeric_columns"]] or profile["columns"])
@@ -538,6 +648,7 @@ with tabs[5]:
             render_card(driver["driver"], f"{driver['explanation']}<br><strong>Impact:</strong> {driver['impact_estimate']}")
         render_card("Evidence", "<br>".join(f"- {item}" for item in root_cause["evidence"]))
         if root_cause.get("chart_spec"):
+            st.caption("Top drivers ranked by contribution strength to support root-cause validation.")
             st.plotly_chart(go.Figure(root_cause["chart_spec"]), use_container_width=True)
 
 with tabs[6]:

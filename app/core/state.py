@@ -26,6 +26,12 @@ class ModelRecord:
     pipeline: Any
     feature_columns: List[str]
     reference_row: Dict[str, Any]
+    metrics: Dict[str, float]
+    primary_metric_name: str
+    primary_metric_value: float
+    confidence_level: str
+    data_coverage_pct: float
+    top_drivers: List[str] = field(default_factory=list)
 
 
 @dataclass

@@ -11,6 +11,8 @@ from app.core.schemas import (
     CopilotAskRequest,
     CopilotAskResponse,
     CopilotSessionState,
+    DecisionEngineRequest,
+    DecisionEngineResponse,
     DatasetListItem,
     EnrichmentRequest,
     EnrichmentResponse,
@@ -35,6 +37,7 @@ from app.core.schemas import (
     UploadResponse,
 )
 from app.services.copilot_agent import answer_business_question
+from app.services.decision_engine import run_decision_engine
 from app.services.dataset_merge import preview_merge
 from app.services.enrichment_agent import suggest_enrichment
 from app.services.action_engine import recommend_actions
@@ -156,6 +159,23 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
             changes=request.changes,
             reference_index=request.reference_index,
             comparison_changes=request.comparison_changes,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/decision-engine", response_model=DecisionEngineResponse)
+def decision_engine(request: DecisionEngineRequest) -> DecisionEngineResponse:
+    try:
+        return run_decision_engine(
+            dataset_id=request.dataset_id,
+            model_id=request.model_id,
+            baseline_mode=request.baseline_mode,
+            reference_index=request.reference_index,
+            scenario_a=request.scenario_a,
+            scenario_b=request.scenario_b,
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc

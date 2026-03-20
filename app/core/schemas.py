@@ -194,6 +194,74 @@ class SimulationResponse(AppBaseModel):
     comparison_row: Optional[Dict[str, Any]] = None
 
 
+class DecisionEngineRequest(AppBaseModel):
+    dataset_id: str
+    model_id: str
+    baseline_mode: Literal["reference_row", "dataset_average"] = "reference_row"
+    reference_index: Optional[int] = None
+    scenario_a: Dict[str, Any]
+    scenario_b: Optional[Dict[str, Any]] = None
+
+
+class DecisionInputControl(AppBaseModel):
+    key: str
+    label: str
+    control_type: Literal["slider", "selectbox"]
+    available: bool = True
+    reason: Optional[str] = None
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    default_value: Optional[Any] = None
+    options: List[str] = []
+
+
+class DecisionScenarioRow(AppBaseModel):
+    baseline: Dict[str, Any]
+    scenario_a: Dict[str, Any]
+    scenario_b: Optional[Dict[str, Any]] = None
+
+
+class DecisionScenarioComparison(AppBaseModel):
+    scenario_key: Literal["baseline", "scenario_a", "scenario_b"]
+    prediction: Union[float, str]
+    delta: Union[float, str]
+    delta_pct: Optional[float] = None
+
+
+class DecisionComparison(AppBaseModel):
+    winner: Literal["baseline", "scenario_a", "scenario_b"]
+    scenarios: List[DecisionScenarioComparison]
+
+
+class DecisionConfidence(AppBaseModel):
+    level: Literal["high", "medium", "low"]
+    model_reliability: str
+    data_size: str
+    row_coverage_pct: float
+    disclaimer: str
+
+
+class DecisionEngineResponse(AppBaseModel):
+    baseline_prediction: Union[float, str]
+    scenario_a_prediction: Union[float, str]
+    scenario_b_prediction: Optional[Union[float, str]] = None
+    prediction_before: Union[float, str]
+    prediction_after: Union[float, str]
+    delta: Union[float, str]
+    delta_pct: Optional[float] = None
+    comparison: DecisionComparison
+    recommended_decision: Literal["baseline", "scenario_a", "scenario_b"]
+    main_risk: str
+    confidence: DecisionConfidence
+    next_best_analysis: str
+    model_reliability: str
+    data_size: str
+    disclaimer: str
+    available_inputs: List[DecisionInputControl]
+    scenario_rows: DecisionScenarioRow
+    recommended_actions: List[RecommendedAction]
+
+
 class ActionRequest(AppBaseModel):
     dataset_id: str
     investigation: InvestigateResponse

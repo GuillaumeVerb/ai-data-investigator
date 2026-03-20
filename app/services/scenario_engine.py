@@ -27,6 +27,73 @@ def _apply_changes(base_row: pd.Series, changes: Dict[str, Any]) -> pd.Series:
     return updated
 
 
+def _resolve_discount_key(feature_columns: list[str]) -> Optional[str]:
+    if "discount_pct" in feature_columns:
+        return "discount_pct"
+    if "discount" in feature_columns:
+        return "discount"
+    return None
+
+
+def normalize_scenario_changes(changes: Optional[Dict[str, Any]], feature_columns: list[str]) -> Dict[str, Any]:
+    normalized: Dict[str, Any] = {}
+    if not changes:
+        return normalized
+
+    discount_key = _resolve_discount_key(feature_columns)
+    product_key = "product" if "product" in feature_columns else None
+
+    for key, value in changes.items():
+        resolved_key = key
+        if key == "discount" and discount_key:
+            resolved_key = discount_key
+        elif key == "product_mix" and product_key:
+            resolved_key = product_key
+        if resolved_key in feature_columns:
+            normalized[resolved_key] = value
+    return normalized
+
+
+def build_feature_frame(dataset_id: str) -> tuple[pd.DataFrame, Any]:
+    dataset_record = store.get_dataset(dataset_id)
+    enriched_df, _ = build_derived_features(dataset_record.dataframe.copy())
+    return enriched_df, dataset_record
+
+
+def build_reference_row(
+    enriched_df: pd.DataFrame,
+    feature_columns: list[str],
+    baseline_mode: str = "reference_row",
+    reference_index: Optional[int] = None,
+) -> pd.Series:
+    if baseline_mode == "dataset_average":
+        base_values: Dict[str, Any] = {}
+        for column in feature_columns:
+            series = enriched_df[column]
+            if pd.api.types.is_numeric_dtype(series):
+                value = series.dropna().median() if not series.dropna().empty else 0.0
+            else:
+                modes = series.dropna().mode()
+                value = modes.iloc[0] if not modes.empty else None
+            base_values[column] = value
+        return pd.Series(base_values, index=feature_columns, dtype=object)
+
+    index = reference_index if reference_index is not None else 0
+    if index >= len(enriched_df):
+        raise ValueError("Reference index is out of bounds.")
+    return enriched_df.iloc[index][feature_columns].copy()
+
+
+def predict_row(model_id: str, row: pd.Series) -> Union[float, str]:
+    model_record = store.get_model(model_id)
+    frame = pd.DataFrame([row])
+    return _serialize_prediction(model_record.pipeline.predict(frame)[0])
+
+
+def row_coverage_pct(row: pd.Series) -> float:
+    return round(float(100 - row.isna().mean() * 100), 1)
+
+
 def _compute_delta(before: Union[float, str], after: Union[float, str]) -> tuple[Union[float, str], Optional[float], str]:
     if isinstance(before, float) and isinstance(after, float):
         delta_value = round(after - before, 4)
@@ -47,27 +114,19 @@ def simulate_scenario(
     reference_index: Optional[int] = None,
     comparison_changes: Optional[Dict[str, Any]] = None,
 ) -> SimulationResponse:
-    dataset_record = store.get_dataset(dataset_id)
     model_record = store.get_model(model_id)
-    df = dataset_record.dataframe.copy()
-    enriched_df, _ = build_derived_features(df)
+    enriched_df, _dataset_record = build_feature_frame(dataset_id)
 
     if dataset_id != model_record.dataset_id:
         raise ValueError("Model and dataset do not belong to the same analysis session.")
 
-    index = reference_index if reference_index is not None else 0
-    if index >= len(enriched_df):
-        raise ValueError("Reference index is out of bounds.")
-
     feature_columns = model_record.feature_columns
-    base_row = enriched_df.iloc[index][feature_columns].copy()
-    scenario_row = _apply_changes(base_row, changes)
+    base_row = build_reference_row(enriched_df, feature_columns, baseline_mode="reference_row", reference_index=reference_index)
+    normalized_changes = normalize_scenario_changes(changes, feature_columns)
+    scenario_row = _apply_changes(base_row, normalized_changes)
 
-    base_df = pd.DataFrame([base_row])
-    scenario_df = pd.DataFrame([scenario_row])
-
-    before = _serialize_prediction(model_record.pipeline.predict(base_df)[0])
-    after = _serialize_prediction(model_record.pipeline.predict(scenario_df)[0])
+    before = predict_row(model_id, base_row)
+    after = predict_row(model_id, scenario_row)
     delta, delta_pct, narrative = _compute_delta(before, after)
 
     comparison_prediction_after: Optional[Union[float, str]] = None
@@ -77,9 +136,9 @@ def simulate_scenario(
     comparison_row_dict: Optional[Dict[str, Any]] = None
 
     if comparison_changes:
-        comparison_row = _apply_changes(base_row, comparison_changes)
-        comparison_df = pd.DataFrame([comparison_row])
-        comparison_prediction_after = _serialize_prediction(model_record.pipeline.predict(comparison_df)[0])
+        normalized_comparison_changes = normalize_scenario_changes(comparison_changes, feature_columns)
+        comparison_row = _apply_changes(base_row, normalized_comparison_changes)
+        comparison_prediction_after = predict_row(model_id, comparison_row)
         comparison_delta, comparison_delta_pct, _ = _compute_delta(before, comparison_prediction_after)
         comparison_row_dict = comparison_row.astype(object).where(pd.notnull(comparison_row), None).to_dict()
         comparison_summary = (
@@ -87,7 +146,7 @@ def simulate_scenario(
             f"for a delta of {comparison_delta}."
         )
 
-    coverage = round(float(100 - enriched_df[feature_columns].isna().mean().mean() * 100), 1)
+    coverage = row_coverage_pct(base_row)
     confidence_level = "high" if coverage >= 90 else "medium" if coverage >= 75 else "low"
 
     narration = narrate_simulation(
@@ -100,8 +159,8 @@ def simulate_scenario(
             "comparison_delta": comparison_delta,
             "comparison_delta_pct": comparison_delta_pct,
             "narrative": narrative,
-            "changes": changes,
-            "comparison_changes": comparison_changes,
+            "changes": normalized_changes,
+            "comparison_changes": normalize_scenario_changes(comparison_changes, feature_columns) if comparison_changes else None,
             "target": model_record.target,
         }
     )
