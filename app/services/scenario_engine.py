@@ -56,7 +56,7 @@ def normalize_scenario_changes(changes: Optional[Dict[str, Any]], feature_column
 
 def build_feature_frame(dataset_id: str) -> tuple[pd.DataFrame, Any]:
     dataset_record = store.get_dataset(dataset_id)
-    enriched_df, _ = build_derived_features(dataset_record.dataframe.copy())
+    enriched_df, _, _ = build_derived_features(dataset_record.dataframe.copy())
     return enriched_df, dataset_record
 
 

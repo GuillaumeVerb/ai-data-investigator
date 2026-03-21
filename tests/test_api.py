@@ -16,13 +16,16 @@ def test_profile_investigation_and_enrichment_flow() -> None:
     profile = client.post("/profile", json={"dataset_id": dataset["dataset_id"]}).json()
     assert profile["data_coverage_pct"] > 0
     assert "derived_features" in profile
+    assert profile["derived_feature_details"]
 
     investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"]}).json()
     assert investigation["investigation_suggestions"]
     assert investigation["recommended_actions"]
+    assert investigation["investigation_suggestions"][0]["confidence_pct"] >= 0
 
     enrichment = client.post("/enrichment-suggestions", json={"dataset_id": dataset["dataset_id"]}).json()
     assert enrichment["suggestions"]
+    assert enrichment["suggestions"][0]["likely_join_key"]
 
 
 def test_copilot_session_context_and_report_export_flow() -> None:
@@ -47,6 +50,7 @@ def test_copilot_session_context_and_report_export_flow() -> None:
     assert "missing_useful_data" in first_payload
     assert "suggested_next_investigation" in first_payload
     assert first_payload["short_answer"]
+    assert first_payload["answer"]
     assert first_payload["supporting_evidence"]
     assert isinstance(first_payload["missing_useful_data"][0], dict)
 
@@ -140,6 +144,8 @@ def test_multi_dataset_merge_preview_and_csv_upload() -> None:
     assert merge_preview.status_code == 200
     body = merge_preview.json()
     assert body["suggested_join_keys"]
+    assert "business_value" in body
+    assert "compatibility_warnings" in body
 
 
 def test_decision_engine_reference_and_average_modes() -> None:

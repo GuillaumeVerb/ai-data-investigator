@@ -177,6 +177,19 @@ def humanize_decision_choice(value: str, lang: str) -> str:
     }.get(value, value)
 
 
+def run_global_copilot_query(dataset_id: str, question: str, target: str | None = None) -> None:
+    st.session_state.copilot_answer = api_post(
+        "/copilot/ask",
+        json={
+            "dataset_id": dataset_id,
+            "question": question,
+            "target": target or None,
+            "session_id": ensure_session(),
+            "language": st.session_state.lang,
+        },
+    )
+
+
 def ensure_actions(dataset_id: str) -> dict:
     if "actions" not in st.session_state or not st.session_state.actions:
         st.session_state.actions = api_post(
@@ -226,14 +239,12 @@ dataset_id = dataset["dataset_id"]
 profile, investigation = load_dataset_context(dataset_id)
 
 st.markdown(
-    """
+    f"""
     <div class="hero">
-        <div class="hero-kicker">AI Decision Copilot</div>
-        <div class="hero-title">A premium AI business analyst for data investigation, prediction, and decision support.</div>
+        <div class="hero-kicker">{t("app.hero_kicker", st.session_state.lang)}</div>
+        <div class="hero-title">{t("app.hero_title", st.session_state.lang)}</div>
         <div>
-            This product combines dataset profiling, investigation suggestions, explainable modeling,
-            scenario comparison, root-cause analysis, enrichment guidance, exportable executive reports,
-            and a memory-enabled decision copilot.
+            {t("app.hero_body", st.session_state.lang)}
         </div>
         <div class="meta" style="margin-top:1rem;">upload -> diagnose -> investigate -> explain -> simulate -> recommend -> export</div>
     </div>
@@ -243,7 +254,7 @@ st.markdown(
 
 top_left, top_right = st.columns([1.0, 1.0], vertical_alignment="center")
 with top_left:
-    uploaded_file = st.file_uploader("Upload a CSV", type=["csv"])
+    uploaded_file = st.file_uploader(t("app.upload_csv", st.session_state.lang), type=["csv"])
 with top_right:
     st.session_state.lang = st.selectbox(
         t("decision_engine.language", st.session_state.lang),
@@ -251,15 +262,28 @@ with top_right:
         index=0 if st.session_state.lang == "fr" else 1,
         format_func=lambda value: value.upper(),
     )
-    st.write("Use the sample dataset for a 5-minute guided demo, or upload additional datasets to test merge preview.")
+    st.write(t("app.sample_hint", st.session_state.lang))
     demo_cols = st.columns(2)
-    if demo_cols[0].button("Open sample demo path", use_container_width=True):
+    if demo_cols[0].button(t("app.open_demo", st.session_state.lang), use_container_width=True):
         run_guided_demo(dataset_id)
-    if demo_cols[1].button("Reload sample dataset", use_container_width=True):
+    if demo_cols[1].button(t("app.reload_sample", st.session_state.lang), use_container_width=True):
         reset_analysis_state()
         dataset = api_post("/upload/sample")
         st.session_state.dataset = dataset
         register_dataset(dataset)
+
+global_question_cols = st.columns([1.8, 0.7, 0.5], vertical_alignment="end")
+with global_question_cols[0]:
+    global_question = st.text_input(
+        t("app.top_question", st.session_state.lang),
+        placeholder=t("app.top_question_placeholder", st.session_state.lang),
+        key="global_question_input",
+    )
+with global_question_cols[1]:
+    global_target = st.text_input(t("app.target_override", st.session_state.lang), value="revenue", key="global_target_override")
+with global_question_cols[2]:
+    if st.button(t("app.top_question_button", st.session_state.lang), type="primary", use_container_width=True) and global_question.strip():
+        run_global_copilot_query(dataset_id, global_question.strip(), global_target)
 
 if uploaded_file is not None and st.session_state.get("uploaded_file_name") != uploaded_file.name:
     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")}
@@ -275,34 +299,34 @@ profile, investigation = load_dataset_context(dataset_id)
 
 metric_cols = st.columns(5)
 with metric_cols[0]:
-    render_metric("Rows", str(profile["shape"]["rows"]), "Records available")
+    render_metric(t("app.metric.rows", st.session_state.lang), str(profile["shape"]["rows"]), t("app.metric.rows_foot", st.session_state.lang))
 with metric_cols[1]:
-    render_metric("Coverage", f"{profile['data_coverage_pct']}%", "Observed data completeness")
+    render_metric(t("app.metric.coverage", st.session_state.lang), f"{profile['data_coverage_pct']}%", t("app.metric.coverage_foot", st.session_state.lang))
 with metric_cols[2]:
-    render_metric("Insights", str(len(investigation["insights"])), "Ranked by importance")
+    render_metric(t("app.metric.insights", st.session_state.lang), str(len(investigation["insights"])), t("app.metric.insights_foot", st.session_state.lang))
 with metric_cols[3]:
-    render_metric("Suggestions", str(len(investigation["investigation_suggestions"])), "Agent-led investigation paths")
+    render_metric(t("app.metric.suggestions", st.session_state.lang), str(len(investigation["investigation_suggestions"])), t("app.metric.suggestions_foot", st.session_state.lang))
 with metric_cols[4]:
-    render_metric("Session", ensure_session()[:8], "Copilot memory context")
+    render_metric(t("app.metric.session", st.session_state.lang), ensure_session()[:8], t("app.metric.session_foot", st.session_state.lang))
 
 intro_cols = st.columns([1.2, 0.8], vertical_alignment="top")
 with intro_cols[0]:
-    render_card("Executive Brief", investigation["executive_brief"])
+    render_card(t("app.executive_brief", st.session_state.lang), investigation["executive_brief"])
 with intro_cols[1]:
-    render_card("Guardrail", "This analysis is based on statistical patterns and model behavior, not causal inference.")
+    render_card(t("app.guardrail", st.session_state.lang), t("app.guardrail_body", st.session_state.lang))
 
 tabs = st.tabs(
     [
-        "Landing",
-        "Diagnostic",
-        "Investigation",
-        "Prediction",
-        "Scenario Simulation",
-        "Root Cause",
-        "Enrichment",
-        "Multi-Dataset",
-        "Decision Copilot",
-        "Executive Summary",
+        t("tab.landing", st.session_state.lang),
+        t("tab.diagnostic", st.session_state.lang),
+        t("tab.investigation", st.session_state.lang),
+        t("tab.prediction", st.session_state.lang),
+        t("tab.scenario", st.session_state.lang),
+        t("tab.root_cause", st.session_state.lang),
+        t("tab.enrichment", st.session_state.lang),
+        t("tab.multi_dataset", st.session_state.lang),
+        t("tab.copilot", st.session_state.lang),
+        t("tab.summary", st.session_state.lang),
     ]
 )
 
@@ -358,7 +382,13 @@ with tabs[1]:
     with cols[0]:
         render_card("Headline Findings", "<br>".join(profile["headline_findings"]))
         render_card("Suggested Targets", ", ".join(profile["target_candidates"]) or "No obvious target")
-        render_card("Derived Features", "<br>".join(f"- {item}" for item in profile["derived_features"]) or "No derived features")
+        render_card(
+            "Derived Features",
+            "<br>".join(
+                f"<strong>{item['feature']}</strong>: {item['reason']}"
+                for item in profile.get("derived_feature_details", [])
+            ) or "No derived features",
+        )
         render_card(
             "Current Dataset",
             f"<strong>{dataset['filename']}</strong><br>Rows: {dataset['rows']}<br>Columns: {dataset['columns']}",
@@ -386,12 +416,13 @@ with tabs[1]:
     st.plotly_chart(go.Figure(profile_quality_card["figure"]), use_container_width=True)
 
 with tabs[2]:
+    st.markdown(f"### {t('investigation.suggestions', st.session_state.lang)}")
     for suggestion in investigation["investigation_suggestions"]:
         cols = st.columns([0.76, 0.24], vertical_alignment="center")
         with cols[0]:
             render_card(
                 suggestion["title"],
-                f"{suggestion['explanation']}<br><br><strong>Expected business impact:</strong> {suggestion['expected_impact']}",
+                f"{suggestion['explanation']}<br><br><strong>Expected business impact:</strong> {suggestion['expected_impact']}<br><strong>Confidence:</strong> {suggestion.get('confidence_pct', 0)}%",
             )
         with cols[1]:
             if st.button("Investigate", key=f"invest_{suggestion['suggestion_id']}", use_container_width=True):
@@ -747,9 +778,12 @@ with tabs[7]:
             )
         preview = st.session_state.get("merge_preview")
         if preview:
-            render_card("Merge Recommendation", preview["explanation"])
+            render_card(t("merge.recommendation", st.session_state.lang), preview["explanation"])
+            render_card(t("merge.business_value", st.session_state.lang), preview["business_value"])
+            if preview.get("compatibility_warnings"):
+                render_card(t("merge.warnings", st.session_state.lang), "<br>".join(f"- {item}" for item in preview["compatibility_warnings"]))
             render_card(
-                "Join suggestion",
+                t("merge.join_suggestion", st.session_state.lang),
                 (
                     f"Suggested keys: <strong>{', '.join(preview['suggested_join_keys']) or 'none'}</strong><br>"
                     f"Readiness: <strong>{preview['merge_readiness']}</strong><br>"
@@ -760,46 +794,38 @@ with tabs[7]:
                 st.dataframe(pd.DataFrame(preview["preview"]), use_container_width=True, hide_index=True)
 
 with tabs[8]:
-    question = st.text_area("Ask a business question", placeholder="Should we increase price? Why did revenue drop? Where should we invest?")
-    copilot_target = st.text_input("Optional target override", value="revenue")
+    question = st.text_area(t("app.top_question", st.session_state.lang), placeholder=t("app.top_question_placeholder", st.session_state.lang))
+    copilot_target = st.text_input(t("app.target_override", st.session_state.lang), value="revenue")
     if st.button("Ask the decision copilot", type="primary") and question.strip():
-        st.session_state.copilot_answer = api_post(
-            "/copilot/ask",
-            json={
-                "dataset_id": dataset_id,
-                "question": question,
-                "target": copilot_target or None,
-                "session_id": ensure_session(),
-            },
-        )
+        run_global_copilot_query(dataset_id, question, copilot_target)
     answer = st.session_state.get("copilot_answer")
     if answer:
-        render_card("Short Answer", answer["short_answer"])
+        render_card(t("copilot.short_answer", st.session_state.lang), answer["answer"])
         reasoning_cols = st.columns(2, vertical_alignment="top")
         with reasoning_cols[0]:
-            render_card("Intent", answer["intent"])
+            render_card(t("copilot.intent", st.session_state.lang), answer["intent"])
             render_card(
-                "Agent Pipeline",
+                t("copilot.pipeline", st.session_state.lang),
                 "<br>".join(f"{step['step']}. {step['purpose']} ({step['tool_name']})" for step in answer["plan"]),
             )
             render_card(
-                "Tools Used",
+                t("copilot.tools", st.session_state.lang),
                 "<br>".join(f"- {tool['tool_name']}: {tool['output_summary']}" for tool in answer["tools_used"]),
             )
         with reasoning_cols[1]:
-            render_card("Key Drivers", "<br>".join(f"- {item}" for item in answer["key_drivers"]))
-            render_card("Supporting Evidence", "<br>".join(f"- {item}" for item in answer["supporting_evidence"]))
-            render_card("Confidence", f"{answer['confidence_level']} ({answer['confidence_score']}/100)")
+            render_card(t("copilot.key_drivers", st.session_state.lang), "<br>".join(f"- {item}" for item in answer["key_drivers"]))
+            render_card(t("copilot.supporting_evidence", st.session_state.lang), "<br>".join(f"- {item}" for item in answer["supporting_evidence"]))
+            render_card(t("copilot.confidence", st.session_state.lang), f"{answer['confidence_level']} ({answer['confidence_score']}/100)")
         meta_cols = st.columns(2, vertical_alignment="top")
         with meta_cols[0]:
             render_card(
-                "Model Reliability",
+                t("copilot.model_reliability", st.session_state.lang),
                 answer.get("model_reliability") or "No model-based reliability signal was required for this answer.",
             )
         with meta_cols[1]:
             coverage_value = answer.get("data_coverage_pct")
             render_card(
-                "Coverage & Guardrail",
+                t("copilot.coverage_guardrail", st.session_state.lang),
                 (
                     f"Data coverage: <strong>{coverage_value}%</strong><br><br>{answer['guardrail']}"
                     if coverage_value is not None
@@ -808,11 +834,11 @@ with tabs[8]:
             )
         if answer.get("simulation_result"):
             render_card("Simulation Result", answer["simulation_result"])
-        render_card("Recommended Actions", "<br>".join(f"- {item}" for item in answer["recommended_actions"]))
+        render_card(t("copilot.recommended_actions", st.session_state.lang), "<br>".join(f"- {item}" for item in answer["recommended_actions"]))
         next_cols = st.columns(2, vertical_alignment="top")
         with next_cols[0]:
             render_card(
-                "Suggested Next Investigation",
+                t("copilot.next_investigation", st.session_state.lang),
                 "<br>".join(f"- {item}" for item in answer["suggested_next_investigation"]) or "No next investigation suggested.",
             )
         with next_cols[1]:
@@ -828,21 +854,13 @@ with tabs[8]:
                         ),
                     )
             else:
-                render_card("Missing Useful Data", "No additional data suggested.")
+                render_card(t("copilot.missing_data", st.session_state.lang), "No additional data suggested.")
         if answer["follow_up_questions"]:
-            st.markdown("### Follow-up Questions")
+            st.markdown(f"### {t('copilot.follow_up', st.session_state.lang)}")
             follow_cols = st.columns(len(answer["follow_up_questions"]))
             for idx, follow_up in enumerate(answer["follow_up_questions"]):
                 if follow_cols[idx].button(follow_up, key=f"follow_{idx}"):
-                    st.session_state.copilot_answer = api_post(
-                        "/copilot/ask",
-                        json={
-                            "dataset_id": dataset_id,
-                            "question": follow_up,
-                            "target": copilot_target or None,
-                            "session_id": answer["session_id"],
-                        },
-                    )
+                    run_global_copilot_query(dataset_id, follow_up, copilot_target)
 
 with tabs[9]:
     actions = ensure_actions(dataset_id)

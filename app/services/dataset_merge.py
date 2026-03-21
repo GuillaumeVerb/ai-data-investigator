@@ -38,6 +38,19 @@ def preview_merge(left_dataset_id: str, right_dataset_id: str, join_keys: List[s
         preview = pd.DataFrame()
 
     readiness = "high" if overlap >= 5 else "medium" if overlap >= 1 else "low"
+    compatibility_warnings: list[str] = []
+    if not shared_columns:
+        compatibility_warnings.append("No obvious shared columns were found between the two datasets.")
+    elif not suggested_join_keys:
+        compatibility_warnings.append("Shared columns exist, but no trusted business key was detected automatically.")
+    if overlap == 0 and suggested_join_keys:
+        compatibility_warnings.append("Suggested keys currently show no overlap in the sampled data.")
+
+    business_value = (
+        "This merge can improve analysis by combining complementary business context before diagnosis, prediction, or scenario work."
+        if readiness != "low"
+        else "The merge may still add value, but the current overlap is weak and should be validated before relying on the result."
+    )
     explanation = (
         f"Shared columns: {', '.join(shared_columns) if shared_columns else 'none'}. "
         f"Suggested join keys: {', '.join(suggested_join_keys) if suggested_join_keys else 'none'}. "
@@ -55,5 +68,7 @@ def preview_merge(left_dataset_id: str, right_dataset_id: str, join_keys: List[s
         right_rows=int(right.dataframe.shape[0]),
         merge_readiness=readiness,
         explanation=explanation,
+        business_value=business_value,
+        compatibility_warnings=compatibility_warnings,
         preview=preview.to_dict(orient="records") if not preview.empty else [],
     )

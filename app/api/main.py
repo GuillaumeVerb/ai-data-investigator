@@ -212,6 +212,7 @@ def copilot_ask(request: CopilotAskRequest) -> CopilotAskResponse:
             request.target,
             request.model_id,
             request.session_id,
+            request.language,
         )
         return response
     except KeyError as exc:

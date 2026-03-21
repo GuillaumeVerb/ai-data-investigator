@@ -185,6 +185,7 @@ def generate_summary(payload: Dict[str, Any]) -> SummaryResponse:
 
 
 def narrate_copilot_answer(payload: Dict[str, Any]) -> Dict[str, Any]:
+    language = payload.get("language", "en")
     fallback = {
         "short_answer": payload["short_answer"],
         "key_drivers": payload.get("key_drivers", [])[:4],
@@ -200,7 +201,7 @@ def narrate_copilot_answer(payload: Dict[str, Any]) -> Dict[str, Any]:
             "Write the final answer for a business stakeholder. "
             "Return JSON with keys: short_answer, key_drivers, supporting_evidence, confidence_level, "
             "recommended_actions, suggested_next_investigation, missing_useful_data. "
-            "Keep the answer short, concrete, business-oriented, and explicitly non-causal."
+            f"Keep the answer short, concrete, business-oriented, and explicitly non-causal. Write in {language}."
         ),
         payload,
     )

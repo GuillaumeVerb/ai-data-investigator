@@ -26,6 +26,7 @@ def build_investigation_suggestions(df: pd.DataFrame) -> List[InvestigationSugge
                 expected_impact="Clarifies whether performance pressure is recent, persistent, or seasonal before action is taken.",
                 investigation_type="trend",
                 priority_score=0.91,
+                confidence_pct=91,
                 payload={"value_column": "revenue", "date_column": datetime_columns[0]},
             )
         )
@@ -39,6 +40,7 @@ def build_investigation_suggestions(df: pd.DataFrame) -> List[InvestigationSugge
                 expected_impact="Improves pricing decisions by identifying likely volume sensitivity and margin trade-offs.",
                 investigation_type="correlation",
                 priority_score=0.88,
+                confidence_pct=88,
                 payload={"left": "price", "right": "units_sold"},
             )
         )
@@ -52,6 +54,7 @@ def build_investigation_suggestions(df: pd.DataFrame) -> List[InvestigationSugge
                 expected_impact="Helps prioritize where commercial intervention or operational review could matter most.",
                 investigation_type="segment",
                 priority_score=0.82,
+                confidence_pct=82,
                 payload={"segment_column": "region", "value_column": numeric_columns[0]},
             )
         )
@@ -65,6 +68,7 @@ def build_investigation_suggestions(df: pd.DataFrame) -> List[InvestigationSugge
                 expected_impact="Reduces the risk of acting on noisy or exceptional observations as if they were broad trends.",
                 investigation_type="anomaly",
                 priority_score=0.74,
+                confidence_pct=74,
                 payload={"numeric_columns": numeric_columns[:5]},
             )
         )
@@ -78,6 +82,7 @@ def build_investigation_suggestions(df: pd.DataFrame) -> List[InvestigationSugge
                 expected_impact="Supports sharper prioritization by showing which segments deserve more focus or protection.",
                 investigation_type="segment",
                 priority_score=0.71,
+                confidence_pct=71,
                 payload={"segment_column": categorical_columns[0], "value_column": "revenue"},
             )
         )

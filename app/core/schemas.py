@@ -42,6 +42,7 @@ class ProfileResponse(AppBaseModel):
     headline_findings: List[str]
     data_coverage_pct: float
     derived_features: List[str]
+    derived_feature_details: List[Dict[str, str]] = []
 
 
 class EnrichmentSuggestion(AppBaseModel):
@@ -49,6 +50,8 @@ class EnrichmentSuggestion(AppBaseModel):
     why_it_matters: str
     integration_hint: str
     expected_value: str
+    likely_join_key: str = "date"
+    business_question_helped: str = "Improves diagnosis and decision confidence."
 
 
 class EnrichmentRequest(AppBaseModel):
@@ -79,6 +82,7 @@ class InvestigationSuggestion(AppBaseModel):
     expected_impact: str
     investigation_type: Literal["trend", "correlation", "segment", "anomaly"]
     priority_score: float = Field(ge=0.0, le=1.0)
+    confidence_pct: int = Field(ge=0, le=100)
     button_label: str = "Investigate"
     payload: Dict[str, Any]
 
@@ -321,6 +325,8 @@ class MergePreviewResponse(AppBaseModel):
     right_rows: int
     merge_readiness: Literal["high", "medium", "low"]
     explanation: str
+    business_value: str
+    compatibility_warnings: List[str]
     preview: List[Dict[str, Any]]
 
 
@@ -330,6 +336,7 @@ class CopilotAskRequest(AppBaseModel):
     target: Optional[str] = None
     model_id: Optional[str] = None
     session_id: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
 
 
 class CopilotPlanStep(AppBaseModel):
@@ -367,7 +374,8 @@ class MissingDataRecommendation(AppBaseModel):
 class CopilotAskResponse(AppBaseModel):
     dataset_id: str
     session_id: str
-    intent: Literal["diagnosis", "root_cause", "prediction", "simulation", "prioritization", "data_gap", "merge"]
+    intent: Literal["diagnosis", "root_cause", "prediction", "simulation", "prioritization", "segment_analysis", "anomaly_investigation", "data_gap", "enrichment", "merge"]
+    answer: str
     short_answer: str
     plan: List[CopilotPlanStep]
     tools_used: List[CopilotToolCall]

@@ -21,8 +21,9 @@ def _find_target_candidates(df: pd.DataFrame) -> list[str]:
 def build_profile(dataset_id: str) -> ProfileResponse:
     record = store.get_dataset(dataset_id)
     df = record.dataframe
-    enriched_df, derived_features = build_derived_features(df)
+    enriched_df, derived_features, derived_feature_details = build_derived_features(df)
     record.metadata["derived_features"] = derived_features
+    record.metadata["derived_feature_details"] = derived_feature_details
 
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
     temporal_columns = df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist()
@@ -59,4 +60,5 @@ def build_profile(dataset_id: str) -> ProfileResponse:
         headline_findings=headline_findings,
         data_coverage_pct=data_coverage_pct,
         derived_features=[feature for feature in derived_features if feature in enriched_df.columns][:12],
+        derived_feature_details=derived_feature_details[:12],
     )

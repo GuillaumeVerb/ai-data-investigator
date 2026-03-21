@@ -43,8 +43,14 @@ def _detect_intent(question: str) -> str:
     lower = question.lower()
     if any(token in lower for token in ["merge", "join", "combine datasets"]):
         return "merge"
-    if any(token in lower for token in ["missing data", "additional data", "what data", "data quality", "enrich"]):
+    if any(token in lower for token in ["missing data", "additional data", "what data", "data quality", "donnees manqu", "enrich"]):
         return "data_gap"
+    if any(token in lower for token in ["segment", "prioritize", "prioriser", "which region", "quel segment"]):
+        return "segment_analysis"
+    if any(token in lower for token in ["anomaly", "outlier", "anomalie", "exception"]):
+        return "anomaly_investigation"
+    if any(token in lower for token in ["enrichment", "enrich", "ameliorer cette analyse", "improve this analysis"]):
+        return "enrichment"
     if any(token in lower for token in ["prioritize", "focus on", "which segment", "where should we invest", "allocate", "budget", "invest more"]):
         return "prioritization"
     if any(token in lower for token in ["why", "drop", "decline", "cause", "root cause"]):
@@ -95,9 +101,23 @@ def _build_plan(intent: str) -> List[CopilotPlanStep]:
             CopilotPlanStep(step="3", purpose="Run a directional scenario to compare focus alternatives", tool_name="simulate"),
             CopilotPlanStep(step="4", purpose="Recommend where to focus next and what to validate", tool_name="actions"),
         ],
+        "segment_analysis": [
+            CopilotPlanStep(step="1", purpose="Identify which segment dimension best matches the question", tool_name="intent_router"),
+            CopilotPlanStep(step="2", purpose="Review segment-level performance, divergence, and opportunity concentration", tool_name="investigate"),
+            CopilotPlanStep(step="3", purpose="Translate segment evidence into recommended commercial focus", tool_name="actions"),
+        ],
+        "anomaly_investigation": [
+            CopilotPlanStep(step="1", purpose="Frame the anomaly question and gather unusual record evidence", tool_name="intent_router"),
+            CopilotPlanStep(step="2", purpose="Run anomaly-oriented investigation on the most extreme signals", tool_name="investigate"),
+            CopilotPlanStep(step="3", purpose="Recommend business follow-up and validation steps", tool_name="actions"),
+        ],
         "data_gap": [
             CopilotPlanStep(step="1", purpose="Review the current dataset limits and analysis blind spots", tool_name="intent_router"),
             CopilotPlanStep(step="2", purpose="Suggest missing data that would materially improve the analysis", tool_name="enrichment"),
+        ],
+        "enrichment": [
+            CopilotPlanStep(step="1", purpose="Review the current dataset blind spots against the business question", tool_name="intent_router"),
+            CopilotPlanStep(step="2", purpose="Suggest high-value external or internal data to strengthen the recommendation", tool_name="enrichment"),
         ],
         "merge": [
             CopilotPlanStep(step="1", purpose="Review available datasets and identify viable shared keys", tool_name="datasets"),
@@ -113,7 +133,10 @@ def _follow_ups(intent: str) -> List[str]:
         "prediction": ["Show me evidence", "Run a scenario", "What additional data would improve this analysis?"],
         "simulation": ["Simulate another pricing option", "Show me evidence", "What should we investigate next?"],
         "prioritization": ["Which segment should we prioritize?", "Run a scenario", "What additional data would improve this analysis?"],
+        "segment_analysis": ["Which segment should we prioritize?", "Show me evidence", "Run a scenario"],
+        "anomaly_investigation": ["Show me evidence", "What should we investigate next?", "What additional data would improve this analysis?"],
         "data_gap": ["How should we merge that data?", "Run the analysis again", "What should we investigate next?"],
+        "enrichment": ["How should we merge that data?", "What should we investigate next?", "Run the analysis again"],
         "merge": ["Which join keys should we trust?", "Run diagnosis after merge", "What additional data would improve this analysis?"],
     }
     return mapping[intent]
@@ -143,8 +166,8 @@ def _build_missing_data_recommendations(dataset_id: str) -> List[MissingDataReco
             MissingDataRecommendation(
                 dataset_name=item.dataset_name,
                 why_it_matters=item.why_it_matters,
-                what_it_improves=item.expected_value,
-                merge_hint=item.integration_hint,
+                what_it_improves=item.business_question_helped,
+                merge_hint=f"{item.integration_hint} Likely join key: {item.likely_join_key}",
             )
         )
     return recommendations
@@ -180,6 +203,7 @@ def answer_business_question(
     target: Optional[str] = None,
     model_id: Optional[str] = None,
     session_id: Optional[str] = None,
+    language: str = "en",
 ) -> Tuple[CopilotAskResponse, CopilotSessionState]:
     session = store.get_or_create_session(session_id, dataset_id)
     resolved_question = _resolve_follow_up_question(question, session)
@@ -204,7 +228,7 @@ def answer_business_question(
     training = None
     simulation = None
 
-    if intent in {"diagnosis", "prioritization"}:
+    if intent in {"diagnosis", "prioritization", "segment_analysis", "anomaly_investigation"}:
         investigation = investigate_dataset(dataset_id)
         tools_used.append(
             CopilotToolCall(tool_name="investigate", status="completed", output_summary="Ranked insights, anomalies, and investigation suggestions were generated.")
@@ -256,28 +280,43 @@ def answer_business_question(
             confidence_level = simulation.confidence_level
             data_coverage_pct = simulation.data_coverage_pct
 
-    if intent == "data_gap":
+    if intent in {"data_gap", "enrichment"}:
         tools_used.append(
             CopilotToolCall(tool_name="enrichment", status="completed", output_summary="Missing useful datasets and merge hints were generated.")
         )
-        short_answer = "The current analysis can move forward, but a few additional datasets would make the explanation and recommendations more decision-ready."
+        short_answer = (
+            "The current analysis can move forward, but a few additional datasets would make the explanation and recommendations more decision-ready."
+            if language == "en"
+            else "L'analyse actuelle peut avancer, mais quelques jeux de donnees supplementaires rendraient l'explication et les recommandations plus solides."
+        )
         key_drivers.extend([item.dataset_name for item in missing_useful_data[:3]])
         supporting_evidence.extend([item.why_it_matters for item in missing_useful_data[:3]])
-        recommended_actions = [f"Add {item.dataset_name} to improve analysis quality." for item in missing_useful_data[:3]]
-        suggested_next_investigation = ["Review campaign timing", "Compare calendar effects", "Validate segmentation gaps"]
+        recommended_actions = [
+            (f"Add {item.dataset_name} to improve analysis quality." if language == "en" else f"Ajouter {item.dataset_name} pour ameliorer la qualite de l'analyse.")
+            for item in missing_useful_data[:3]
+        ]
+        suggested_next_investigation = (
+            ["Review campaign timing", "Compare calendar effects", "Validate segmentation gaps"]
+            if language == "en"
+            else ["Examiner le calendrier des campagnes", "Comparer les effets calendaires", "Valider les ecarts de segmentation"]
+        )
 
     if intent == "merge":
         tools_used.append(
             CopilotToolCall(tool_name="datasets", status="completed", output_summary="Available datasets were reviewed for merge planning.")
         )
         dataset_labels = [item.filename for item in store.list_datasets()[:3]]
-        short_answer = "Multiple datasets are available in session. The next step is to validate shared keys such as date, region, product, or customer identifiers before merging."
+        short_answer = (
+            "Multiple datasets are available in session. The next step is to validate shared keys such as date, region, product, or customer identifiers before merging."
+            if language == "en"
+            else "Plusieurs jeux de donnees sont disponibles dans la session. L'etape suivante consiste a valider des cles partagees comme date, region, produit ou identifiant client avant de fusionner."
+        )
         key_drivers.extend(dataset_labels)
         supporting_evidence.append(f"{len(store.list_datasets())} datasets are currently loaded in this session.")
-        recommended_actions = ["Open merge preview", "Validate overlap quality", "Re-run the investigation after merging"]
-        suggested_next_investigation = ["Inspect shared keys", "Validate overlap quality", "Re-run insights after merge"]
+        recommended_actions = ["Open merge preview", "Validate overlap quality", "Re-run the investigation after merging"] if language == "en" else ["Ouvrir l'aperçu de fusion", "Valider la qualite du recouvrement", "Relancer l'investigation apres fusion"]
+        suggested_next_investigation = ["Inspect shared keys", "Validate overlap quality", "Re-run insights after merge"] if language == "en" else ["Inspecter les cles partagees", "Valider la qualite du recouvrement", "Relancer les insights apres fusion"]
 
-    if intent in {"diagnosis", "prioritization"}:
+    if intent in {"diagnosis", "prioritization", "segment_analysis", "anomaly_investigation"}:
         actions = recommend_actions(
             {"insights": [item.model_dump() for item in investigation.insights] if investigation else []},
             training.model_dump() if training else None,
@@ -289,6 +328,18 @@ def answer_business_question(
         recommended_actions = [item.title for item in actions[:3]]
         if intent == "diagnosis":
             short_answer = investigation.executive_brief if investigation else "The copilot found a small set of ranked signals worth investigating next."
+        elif intent == "segment_analysis":
+            short_answer = (
+                "The strongest evidence suggests concentrating attention on the segments with higher modeled upside and more resilient performance."
+                if language == "en"
+                else "Les signaux les plus solides suggerent de concentrer l'attention sur les segments au potentiel modele plus eleve et a la performance plus resiliente."
+            )
+        elif intent == "anomaly_investigation":
+            short_answer = (
+                "A small set of unusual records appears to be contributing disproportionately to the current performance story."
+                if language == "en"
+                else "Un petit ensemble d'observations inhabituelles semble contribuer de maniere disproportionnee a la performance actuelle."
+            )
         else:
             short_answer = "The strongest current evidence suggests prioritizing the segments and levers that already show stronger modeled performance and lower downside risk."
             if simulation_result:
@@ -331,6 +382,7 @@ def answer_business_question(
             "suggested_next_investigation": suggested_next_investigation,
             "missing_useful_data": [item.model_dump() for item in missing_useful_data],
             "guardrail": guardrail,
+            "language": language,
         }
     )
     short_answer = copilot_narrative["short_answer"]
@@ -373,6 +425,7 @@ def answer_business_question(
         dataset_id=dataset_id,
         session_id=session_state.session_id,
         intent=intent,  # type: ignore[arg-type]
+        answer=short_answer,
         short_answer=short_answer,
         plan=plan,
         tools_used=tools_used,

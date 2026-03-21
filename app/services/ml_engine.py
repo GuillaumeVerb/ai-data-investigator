@@ -79,7 +79,7 @@ def train_model(dataset_id: str, target: str) -> TrainResponse:
     if target not in df.columns:
         raise ValueError(f"Target column '{target}' not found.")
 
-    enriched_df, derived_features = build_derived_features(df)
+    enriched_df, derived_features, derived_feature_details = build_derived_features(df)
     y = enriched_df[target]
     X = enriched_df.drop(columns=[target])
     X = X.astype(object).where(pd.notnull(X), np.nan)
@@ -162,6 +162,7 @@ def train_model(dataset_id: str, target: str) -> TrainResponse:
         )
     )
     record.metadata["derived_features"] = derived_features
+    record.metadata["derived_feature_details"] = derived_feature_details
 
     model_name = type(model).__name__
     return TrainResponse(
