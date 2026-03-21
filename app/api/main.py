@@ -174,6 +174,9 @@ def decision_engine(request: DecisionEngineRequest) -> DecisionEngineResponse:
             model_id=request.model_id,
             baseline_mode=request.baseline_mode,
             reference_index=request.reference_index,
+            segment_column=request.segment_column,
+            segment_value=request.segment_value,
+            language=request.language,
             scenario_a=request.scenario_a,
             scenario_b=request.scenario_b,
         )

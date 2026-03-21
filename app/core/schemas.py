@@ -199,6 +199,9 @@ class DecisionEngineRequest(AppBaseModel):
     model_id: str
     baseline_mode: Literal["reference_row", "dataset_average"] = "reference_row"
     reference_index: Optional[int] = None
+    segment_column: Optional[str] = None
+    segment_value: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
     scenario_a: Dict[str, Any]
     scenario_b: Optional[Dict[str, Any]] = None
 
@@ -241,6 +244,24 @@ class DecisionConfidence(AppBaseModel):
     disclaimer: str
 
 
+class DecisionImpactView(AppBaseModel):
+    view_key: Literal["reference_row", "dataset_average", "segment_level"]
+    label: str
+    baseline_prediction: Union[float, str]
+    recommended_prediction: Union[float, str]
+    delta: Union[float, str]
+    delta_pct: Optional[float] = None
+    insight: str
+
+
+class DecisionEvidencePack(AppBaseModel):
+    supporting_metrics: Dict[str, Union[float, int, str]]
+    top_variables: List[str]
+    chart_references: List[str]
+    scenario_assumptions: List[str]
+    quality_indicators: List[str]
+
+
 class DecisionEngineResponse(AppBaseModel):
     baseline_prediction: Union[float, str]
     scenario_a_prediction: Union[float, str]
@@ -253,7 +274,17 @@ class DecisionEngineResponse(AppBaseModel):
     recommended_decision: Literal["baseline", "scenario_a", "scenario_b"]
     main_risk: str
     confidence: DecisionConfidence
+    robustness: Literal["high", "medium", "low"]
+    guardrails: List[str]
+    key_drivers: List[str]
+    supporting_evidence: List[str]
+    missing_useful_data: List[MissingDataRecommendation]
     next_best_analysis: str
+    simulation_basis_used: str
+    impact_views: List[DecisionImpactView]
+    risk_summary: str
+    chart_specs: List[Dict[str, Any]]
+    evidence_pack: DecisionEvidencePack
     model_reliability: str
     data_size: str
     disclaimer: str

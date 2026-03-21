@@ -14,7 +14,8 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from app.core.config import get_settings
-from app.services.charts import build_data_quality_chart, build_scenario_comparison_chart
+from app.services.charts import build_data_quality_chart
+from app.ui.i18n import t
 
 
 st.set_page_config(page_title="AI Decision Copilot", page_icon="AI", layout="wide")
@@ -83,6 +84,8 @@ def api_post(path: str, json: dict | None = None, files: dict | None = None) -> 
 def ensure_session() -> str:
     if "copilot_session_id" not in st.session_state:
         st.session_state.copilot_session_id = str(uuid4())
+    if "lang" not in st.session_state:
+        st.session_state.lang = "fr"
     return st.session_state.copilot_session_id
 
 
@@ -166,6 +169,14 @@ def labelize_decision(value: str) -> str:
     return value.replace("_", " ").title()
 
 
+def humanize_decision_choice(value: str, lang: str) -> str:
+    return {
+        "baseline": "Keep baseline" if lang == "en" else "Conserver la reference",
+        "scenario_a": "Scenario A" if lang == "en" else "Scenario A",
+        "scenario_b": "Scenario B" if lang == "en" else "Scenario B",
+    }.get(value, value)
+
+
 def ensure_actions(dataset_id: str) -> dict:
     if "actions" not in st.session_state or not st.session_state.actions:
         st.session_state.actions = api_post(
@@ -234,6 +245,12 @@ top_left, top_right = st.columns([1.0, 1.0], vertical_alignment="center")
 with top_left:
     uploaded_file = st.file_uploader("Upload a CSV", type=["csv"])
 with top_right:
+    st.session_state.lang = st.selectbox(
+        t("decision_engine.language", st.session_state.lang),
+        options=["fr", "en"],
+        index=0 if st.session_state.lang == "fr" else 1,
+        format_func=lambda value: value.upper(),
+    )
     st.write("Use the sample dataset for a 5-minute guided demo, or upload additional datasets to test merge preview.")
     demo_cols = st.columns(2)
     if demo_cols[0].button("Open sample demo path", use_container_width=True):
@@ -459,18 +476,28 @@ with tabs[4]:
     if not training:
         st.info("Train a model first.")
     else:
-        st.markdown("### Decision Engine")
+        lang = st.session_state.lang
+        st.markdown(
+            f"""
+            <div class="hero" style="padding:1.35rem 1.6rem;">
+                <div class="hero-kicker">{t("decision_engine.title", lang)}</div>
+                <div style="font-size:1.15rem; color:#163828; font-weight:700; margin:.3rem 0 .55rem 0;">{t("decision_engine.subtitle", lang)}</div>
+                <div class="meta">{t("decision_engine.core_card_caption", lang)}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         baseline_mode = st.radio(
-            "Baseline mode",
+            t("decision_engine.baseline_mode", lang),
             options=["reference_row", "dataset_average"],
-            format_func=lambda value: "Reference row" if value == "reference_row" else "Average case",
+            format_func=lambda value: t("decision_engine.reference_row", lang) if value == "reference_row" else t("decision_engine.average_case", lang),
             horizontal=True,
         )
         reference_index = None
         if baseline_mode == "reference_row":
             reference_index = int(
                 st.number_input(
-                    "Reference row index",
+                    t("decision_engine.reference_index", lang),
                     min_value=0,
                     max_value=max(0, dataset["rows"] - 1),
                     value=0,
@@ -478,7 +505,7 @@ with tabs[4]:
                 )
             )
 
-        meta_signature = (training["model_id"], baseline_mode, reference_index)
+        meta_signature = (training["model_id"], baseline_mode, reference_index, lang)
         if st.session_state.get("decision_engine_meta_signature") != meta_signature:
             st.session_state.decision_engine_meta = api_post(
                 "/decision-engine",
@@ -487,6 +514,7 @@ with tabs[4]:
                     "model_id": training["model_id"],
                     "baseline_mode": baseline_mode,
                     "reference_index": reference_index,
+                    "language": lang,
                     "scenario_a": {},
                     "scenario_b": {},
                 },
@@ -496,13 +524,39 @@ with tabs[4]:
         decision_meta = st.session_state.get("decision_engine_meta") or {}
         available_inputs = [item for item in decision_meta.get("available_inputs", []) if item.get("available", True)]
         unavailable_inputs = [item for item in decision_meta.get("available_inputs", []) if not item.get("available", True)]
+        segment_controls = [item for item in available_inputs if item["key"] in {"segment_column", "segment_value"}]
+        scenario_controls = [item for item in available_inputs if item["key"] not in {"segment_column", "segment_value"}]
+        segment_column = None
+        segment_value = None
+        if segment_controls:
+            selector_cols = st.columns(2)
+            segment_column_control = next((item for item in segment_controls if item["key"] == "segment_column"), None)
+            segment_value_control = next((item for item in segment_controls if item["key"] == "segment_value"), None)
+            if segment_column_control:
+                options = segment_column_control.get("options", [])
+                default_index = options.index(segment_column_control["default_value"]) if segment_column_control.get("default_value") in options else 0
+                with selector_cols[0]:
+                    segment_column = st.selectbox(
+                        t("decision_engine.segment_dimension", lang),
+                        options,
+                        index=default_index,
+                    )
+            if segment_value_control:
+                options = segment_value_control.get("options", [])
+                default_index = options.index(segment_value_control["default_value"]) if segment_value_control.get("default_value") in options else 0
+                with selector_cols[1]:
+                    segment_value = st.selectbox(
+                        t("decision_engine.segment_value", lang),
+                        options,
+                        index=default_index,
+                    )
         a_col, b_col = st.columns(2, vertical_alignment="top")
         scenario_a: dict[str, object] = {}
         scenario_b: dict[str, object] = {}
 
         with a_col:
             st.markdown("**Scenario A**")
-            for control in available_inputs:
+            for control in scenario_controls:
                 if control["control_type"] == "slider":
                     scenario_a[control["key"]] = st.slider(
                         f"A - {control['label']}",
@@ -521,7 +575,7 @@ with tabs[4]:
 
         with b_col:
             st.markdown("**Scenario B**")
-            for control in available_inputs:
+            for control in scenario_controls:
                 if control["control_type"] == "slider":
                     scenario_b[control["key"]] = st.slider(
                         f"B - {control['label']}",
@@ -541,11 +595,11 @@ with tabs[4]:
 
         if unavailable_inputs:
             render_card(
-                "Unavailable Inputs",
+                t("decision_engine.unavailable_inputs", lang),
                 "<br>".join(f"{item['label']}: {item.get('reason', 'Not available for this dataset/model.')}" for item in unavailable_inputs),
             )
 
-        if st.button("Run Decision Engine", type="primary"):
+        if st.button(t("decision_engine.run", lang), type="primary"):
             st.session_state.decision_engine = api_post(
                 "/decision-engine",
                 json={
@@ -553,6 +607,9 @@ with tabs[4]:
                     "model_id": training["model_id"],
                     "baseline_mode": baseline_mode,
                     "reference_index": reference_index,
+                    "segment_column": segment_column,
+                    "segment_value": segment_value,
+                    "language": lang,
                     "scenario_a": scenario_a,
                     "scenario_b": scenario_b,
                 },
@@ -565,45 +622,35 @@ with tabs[4]:
             delta_pct_value = decision.get("delta_pct")
             scenario_impact = "high" if isinstance(delta_pct_value, (int, float)) and abs(delta_pct_value) >= 10 else "medium"
             metrics = st.columns(5)
-            metrics[0].metric("Baseline", decision["baseline_prediction"])
+            metrics[0].metric(t("decision_engine.reference_row", lang), decision["baseline_prediction"])
             metrics[1].metric("Scenario A", decision["scenario_a_prediction"])
             metrics[2].metric("Scenario B", decision.get("scenario_b_prediction") or "N/A")
-            metrics[3].metric("Winner", labelize_decision(decision["recommended_decision"]))
+            metrics[3].metric("Winner", humanize_decision_choice(decision["recommended_decision"], lang))
             metrics[4].metric("Delta %", decision["delta_pct"] if decision["delta_pct"] is not None else "N/A")
             render_insight_panel(
-                "Recommended Decision",
-                f"Recommend {labelize_decision(decision['recommended_decision'])} based on the current modeled trade-off.",
-                "This matters because the decision engine converts multiple scenario outputs into a single action-oriented recommendation with guardrails.",
+                t("decision_engine.recommended", lang),
+                t("decision_engine.summary.recommend_template", lang, decision=humanize_decision_choice(decision["recommended_decision"], lang).lower()),
+                "This matters because the decision engine converts multiple scenario outputs into a single action-oriented recommendation with guardrails."
+                if lang == "en"
+                else "Cela compte car le moteur de decision transforme plusieurs sorties de scenario en une recommandation actionnable avec des garde-fous.",
                 scenario_impact,
-                decision["confidence"]["level"],
+                decision["confidence"]["level"] if lang == "en" else {"high": "elevee", "medium": "moyenne", "low": "faible"}[decision["confidence"]["level"]],
             )
-            baseline_value = to_float_if_possible(decision["baseline_prediction"])
-            scenario_a_value = to_float_if_possible(decision["scenario_a_prediction"])
-            scenario_b_value = to_float_if_possible(decision.get("scenario_b_prediction"))
-            if baseline_value is not None and scenario_a_value is not None:
-                chart_labels = ["Baseline", "Scenario A"]
-                chart_values = [baseline_value, scenario_a_value]
-                delta_pcts: list[float | None] = [0.0, decision["comparison"]["scenarios"][1]["delta_pct"]]
-                if scenario_b_value is not None:
-                    chart_labels.append("Scenario B")
-                    chart_values.append(scenario_b_value)
-                    scenario_b_delta_pct = next(
-                        (item["delta_pct"] for item in decision["comparison"]["scenarios"] if item["scenario_key"] == "scenario_b"),
-                        None,
-                    )
-                    delta_pcts.append(scenario_b_delta_pct)
-                scenario_chart = build_scenario_comparison_chart(chart_labels, chart_values, delta_pcts)
-                st.caption(f"Before/after view with {labelize_decision(decision['comparison']['winner'])} currently leading.")
-                st.plotly_chart(go.Figure(scenario_chart), use_container_width=True)
+            st.markdown(f"### {t('decision_engine.scenario_comparison', lang)}")
+            for chart_spec in decision.get("chart_specs", []):
+                st.caption(chart_spec["title"])
+                st.plotly_chart(go.Figure(chart_spec["figure"]), use_container_width=True)
 
             summary_cols = st.columns(2, vertical_alignment="top")
             with summary_cols[0]:
-                render_card("Recommended decision", labelize_decision(decision["recommended_decision"]))
-                render_card("Main risk", decision["main_risk"])
-                render_card("Next best analysis", decision["next_best_analysis"])
+                render_card(t("decision_engine.recommended", lang), humanize_decision_choice(decision["recommended_decision"], lang))
+                render_card(t("decision_engine.main_risk", lang), decision["main_risk"])
+                render_card(t("decision_engine.robustness", lang), decision["robustness"])
+                render_card(t("decision_engine.guardrails", lang), "<br>".join(f"- {item}" for item in decision["guardrails"]))
+                render_card(t("decision_engine.next_analysis", lang), decision["next_best_analysis"])
             with summary_cols[1]:
                 render_card(
-                    "Confidence",
+                    t("decision_engine.confidence", lang),
                     (
                         f"Level: <strong>{decision['confidence']['level']}</strong><br>"
                         f"Model reliability: <strong>{decision['model_reliability']}</strong><br>"
@@ -613,21 +660,36 @@ with tabs[4]:
                     ),
                 )
                 render_card(
-                    "Scenario outputs",
+                    t("decision_engine.simulation_basis", lang),
                     (
                         f"Before: <strong>{decision['prediction_before']}</strong><br>"
                         f"After: <strong>{decision['prediction_after']}</strong><br>"
                         f"Delta: <strong>{decision['delta']}</strong><br>"
-                        f"Delta %: <strong>{decision['delta_pct'] if decision['delta_pct'] is not None else 'N/A'}</strong>"
+                        f"Delta %: <strong>{decision['delta_pct'] if decision['delta_pct'] is not None else 'N/A'}</strong><br>"
+                        f"Basis: <strong>{decision['simulation_basis_used']}</strong>"
                     ),
                 )
+                render_card(t("decision_engine.supporting_evidence", lang), "<br>".join(f"- {item}" for item in decision["supporting_evidence"]))
 
-            st.markdown("### Recommended Actions")
+            render_card(t("decision_engine.impact_views", lang), "<br>".join(f"<strong>{item['label']}</strong>: {item['insight']}" for item in decision["impact_views"]))
+            render_card(t("decision_engine.missing_data", lang), "<br>".join(
+                f"<strong>{item['dataset_name']}</strong><br>{item['why_it_matters']}<br><strong>Gain:</strong> {item['what_it_improves']}<br><strong>Join key:</strong> {item['merge_hint']}"
+                for item in decision["missing_useful_data"]
+            ))
+
+            st.markdown(f"### {t('decision_engine.actions', lang)}")
             for action in decision["recommended_actions"]:
                 render_card(
                     action["title"],
                     f"{action['rationale']}<br><br><strong>Expected effect:</strong> {action['expected_effect']}<br><strong>Priority:</strong> {action['priority']}",
                 )
+
+            with st.expander(t("decision_engine.evidence_pack", lang), expanded=False):
+                render_card("Metrics", "<br>".join(f"<strong>{key}</strong>: {value}" for key, value in decision["evidence_pack"]["supporting_metrics"].items()))
+                render_card("Top variables", "<br>".join(f"- {item}" for item in decision["evidence_pack"]["top_variables"]))
+                render_card("Chart references", "<br>".join(f"- {item}" for item in decision["evidence_pack"]["chart_references"]))
+                render_card("Assumptions", "<br>".join(f"- {item}" for item in decision["evidence_pack"]["scenario_assumptions"]))
+                render_card(t("decision_engine.quality", lang), "<br>".join(f"- {item}" for item in decision["evidence_pack"]["quality_indicators"]))
 
 with tabs[5]:
     root_metric = st.selectbox("Metric to explain", [col for col in profile["columns"] if col in profile["numeric_columns"]] or profile["columns"])

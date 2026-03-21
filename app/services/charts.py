@@ -614,6 +614,117 @@ def build_scenario_comparison_chart(labels: list[str], values: list[float], delt
     return _json_safe_figure(fig)
 
 
+def build_localized_scenario_comparison_chart(
+    labels: list[str],
+    values: list[float],
+    delta_pcts: Optional[list[Optional[float]]] = None,
+    *,
+    title: str,
+    subtitle: str,
+    winner_label: Optional[str] = None,
+) -> dict:
+    colors = [BASELINE_BLUE]
+    for idx in range(1, len(labels)):
+        pct = delta_pcts[idx] if delta_pcts and idx < len(delta_pcts) else None
+        colors.append(OPPORTUNITY_GREEN if pct is not None and pct >= 0 else RISK_RED)
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=labels,
+                y=values,
+                marker_color=colors,
+                text=[f"{value:.2f}" for value in values],
+                textposition="outside",
+            )
+        ]
+    )
+    fig = _apply_premium_layout(fig, title, subtitle)
+    if delta_pcts:
+        for idx, pct in enumerate(delta_pcts[1:], start=1):
+            if pct is not None:
+                fig.add_annotation(
+                    x=labels[idx],
+                    y=values[idx],
+                    text=f"{pct:+.1f}%",
+                    showarrow=False,
+                    yshift=28,
+                    font={"color": OPPORTUNITY_GREEN if pct >= 0 else RISK_RED, "size": 13},
+                    bgcolor="rgba(255,252,247,0.95)",
+                )
+    if winner_label and len(labels) > 1:
+        fig.add_annotation(
+            x=labels[-1],
+            y=max(values),
+            text=winner_label,
+            showarrow=True,
+            arrowcolor=OPPORTUNITY_GREEN,
+            bgcolor="rgba(255,252,247,0.95)",
+            font={"color": OPPORTUNITY_GREEN},
+            ay=-40,
+        )
+    return _json_safe_figure(fig)
+
+
+def build_decision_impact_chart(impact_views: list[dict[str, Any]], *, title: str, subtitle: str, annotation: str) -> dict:
+    labels = [item["label"] for item in impact_views]
+    delta_pcts = [float(item["delta_pct"] or 0.0) for item in impact_views]
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=labels,
+                y=delta_pcts,
+                marker_color=[OPPORTUNITY_GREEN if value >= 0 else RISK_RED for value in delta_pcts],
+                text=[f"{value:+.1f}%" for value in delta_pcts],
+                textposition="outside",
+            )
+        ]
+    )
+    fig = _apply_premium_layout(fig, title, subtitle)
+    fig.update_yaxes(title="Delta %")
+    if labels:
+        max_idx = int(np.argmax(np.abs(delta_pcts)))
+        fig.add_annotation(
+            x=labels[max_idx],
+            y=delta_pcts[max_idx],
+            text=annotation,
+            showarrow=True,
+            arrowcolor=BASELINE_BLUE,
+            bgcolor="rgba(255,252,247,0.95)",
+            font={"color": BASELINE_BLUE},
+            ay=-35,
+        )
+    return _json_safe_figure(fig)
+
+
+def build_decision_risk_chart(items: list[dict[str, Any]], *, title: str, subtitle: str, annotation: str) -> dict:
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=[item["label"] for item in items],
+                y=[float(item["score"]) for item in items],
+                marker_color=[RISK_RED if float(item["score"]) >= 70 else WARN_ORANGE if float(item["score"]) >= 40 else BASELINE_BLUE for item in items],
+                text=[str(item["text"]) for item in items],
+                textposition="outside",
+            )
+        ]
+    )
+    fig = _apply_premium_layout(fig, title, subtitle)
+    fig.update_yaxes(title="Risk score")
+    if items:
+        top = max(items, key=lambda item: float(item["score"]))
+        fig.add_annotation(
+            x=top["label"],
+            y=float(top["score"]),
+            text=annotation,
+            showarrow=True,
+            arrowcolor=RISK_RED,
+            bgcolor="rgba(255,252,247,0.95)",
+            font={"color": RISK_RED},
+            ay=-35,
+        )
+    return _json_safe_figure(fig)
+
+
 def build_root_cause_driver_chart(drivers: list[dict[str, str]], metric: str) -> dict:
     if not drivers:
         return _json_safe_figure(_apply_premium_layout(go.Figure(), f"Root-Cause Drivers for {metric}"))

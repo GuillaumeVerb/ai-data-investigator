@@ -153,6 +153,9 @@ def test_decision_engine_reference_and_average_modes() -> None:
             "model_id": training["model_id"],
             "baseline_mode": "reference_row",
             "reference_index": 0,
+            "segment_column": "region",
+            "segment_value": "South",
+            "language": "fr",
             "scenario_a": {"price": 125, "marketing_spend": 7200, "discount": 6, "region": "South", "product_mix": "Beta"},
             "scenario_b": {"price": 100, "marketing_spend": 4800, "discount": 4, "region": "North", "product_mix": "Gamma"},
         },
@@ -167,6 +170,13 @@ def test_decision_engine_reference_and_average_modes() -> None:
     assert reference_body["scenario_rows"]["scenario_a"]["product"] == "Beta"
     assert reference_body["recommended_actions"]
     assert reference_body["confidence"]["disclaimer"]
+    assert reference_body["guardrails"]
+    assert reference_body["impact_views"]
+    assert any(item["view_key"] == "segment_level" for item in reference_body["impact_views"])
+    assert reference_body["missing_useful_data"]
+    assert reference_body["chart_specs"]
+    assert reference_body["evidence_pack"]["chart_references"]
+    assert "Cette recommandation" in reference_body["confidence"]["disclaimer"]
 
     average_response = client.post(
         "/decision-engine",
@@ -174,6 +184,7 @@ def test_decision_engine_reference_and_average_modes() -> None:
             "dataset_id": dataset["dataset_id"],
             "model_id": training["model_id"],
             "baseline_mode": "dataset_average",
+            "language": "en",
             "scenario_a": {"price": 130, "marketing_spend": 6500, "discount": 9},
         },
     )
@@ -184,3 +195,5 @@ def test_decision_engine_reference_and_average_modes() -> None:
     assert average_body["data_size"] in {"small", "medium", "large"}
     assert average_body["model_reliability"] in {"low", "medium", "high"}
     assert average_body["comparison"]["scenarios"][0]["scenario_key"] == "baseline"
+    assert average_body["robustness"] in {"high", "medium", "low"}
+    assert average_body["supporting_evidence"]
