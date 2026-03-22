@@ -1,0 +1,21 @@
+date,region,channel,campaign_name,marketing_spend,impressions,clicks,leads,conversions,qualified_pipeline
+2025-01-01,North,Online,New Year Boost,5000,120000,4200,320,68,182000
+2025-01-08,North,Online,Retention Push,5200,125000,4380,335,72,191500
+2025-01-15,North,Retail,Retail Visibility,5300,98000,3010,255,59,148200
+2025-01-22,South,Online,Discount Revival,4900,132000,4650,350,79,205100
+2025-01-29,South,Partner,Partner Acceleration,4700,101000,2890,248,63,159800
+2025-02-05,North,Online,Premium Awareness,6100,145000,4720,361,75,212700
+2025-02-12,North,Retail,Store Traffic Lift,6400,118000,3280,287,66,173900
+2025-02-19,South,Online,Regional Growth,6200,149000,4860,372,81,220400
+2025-02-26,West,Partner,Channel Recovery,6600,96000,2610,214,48,132600
+2025-03-05,East,Online,Spring Launch,4100,138000,4980,381,91,226300
+2025-03-12,East,Retail,Footfall Campaign,4300,112000,3180,276,70,176400
+2025-03-19,South,Online,Conversion Sprint,4000,141000,5120,395,94,231800
+2025-03-26,West,Partner,Partner Reactivation,4500,99000,2740,225,54,147100
+2025-04-02,West,Online,West Rebound,5600,128000,4010,319,71,189200
+2025-04-09,West,Retail,Store Recovery,5500,110000,3120,268,62,168500
+2025-04-16,East,Online,Easter Momentum,5400,144000,5210,402,96,236400
+2025-04-23,East,Online,Enterprise Push,6800,151000,4890,365,78,221300
+2025-04-30,South,Retail,Regional Retail Lift,6500,119000,3410,292,68,179200
+2025-05-07,West,Online,Premium Retargeting,7000,133000,4080,305,64,171900
+2025-05-14,West,Retail,Partner Support,6900,108000,2990,251,56,150700

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from fastapi.testclient import TestClient
 
 from app.api.main import app
@@ -124,14 +122,10 @@ def test_copilot_session_context_and_report_export_flow() -> None:
 
 def test_multi_dataset_merge_preview_and_csv_upload() -> None:
     first = client.post("/upload/sample").json()
-    sample_csv = Path(__file__).resolve().parents[1] / "data" / "sample_sales.csv"
-    with sample_csv.open("rb") as handle:
-        second_response = client.post(
-            "/upload",
-            files={"file": ("sample_sales_copy.csv", handle, "text/csv")},
-        )
+    second_response = client.post("/upload/sample/marketing")
     assert second_response.status_code == 200
     second = second_response.json()
+    assert second["filename"] == "sample_marketing.csv"
 
     datasets = client.get("/datasets")
     assert datasets.status_code == 200
@@ -146,6 +140,7 @@ def test_multi_dataset_merge_preview_and_csv_upload() -> None:
     assert body["suggested_join_keys"]
     assert "business_value" in body
     assert "compatibility_warnings" in body
+    assert body["estimated_overlap_rows"] >= 1
 
 
 def test_decision_engine_reference_and_average_modes() -> None:

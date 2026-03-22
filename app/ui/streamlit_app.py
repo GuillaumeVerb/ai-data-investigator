@@ -124,6 +124,13 @@ def bootstrap_sample() -> None:
         register_dataset(dataset)
 
 
+def load_named_sample(sample_name: str) -> None:
+    reset_analysis_state()
+    dataset = api_post(f"/upload/sample/{sample_name}")
+    st.session_state.dataset = dataset
+    register_dataset(dataset)
+
+
 def render_card(title: str, body: str) -> None:
     st.markdown(f'<div class="card"><strong>{title}</strong><div style="margin-top:.45rem;">{body}</div></div>', unsafe_allow_html=True)
 
@@ -135,23 +142,27 @@ def render_metric(label: str, value: str, foot: str) -> None:
     )
 
 
-def render_insight_panel(title: str, summary: str, why_it_matters: str, impact_level: str, confidence: str) -> None:
+def render_insight_panel(title: str, summary: str, why_it_matters: str, impact_level: str, confidence: str, lang: str) -> None:
     impact_color = {"high": "#b44747", "medium": "#d38336", "low": "#2f6d49"}.get(impact_level, "#607087")
     st.markdown(
         (
             '<div class="card" style="border-left:8px solid {impact_color};">'
-            '<div class="meta">Key Message</div>'
+            '<div class="meta">{key_message}</div>'
             "<strong>{title}</strong>"
             '<div style="margin-top:.45rem;">{summary}</div>'
-            '<div style="margin-top:.7rem;"><strong>Why it matters:</strong> {why}</div>'
-            '<div class="meta" style="margin-top:.8rem;">impact={impact} | confidence={confidence}</div>'
+            '<div style="margin-top:.7rem;"><strong>{why_label}:</strong> {why}</div>'
+            '<div class="meta" style="margin-top:.8rem;">{impact_label}={impact} | {confidence_label}={confidence}</div>'
             "</div>"
         ).format(
             impact_color=impact_color,
+            key_message=t("insight.key_message", lang),
             title=title,
             summary=summary,
+            why_label=t("insight.why_it_matters", lang),
             why=why_it_matters,
+            impact_label=t("insight.impact", lang),
             impact=impact_level,
+            confidence_label=t("insight.confidence", lang),
             confidence=confidence,
         ),
         unsafe_allow_html=True,
@@ -175,6 +186,87 @@ def humanize_decision_choice(value: str, lang: str) -> str:
         "scenario_a": "Scenario A" if lang == "en" else "Scenario A",
         "scenario_b": "Scenario B" if lang == "en" else "Scenario B",
     }.get(value, value)
+
+
+def humanize_intent(value: str, lang: str) -> str:
+    mapping = {
+        "diagnosis": "Diagnosis" if lang == "en" else "Diagnostic",
+        "root_cause": "Root cause" if lang == "en" else "Cause racine",
+        "prediction": "Prediction" if lang == "en" else "Prediction",
+        "simulation": "Simulation" if lang == "en" else "Simulation",
+        "prioritization": "Prioritization" if lang == "en" else "Priorisation",
+        "segment_analysis": "Segment analysis" if lang == "en" else "Analyse de segment",
+        "anomaly_investigation": "Anomaly investigation" if lang == "en" else "Investigation d'anomalie",
+        "data_gap": "Missing data" if lang == "en" else "Donnees manquantes",
+        "enrichment": "Enrichment" if lang == "en" else "Enrichissement",
+        "merge": "Merge suggestion" if lang == "en" else "Suggestion de fusion",
+    }
+    return mapping.get(value, value.replace("_", " ").title())
+
+
+def html_bullets(items: list[str]) -> str:
+    return "<br>".join(f"- {item}" for item in items)
+
+
+def confidence_label(level: str, lang: str) -> str:
+    if lang == "fr":
+        return {"high": "elevee", "medium": "moyenne", "low": "faible"}.get(level, level)
+    return level
+
+
+def detect_business_levers(profile: dict, lang: str) -> list[str]:
+    columns = [column.lower() for column in profile["columns"]]
+    levers: list[str] = []
+    if any(keyword in column for column in columns for keyword in ["price", "discount"]):
+        levers.append("Pricing and discount strategy" if lang == "en" else "Strategie prix et remise")
+    if any(keyword in column for column in columns for keyword in ["marketing", "campaign", "spend"]):
+        levers.append("Marketing allocation" if lang == "en" else "Allocation marketing")
+    if any(keyword in column for column in columns for keyword in ["region", "segment", "channel", "customer"]):
+        levers.append("Segment and regional prioritization" if lang == "en" else "Priorisation segment et region")
+    if any(keyword in column for column in columns for keyword in ["product", "sku", "category", "mix"]):
+        levers.append("Product mix and assortment" if lang == "en" else "Mix produit et assortiment")
+    if profile.get("temporal_columns"):
+        levers.append("Trend and anomaly monitoring" if lang == "en" else "Suivi de tendance et d'anomalies")
+    if not levers:
+        levers.append("Baseline operational diagnosis" if lang == "en" else "Diagnostic operationnel de base")
+    return levers[:5]
+
+
+def suggest_demo_paths(profile: dict, lang: str) -> list[str]:
+    columns = [column.lower() for column in profile["columns"]]
+    suggestions: list[str] = []
+    if "revenue" in columns or "sales" in columns:
+        suggestions.append("Explain revenue changes" if lang == "en" else "Expliquer les variations de revenu")
+    if any(keyword in column for column in columns for keyword in ["price", "discount"]):
+        suggestions.append("Test pricing scenarios safely" if lang == "en" else "Tester des scenarios de prix de facon sure")
+    if any(keyword in column for column in columns for keyword in ["marketing", "campaign", "spend"]):
+        suggestions.append("Compare marketing return by scenario" if lang == "en" else "Comparer le retour marketing par scenario")
+    if any(keyword in column for column in columns for keyword in ["region", "segment", "channel"]):
+        suggestions.append("Prioritize high-value segments" if lang == "en" else "Prioriser les segments a forte valeur")
+    if profile.get("temporal_columns"):
+        suggestions.append("Investigate trend breaks and anomalies" if lang == "en" else "Investiguer les ruptures de tendance et anomalies")
+    if not suggestions:
+        suggestions.append("Start with automated investigation suggestions" if lang == "en" else "Commencer par les suggestions d'investigation automatiques")
+    return suggestions[:5]
+
+
+def dataset_snapshot_lines(dataset: dict, profile: dict, lang: str) -> list[str]:
+    main_dimensions = ", ".join(profile["categorical_columns"][:4]) or t("app.none", lang)
+    return [
+        f"{t('app.current_dataset', lang)}: <strong>{dataset['filename']}</strong>",
+        f"{t('app.rows_and_columns', lang)}: <strong>{dataset['rows']} / {dataset['columns']}</strong>",
+        f"{t('app.time_signal', lang)}: <strong>{t('app.yes', lang) if profile.get('temporal_columns') else t('app.no', lang)}</strong>",
+        f"{t('app.main_dimensions', lang)}: <strong>{main_dimensions}</strong>",
+        f"{t('app.quality_score', lang)}: <strong>{profile['quality_score']}</strong>",
+    ]
+
+
+def render_dataset_preview(dataset: dict) -> None:
+    preview = dataset.get("preview") or []
+    if preview:
+        st.dataframe(pd.DataFrame(preview), use_container_width=True, hide_index=True)
+    else:
+        st.info(t("app.no_preview", st.session_state.lang))
 
 
 def run_global_copilot_query(dataset_id: str, question: str, target: str | None = None) -> None:
@@ -246,7 +338,7 @@ st.markdown(
         <div>
             {t("app.hero_body", st.session_state.lang)}
         </div>
-        <div class="meta" style="margin-top:1rem;">upload -> diagnose -> investigate -> explain -> simulate -> recommend -> export</div>
+        <div class="meta" style="margin-top:1rem;">{t("app.process_flow", st.session_state.lang)}</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -263,16 +355,16 @@ with top_right:
         format_func=lambda value: value.upper(),
     )
     st.write(t("app.sample_hint", st.session_state.lang))
-    demo_cols = st.columns(2)
-    if demo_cols[0].button(t("app.open_demo", st.session_state.lang), use_container_width=True):
-        run_guided_demo(dataset_id)
-    if demo_cols[1].button(t("app.reload_sample", st.session_state.lang), use_container_width=True):
-        reset_analysis_state()
-        dataset = api_post("/upload/sample")
-        st.session_state.dataset = dataset
-        register_dataset(dataset)
+    demo_cols = st.columns(3)
+    if demo_cols[0].button(t("app.load_sales_demo", st.session_state.lang), use_container_width=True):
+        load_named_sample("sales")
+        run_guided_demo(st.session_state.dataset["dataset_id"])
+    if demo_cols[1].button(t("app.load_marketing_demo", st.session_state.lang), use_container_width=True):
+        load_named_sample("marketing")
+    if demo_cols[2].button(t("app.reload_sample", st.session_state.lang), use_container_width=True):
+        load_named_sample("sales")
 
-global_question_cols = st.columns([1.8, 0.7, 0.5], vertical_alignment="end")
+global_question_cols = st.columns([1.8, 0.7, 0.5], vertical_alignment="bottom")
 with global_question_cols[0]:
     global_question = st.text_input(
         t("app.top_question", st.session_state.lang),
@@ -315,6 +407,16 @@ with intro_cols[0]:
 with intro_cols[1]:
     render_card(t("app.guardrail", st.session_state.lang), t("app.guardrail_body", st.session_state.lang))
 
+st.markdown(f"### {t('app.dataset_overview', st.session_state.lang)}")
+overview_cols = st.columns([0.78, 1.22], vertical_alignment="top")
+with overview_cols[0]:
+    render_card(t("app.dataset_snapshot", st.session_state.lang), "<br>".join(dataset_snapshot_lines(dataset, profile, st.session_state.lang)))
+    render_card(t("app.detected_levers", st.session_state.lang), html_bullets(detect_business_levers(profile, st.session_state.lang)))
+    render_card(t("app.best_demo_paths", st.session_state.lang), html_bullets(suggest_demo_paths(profile, st.session_state.lang)))
+with overview_cols[1]:
+    st.caption(t("app.dataset_preview", st.session_state.lang))
+    render_dataset_preview(dataset)
+
 tabs = st.tabs(
     [
         t("tab.landing", st.session_state.lang),
@@ -331,75 +433,100 @@ tabs = st.tabs(
 )
 
 with tabs[0]:
+    lang = st.session_state.lang
     left, right = st.columns([1.0, 1.0], vertical_alignment="top")
     with left:
         render_card(
-            "What this product does",
+            t("landing.positioning", lang),
             (
-                "• analyzes uploaded datasets automatically<br>"
-                "• proposes investigation paths<br>"
-                "• trains explainable predictive models<br>"
-                "• simulates decisions before rollout<br>"
-                "• recommends business actions<br>"
-                "• exports a consulting-style report"
+                "AI Data Investigator is positioned as a business decision copilot for commercial, ecommerce, RevOps, and finance teams.<br><br>"
+                "It turns raw data exports into diagnosis, scenarios, recommendations, and guardrails."
+                if lang == "en"
+                else "AI Data Investigator se positionne comme un copilote de decision pour les equipes commerciales, ecommerce, RevOps et finance.<br><br>"
+                "Il transforme des exports de donnees brutes en diagnostic, scenarios, recommandations et garde-fous."
             ),
         )
         render_card(
-            "Example business questions",
-            (
-                "• Should we increase price?<br>"
-                "• Why did revenue drop?<br>"
-                "• Where should we invest?<br>"
-                "• What additional data would improve confidence?"
+            t("landing.buyers", lang),
+            html_bullets(
+                [
+                    "Heads of ecommerce, revenue managers, and COOs" if lang == "en" else "Heads of ecommerce, revenue managers et COO",
+                    "Consultants, freelance analytics experts, and RevOps teams" if lang == "en" else "Consultants, freelances analytics et equipes RevOps",
+                    "SMB commercial and finance leaders who need decision support without a full data team"
+                    if lang == "en"
+                    else "Dirigeants commerciaux et finance de PME qui ont besoin d'aide a la decision sans equipe data complete",
+                ]
             ),
         )
     with right:
         render_card(
-            "Demo Checklist",
-            (
-                "1. Load the sample dataset<br>"
-                "2. Review ranked investigation suggestions<br>"
-                "3. Train the prediction engine on revenue<br>"
-                "4. Compare scenarios<br>"
-                "5. Ask the decision copilot<br>"
-                "6. Export the executive report"
+            t("landing.demo_use_cases", lang),
+            html_bullets(
+                [
+                    "Should we increase price?" if lang == "en" else "Faut-il augmenter le prix ?",
+                    "Why did revenue drop?" if lang == "en" else "Pourquoi le revenu a-t-il baisse ?",
+                    "Which segment should we prioritize?" if lang == "en" else "Quel segment faut-il prioriser ?",
+                    "What extra data would improve this recommendation?" if lang == "en" else "Quelles donnees supplementaires renforceraient cette recommandation ?",
+                ]
             ),
         )
         render_card(
-            "Suggested screenshots",
+            t("landing.premium_stack", lang),
+            html_bullets(
+                [
+                    "Visible dataset extract and business-ready summary" if lang == "en" else "Extrait dataset visible et resume business-ready",
+                    "Annotated investigation and premium Plotly charts" if lang == "en" else "Investigation annotee et graphiques Plotly premium",
+                    "Scenario comparison with recommendation, risks, and guardrails" if lang == "en" else "Comparaison de scenarios avec recommandation, risques et garde-fous",
+                    "Auditable evidence pack and missing-data suggestions" if lang == "en" else "Pack de preuves auditable et suggestions de donnees manquantes",
+                ]
+            ),
+        )
+    lower_left, lower_right = st.columns([1.0, 1.0], vertical_alignment="top")
+    with lower_left:
+        render_card(
+            t("landing.portfolio_highlights", lang),
+            html_bullets(
+                [
+                    "Premium bilingual UX for EN and FR demos" if lang == "en" else "UX bilingue premium pour des demos EN et FR",
+                    "Agentic business question flow with structured evidence" if lang == "en" else "Flux agentique de question business avec preuves structurees",
+                    "Decision cockpit with actions, risk, and confidence" if lang == "en" else "Cockpit de decision avec actions, risque et confiance",
+                ]
+            ),
+        )
+    with lower_right:
+        render_card(
+            t("landing.demo_checklist", lang),
             (
-                "• Landing hero<br>"
-                "• Investigation suggestions<br>"
-                "• Prediction engine<br>"
-                "• Scenario comparison<br>"
-                "• Copilot reasoning<br>"
-                "• Executive report export"
+                "1. Load the sample dataset<br>2. Show the dataset extract<br>3. Review investigation suggestions<br>4. Train the prediction engine<br>5. Compare scenarios in the Decision Engine<br>6. Ask the Copilot and open the Evidence Pack"
+                if lang == "en"
+                else "1. Charger le dataset exemple<br>2. Montrer l'extrait de donnees<br>3. Lire les suggestions d'investigation<br>4. Entrainer le moteur de prediction<br>5. Comparer les scenarios dans le moteur de decision<br>6. Interroger le copilote et ouvrir le pack de preuves"
             ),
         )
 
 with tabs[1]:
     cols = st.columns([0.95, 1.05], vertical_alignment="top")
     with cols[0]:
-        render_card("Headline Findings", "<br>".join(profile["headline_findings"]))
-        render_card("Suggested Targets", ", ".join(profile["target_candidates"]) or "No obvious target")
+        render_card(t("diagnostic.headline_findings", st.session_state.lang), "<br>".join(profile["headline_findings"]))
+        render_card(t("diagnostic.suggested_targets", st.session_state.lang), ", ".join(profile["target_candidates"]) or t("app.none", st.session_state.lang))
         render_card(
-            "Derived Features",
+            t("diagnostic.derived_features", st.session_state.lang),
             "<br>".join(
                 f"<strong>{item['feature']}</strong>: {item['reason']}"
                 for item in profile.get("derived_feature_details", [])
-            ) or "No derived features",
+            ) or t("diagnostic.no_derived_features", st.session_state.lang),
         )
         render_card(
-            "Current Dataset",
-            f"<strong>{dataset['filename']}</strong><br>Rows: {dataset['rows']}<br>Columns: {dataset['columns']}",
+            t("app.current_dataset", st.session_state.lang),
+            f"<strong>{dataset['filename']}</strong><br>{t('app.rows_and_columns', st.session_state.lang)}: {dataset['rows']} / {dataset['columns']}",
         )
     with cols[1]:
+        st.caption(t("diagnostic.data_dictionary", st.session_state.lang))
         st.dataframe(
             pd.DataFrame(
                 {
-                    "column": profile["columns"],
-                    "dtype": [profile["dtypes"][col] for col in profile["columns"]],
-                    "missing_pct": [profile["missing_pct"][col] for col in profile["columns"]],
+                    t("diagnostic.column", st.session_state.lang): profile["columns"],
+                    t("diagnostic.dtype", st.session_state.lang): [profile["dtypes"][col] for col in profile["columns"]],
+                    t("diagnostic.missing_pct", st.session_state.lang): [profile["missing_pct"][col] for col in profile["columns"]],
                 }
             ),
             use_container_width=True,
@@ -412,6 +539,7 @@ with tabs[1]:
         profile_quality_card["why_it_matters"],
         profile_quality_card["impact_level"],
         profile_quality_card["confidence"],
+        st.session_state.lang,
     )
     st.plotly_chart(go.Figure(profile_quality_card["figure"]), use_container_width=True)
 
@@ -422,10 +550,10 @@ with tabs[2]:
         with cols[0]:
             render_card(
                 suggestion["title"],
-                f"{suggestion['explanation']}<br><br><strong>Expected business impact:</strong> {suggestion['expected_impact']}<br><strong>Confidence:</strong> {suggestion.get('confidence_pct', 0)}%",
+                f"{suggestion['explanation']}<br><br><strong>{t('investigation.expected_impact', st.session_state.lang)}:</strong> {suggestion['expected_impact']}<br><strong>{t('investigation.confidence', st.session_state.lang)}:</strong> {suggestion.get('confidence_pct', 0)}%",
             )
         with cols[1]:
-            if st.button("Investigate", key=f"invest_{suggestion['suggestion_id']}", use_container_width=True):
+            if st.button(t("investigation.button", st.session_state.lang), key=f"invest_{suggestion['suggestion_id']}", use_container_width=True):
                 payload = dict(suggestion["payload"])
                 payload["investigation_type"] = suggestion["investigation_type"]
                 st.session_state.focused_analysis = api_post(
@@ -434,12 +562,12 @@ with tabs[2]:
                 )
     focused = st.session_state.get("focused_analysis")
     if focused:
-        render_card(focused["title"], f"{focused['analysis']}<br><br><strong>Business implication:</strong> {focused['business_implication']}")
+        render_card(focused["title"], f"{focused['analysis']}<br><br><strong>{t('investigation.business_implication', st.session_state.lang)}:</strong> {focused['business_implication']}")
         st.json(focused["supporting_stats"])
         if focused.get("chart_spec"):
             st.plotly_chart(go.Figure(focused["chart_spec"]), use_container_width=True)
 
-    st.markdown("### Ranked Insights")
+    st.markdown(f"### {t('investigation.ranked_insights', st.session_state.lang)}")
     for insight in investigation["insights"]:
         st.markdown(
             f"""
@@ -451,8 +579,8 @@ with tabs[2]:
             """,
             unsafe_allow_html=True,
         )
-    render_card("Opportunity Areas", "<br>".join(f"- {item}" for item in investigation["opportunity_areas"]))
-    render_card("Anomaly Narrative", investigation["anomaly_narrative"])
+    render_card(t("investigation.opportunity_areas", st.session_state.lang), html_bullets(investigation["opportunity_areas"]))
+    render_card(t("investigation.anomaly_narrative", st.session_state.lang), investigation["anomaly_narrative"])
     for chart_spec in investigation["chart_specs"]:
         render_insight_panel(
             chart_spec["title"],
@@ -460,14 +588,15 @@ with tabs[2]:
             chart_spec["why_it_matters"],
             chart_spec["impact_level"],
             chart_spec["confidence"],
+            st.session_state.lang,
         )
         st.caption(chart_spec["question"])
         st.plotly_chart(go.Figure(chart_spec["figure"]), use_container_width=True)
 
 with tabs[3]:
     target_candidates = profile["target_candidates"] or profile["columns"]
-    selected_target = st.selectbox("Choose a target to model", target_candidates)
-    if st.button("Train prediction engine", type="primary"):
+    selected_target = st.selectbox(t("prediction.choose_target", st.session_state.lang), target_candidates)
+    if st.button(t("prediction.train_button", st.session_state.lang), type="primary"):
         st.session_state.training = api_post("/train", json={"dataset_id": dataset_id, "target": selected_target})
         st.session_state.actions = None
     training = st.session_state.get("training")
@@ -475,37 +604,44 @@ with tabs[3]:
         cols = st.columns([0.85, 1.15], vertical_alignment="top")
         with cols[0]:
             render_insight_panel(
-                "Top Model Drivers",
-                f"The model is currently most influenced by {training['top_drivers'][0] if training['top_drivers'] else 'available features'}.",
-                "This matters because the top-ranked drivers are the best place to pressure-test the model before acting on it.",
+                t("prediction.top_drivers", st.session_state.lang),
+                t(
+                    "prediction.insight_summary",
+                    st.session_state.lang,
+                    driver=training["top_drivers"][0] if training["top_drivers"] else t("app.not_available", st.session_state.lang),
+                ),
+                "This matters because the top-ranked drivers are the best place to pressure-test the model before acting on it."
+                if st.session_state.lang == "en"
+                else "Cela compte car les leviers les mieux classes sont le meilleur point de depart pour tester le modele avant d'agir.",
                 "high" if training["top_drivers"] else "medium",
                 training["confidence_level"],
+                st.session_state.lang,
             )
             render_card(
-                "Model trained successfully",
+                t("prediction.trained", st.session_state.lang),
                 (
-                    f"Model type: <strong>{training['task_type']}</strong><br>"
-                    f"Model: <strong>{training['model_name']}</strong><br>"
-                    f"{training['primary_metric_name'].upper()} = <strong>{training['primary_metric_value']}</strong><br>"
-                    f"Confidence: <strong>{training['confidence_level']}</strong><br>"
-                    f"Data coverage: <strong>{training['data_coverage_pct']}%</strong>"
+                    f"{t('prediction.model_type', st.session_state.lang)}: <strong>{training['task_type']}</strong><br>"
+                    f"{t('prediction.model_name', st.session_state.lang)}: <strong>{training['model_name']}</strong><br>"
+                    f"{t('prediction.primary_metric', st.session_state.lang)}: <strong>{training['primary_metric_name'].upper()} = {training['primary_metric_value']}</strong><br>"
+                    f"{t('copilot.confidence', st.session_state.lang)}: <strong>{confidence_label(training['confidence_level'], st.session_state.lang)}</strong><br>"
+                    f"{t('prediction.data_coverage', st.session_state.lang)}: <strong>{training['data_coverage_pct']}%</strong>"
                 ),
             )
-            render_card("Top features", "<br>".join(f"{idx + 1}. {driver}" for idx, driver in enumerate(training["top_drivers"][:5])))
+            render_card(t("prediction.top_features", st.session_state.lang), "<br>".join(f"{idx + 1}. {driver}" for idx, driver in enumerate(training["top_drivers"][:5])))
             st.json(training["metrics"])
-            st.caption("Baseline comparison")
+            st.caption(t("prediction.baseline_comparison", st.session_state.lang))
             st.json(training["baseline_metrics"])
         with cols[1]:
-            st.caption("Annotated feature importance view with ranked contribution.")
+            st.caption(t("prediction.annotation_caption", st.session_state.lang))
             st.plotly_chart(go.Figure(training["feature_importance_chart"]), use_container_width=True)
             st.dataframe(pd.DataFrame(training["feature_importance"][:5]), use_container_width=True, hide_index=True)
     else:
-        st.info("Train a model to unlock richer simulation and copilot answers.")
+        st.info(t("prediction.empty", st.session_state.lang))
 
 with tabs[4]:
     training = st.session_state.get("training")
     if not training:
-        st.info("Train a model first.")
+        st.info(t("prediction.train_first", st.session_state.lang))
     else:
         lang = st.session_state.lang
         st.markdown(
@@ -586,7 +722,7 @@ with tabs[4]:
         scenario_b: dict[str, object] = {}
 
         with a_col:
-            st.markdown("**Scenario A**")
+            st.markdown(f"**{t('decision_engine.scenario_a', lang)}**")
             for control in scenario_controls:
                 if control["control_type"] == "slider":
                     scenario_a[control["key"]] = st.slider(
@@ -605,7 +741,7 @@ with tabs[4]:
                     )
 
         with b_col:
-            st.markdown("**Scenario B**")
+            st.markdown(f"**{t('decision_engine.scenario_b', lang)}**")
             for control in scenario_controls:
                 if control["control_type"] == "slider":
                     scenario_b[control["key"]] = st.slider(
@@ -627,7 +763,10 @@ with tabs[4]:
         if unavailable_inputs:
             render_card(
                 t("decision_engine.unavailable_inputs", lang),
-                "<br>".join(f"{item['label']}: {item.get('reason', 'Not available for this dataset/model.')}" for item in unavailable_inputs),
+                "<br>".join(
+                    f"{item['label']}: {item.get('reason', t('app.not_available', lang))}"
+                    for item in unavailable_inputs
+                ),
             )
 
         if st.button(t("decision_engine.run", lang), type="primary"):
@@ -654,10 +793,10 @@ with tabs[4]:
             scenario_impact = "high" if isinstance(delta_pct_value, (int, float)) and abs(delta_pct_value) >= 10 else "medium"
             metrics = st.columns(5)
             metrics[0].metric(t("decision_engine.reference_row", lang), decision["baseline_prediction"])
-            metrics[1].metric("Scenario A", decision["scenario_a_prediction"])
-            metrics[2].metric("Scenario B", decision.get("scenario_b_prediction") or "N/A")
-            metrics[3].metric("Winner", humanize_decision_choice(decision["recommended_decision"], lang))
-            metrics[4].metric("Delta %", decision["delta_pct"] if decision["delta_pct"] is not None else "N/A")
+            metrics[1].metric(t("decision_engine.scenario_a", lang), decision["scenario_a_prediction"])
+            metrics[2].metric(t("decision_engine.scenario_b", lang), decision.get("scenario_b_prediction") or t("app.not_available", lang))
+            metrics[3].metric(t("decision_engine.winner", lang), humanize_decision_choice(decision["recommended_decision"], lang))
+            metrics[4].metric(t("decision_engine.delta_pct", lang), decision["delta_pct"] if decision["delta_pct"] is not None else t("app.not_available", lang))
             render_insight_panel(
                 t("decision_engine.recommended", lang),
                 t("decision_engine.summary.recommend_template", lang, decision=humanize_decision_choice(decision["recommended_decision"], lang).lower()),
@@ -665,7 +804,8 @@ with tabs[4]:
                 if lang == "en"
                 else "Cela compte car le moteur de decision transforme plusieurs sorties de scenario en une recommandation actionnable avec des garde-fous.",
                 scenario_impact,
-                decision["confidence"]["level"] if lang == "en" else {"high": "elevee", "medium": "moyenne", "low": "faible"}[decision["confidence"]["level"]],
+                confidence_label(decision["confidence"]["level"], lang),
+                lang,
             )
             st.markdown(f"### {t('decision_engine.scenario_comparison', lang)}")
             for chart_spec in decision.get("chart_specs", []):
@@ -683,28 +823,28 @@ with tabs[4]:
                 render_card(
                     t("decision_engine.confidence", lang),
                     (
-                        f"Level: <strong>{decision['confidence']['level']}</strong><br>"
-                        f"Model reliability: <strong>{decision['model_reliability']}</strong><br>"
-                        f"Data size: <strong>{decision['data_size']}</strong><br>"
-                        f"Row coverage: <strong>{decision['confidence']['row_coverage_pct']}%</strong><br>"
+                        f"{t('decision_engine.level', lang)}: <strong>{confidence_label(decision['confidence']['level'], lang)}</strong><br>"
+                        f"{t('decision_engine.model_reliability', lang)}: <strong>{decision['model_reliability']}</strong><br>"
+                        f"{t('decision_engine.data_size', lang)}: <strong>{decision['data_size']}</strong><br>"
+                        f"{t('decision_engine.row_coverage', lang)}: <strong>{decision['confidence']['row_coverage_pct']}%</strong><br>"
                         f"{decision['disclaimer']}"
                     ),
                 )
                 render_card(
                     t("decision_engine.simulation_basis", lang),
                     (
-                        f"Before: <strong>{decision['prediction_before']}</strong><br>"
-                        f"After: <strong>{decision['prediction_after']}</strong><br>"
-                        f"Delta: <strong>{decision['delta']}</strong><br>"
-                        f"Delta %: <strong>{decision['delta_pct'] if decision['delta_pct'] is not None else 'N/A'}</strong><br>"
-                        f"Basis: <strong>{decision['simulation_basis_used']}</strong>"
+                        f"{t('decision_engine.before', lang)}: <strong>{decision['prediction_before']}</strong><br>"
+                        f"{t('decision_engine.after', lang)}: <strong>{decision['prediction_after']}</strong><br>"
+                        f"{t('decision_engine.delta', lang)}: <strong>{decision['delta']}</strong><br>"
+                        f"{t('decision_engine.delta_pct', lang)}: <strong>{decision['delta_pct'] if decision['delta_pct'] is not None else t('app.not_available', lang)}</strong><br>"
+                        f"{t('decision_engine.basis', lang)}: <strong>{decision['simulation_basis_used']}</strong>"
                     ),
                 )
                 render_card(t("decision_engine.supporting_evidence", lang), "<br>".join(f"- {item}" for item in decision["supporting_evidence"]))
 
             render_card(t("decision_engine.impact_views", lang), "<br>".join(f"<strong>{item['label']}</strong>: {item['insight']}" for item in decision["impact_views"]))
             render_card(t("decision_engine.missing_data", lang), "<br>".join(
-                f"<strong>{item['dataset_name']}</strong><br>{item['why_it_matters']}<br><strong>Gain:</strong> {item['what_it_improves']}<br><strong>Join key:</strong> {item['merge_hint']}"
+                f"<strong>{item['dataset_name']}</strong><br>{item['why_it_matters']}<br><strong>{t('decision_engine.gain', lang)}:</strong> {item['what_it_improves']}<br><strong>{t('decision_engine.join_key', lang)}:</strong> {item['merge_hint']}"
                 for item in decision["missing_useful_data"]
             ))
 
@@ -712,40 +852,43 @@ with tabs[4]:
             for action in decision["recommended_actions"]:
                 render_card(
                     action["title"],
-                    f"{action['rationale']}<br><br><strong>Expected effect:</strong> {action['expected_effect']}<br><strong>Priority:</strong> {action['priority']}",
+                    f"{action['rationale']}<br><br><strong>{t('decision_engine.expected_effect', lang)}:</strong> {action['expected_effect']}<br><strong>{t('decision_engine.priority', lang)}:</strong> {action['priority']}",
                 )
 
             with st.expander(t("decision_engine.evidence_pack", lang), expanded=False):
-                render_card("Metrics", "<br>".join(f"<strong>{key}</strong>: {value}" for key, value in decision["evidence_pack"]["supporting_metrics"].items()))
-                render_card("Top variables", "<br>".join(f"- {item}" for item in decision["evidence_pack"]["top_variables"]))
-                render_card("Chart references", "<br>".join(f"- {item}" for item in decision["evidence_pack"]["chart_references"]))
-                render_card("Assumptions", "<br>".join(f"- {item}" for item in decision["evidence_pack"]["scenario_assumptions"]))
+                render_card(t("decision_engine.metrics", lang), "<br>".join(f"<strong>{key}</strong>: {value}" for key, value in decision["evidence_pack"]["supporting_metrics"].items()))
+                render_card(t("decision_engine.top_variables", lang), html_bullets(decision["evidence_pack"]["top_variables"]))
+                render_card(t("decision_engine.chart_references", lang), html_bullets(decision["evidence_pack"]["chart_references"]))
+                render_card(t("decision_engine.assumptions", lang), html_bullets(decision["evidence_pack"]["scenario_assumptions"]))
                 render_card(t("decision_engine.quality", lang), "<br>".join(f"- {item}" for item in decision["evidence_pack"]["quality_indicators"]))
 
 with tabs[5]:
-    root_metric = st.selectbox("Metric to explain", [col for col in profile["columns"] if col in profile["numeric_columns"]] or profile["columns"])
-    if st.button("Explain root cause", type="primary"):
+    root_metric = st.selectbox(t("root_cause.metric", st.session_state.lang), [col for col in profile["columns"] if col in profile["numeric_columns"]] or profile["columns"])
+    if st.button(t("root_cause.button", st.session_state.lang), type="primary"):
         st.session_state.root_cause = api_post("/root-cause", json={"dataset_id": dataset_id, "metric": root_metric})
     root_cause = st.session_state.get("root_cause")
     if root_cause:
         lead_driver = root_cause["main_drivers"][0]["driver"] if root_cause["main_drivers"] else root_cause["metric"]
         render_insight_panel(
-            "Most Plausible Driver",
-            f"{lead_driver} appears to be the strongest contributor in the current statistical pattern review.",
-            "This matters because it gives the team a first hypothesis to validate before making broader changes.",
+            t("root_cause.most_plausible_driver", st.session_state.lang),
+            t("root_cause.insight_summary", st.session_state.lang, driver=lead_driver),
+            "This matters because it gives the team a first hypothesis to validate before making broader changes."
+            if st.session_state.lang == "en"
+            else "Cela compte car cela donne a l'equipe une premiere hypothese a valider avant des changements plus larges.",
             "high",
             "medium",
+            st.session_state.lang,
         )
-        render_card("Why did this happen?", root_cause["explanation"])
+        render_card(t("root_cause.why_title", st.session_state.lang), root_cause["explanation"])
         for driver in root_cause["main_drivers"]:
-            render_card(driver["driver"], f"{driver['explanation']}<br><strong>Impact:</strong> {driver['impact_estimate']}")
-        render_card("Evidence", "<br>".join(f"- {item}" for item in root_cause["evidence"]))
+            render_card(driver["driver"], f"{driver['explanation']}<br><strong>{t('root_cause.impact', st.session_state.lang)}:</strong> {driver['impact_estimate']}")
+        render_card(t("root_cause.evidence", st.session_state.lang), html_bullets(root_cause["evidence"]))
         if root_cause.get("chart_spec"):
-            st.caption("Top drivers ranked by contribution strength to support root-cause validation.")
+            st.caption(t("root_cause.caption", st.session_state.lang))
             st.plotly_chart(go.Figure(root_cause["chart_spec"]), use_container_width=True)
 
 with tabs[6]:
-    if st.button("Suggest missing useful data", type="primary"):
+    if st.button(t("enrichment.button", st.session_state.lang), type="primary"):
         st.session_state.enrichment = api_post("/enrichment-suggestions", json={"dataset_id": dataset_id})
     enrichment = st.session_state.get("enrichment")
     if enrichment:
@@ -753,25 +896,25 @@ with tabs[6]:
             render_card(
                 item["dataset_name"],
                 (
-                    f"<strong>Why it matters:</strong> {item['why_it_matters']}<br><br>"
-                    f"<strong>How to integrate:</strong> {item['integration_hint']}<br><br>"
-                    f"<strong>Expected value:</strong> {item['expected_value']}"
+                    f"<strong>{t('enrichment.why', st.session_state.lang)}:</strong> {item['why_it_matters']}<br><br>"
+                    f"<strong>{t('enrichment.how', st.session_state.lang)}:</strong> {item['integration_hint']}<br><br>"
+                    f"<strong>{t('enrichment.value', st.session_state.lang)}:</strong> {item['expected_value']}"
                 ),
             )
     else:
-        st.info("Ask the agent to suggest useful missing datasets such as campaigns, calendar effects, or segment data.")
+        st.info(t("enrichment.empty", st.session_state.lang))
 
 with tabs[7]:
     datasets_catalog = st.session_state.get("datasets_catalog", [])
     if len(datasets_catalog) < 2:
-        st.info("Upload at least two datasets in this session to preview a merge.")
+        st.info(t("merge.empty", st.session_state.lang))
     else:
         label_pairs = [f"{item['filename']} ({item['dataset_id'][:8]})" for item in datasets_catalog]
         mapping = {f"{item['filename']} ({item['dataset_id'][:8]})": item["dataset_id"] for item in datasets_catalog}
-        left_label = st.selectbox("Left dataset", label_pairs, key="merge_left")
+        left_label = st.selectbox(t("merge.left_dataset", st.session_state.lang), label_pairs, key="merge_left")
         right_options = [label for label in label_pairs if label != left_label]
-        right_label = st.selectbox("Right dataset", right_options, key="merge_right")
-        if st.button("Preview merge", type="primary"):
+        right_label = st.selectbox(t("merge.right_dataset", st.session_state.lang), right_options, key="merge_right")
+        if st.button(t("merge.preview_button", st.session_state.lang), type="primary"):
             st.session_state.merge_preview = api_post(
                 "/merge-preview",
                 json={"left_dataset_id": mapping[left_label], "right_dataset_id": mapping[right_label]},
@@ -785,9 +928,9 @@ with tabs[7]:
             render_card(
                 t("merge.join_suggestion", st.session_state.lang),
                 (
-                    f"Suggested keys: <strong>{', '.join(preview['suggested_join_keys']) or 'none'}</strong><br>"
-                    f"Readiness: <strong>{preview['merge_readiness']}</strong><br>"
-                    f"Estimated overlap rows: <strong>{preview['estimated_overlap_rows']}</strong>"
+                    f"{t('merge.suggested_keys', st.session_state.lang)}: <strong>{', '.join(preview['suggested_join_keys']) or t('app.none', st.session_state.lang)}</strong><br>"
+                    f"{t('merge.readiness', st.session_state.lang)}: <strong>{preview['merge_readiness']}</strong><br>"
+                    f"{t('merge.overlap_rows', st.session_state.lang)}: <strong>{preview['estimated_overlap_rows']}</strong>"
                 ),
             )
             if preview["preview"]:
@@ -796,14 +939,14 @@ with tabs[7]:
 with tabs[8]:
     question = st.text_area(t("app.top_question", st.session_state.lang), placeholder=t("app.top_question_placeholder", st.session_state.lang))
     copilot_target = st.text_input(t("app.target_override", st.session_state.lang), value="revenue")
-    if st.button("Ask the decision copilot", type="primary") and question.strip():
+    if st.button(t("copilot.ask_button", st.session_state.lang), type="primary") and question.strip():
         run_global_copilot_query(dataset_id, question, copilot_target)
     answer = st.session_state.get("copilot_answer")
     if answer:
         render_card(t("copilot.short_answer", st.session_state.lang), answer["answer"])
         reasoning_cols = st.columns(2, vertical_alignment="top")
         with reasoning_cols[0]:
-            render_card(t("copilot.intent", st.session_state.lang), answer["intent"])
+            render_card(t("copilot.intent_label", st.session_state.lang), humanize_intent(answer["intent"], st.session_state.lang))
             render_card(
                 t("copilot.pipeline", st.session_state.lang),
                 "<br>".join(f"{step['step']}. {step['purpose']} ({step['tool_name']})" for step in answer["plan"]),
@@ -815,31 +958,31 @@ with tabs[8]:
         with reasoning_cols[1]:
             render_card(t("copilot.key_drivers", st.session_state.lang), "<br>".join(f"- {item}" for item in answer["key_drivers"]))
             render_card(t("copilot.supporting_evidence", st.session_state.lang), "<br>".join(f"- {item}" for item in answer["supporting_evidence"]))
-            render_card(t("copilot.confidence", st.session_state.lang), f"{answer['confidence_level']} ({answer['confidence_score']}/100)")
+            render_card(t("copilot.confidence", st.session_state.lang), f"{confidence_label(answer['confidence_level'], st.session_state.lang)} ({answer['confidence_score']}/100)")
         meta_cols = st.columns(2, vertical_alignment="top")
         with meta_cols[0]:
             render_card(
                 t("copilot.model_reliability", st.session_state.lang),
-                answer.get("model_reliability") or "No model-based reliability signal was required for this answer.",
+                answer.get("model_reliability") or t("copilot.no_model_signal", st.session_state.lang),
             )
         with meta_cols[1]:
             coverage_value = answer.get("data_coverage_pct")
             render_card(
                 t("copilot.coverage_guardrail", st.session_state.lang),
                 (
-                    f"Data coverage: <strong>{coverage_value}%</strong><br><br>{answer['guardrail']}"
+                    f"{t('copilot.data_coverage', st.session_state.lang)}: <strong>{coverage_value}%</strong><br><br>{answer['guardrail']}"
                     if coverage_value is not None
                     else answer["guardrail"]
                 ),
             )
         if answer.get("simulation_result"):
-            render_card("Simulation Result", answer["simulation_result"])
+            render_card(t("copilot.simulation_result", st.session_state.lang), answer["simulation_result"])
         render_card(t("copilot.recommended_actions", st.session_state.lang), "<br>".join(f"- {item}" for item in answer["recommended_actions"]))
         next_cols = st.columns(2, vertical_alignment="top")
         with next_cols[0]:
             render_card(
                 t("copilot.next_investigation", st.session_state.lang),
-                "<br>".join(f"- {item}" for item in answer["suggested_next_investigation"]) or "No next investigation suggested.",
+                "<br>".join(f"- {item}" for item in answer["suggested_next_investigation"]) or t("copilot.no_next_investigation", st.session_state.lang),
             )
         with next_cols[1]:
             missing_data_items = answer["missing_useful_data"]
@@ -848,13 +991,13 @@ with tabs[8]:
                     render_card(
                         item["dataset_name"],
                         (
-                            f"<strong>Why it matters:</strong> {item['why_it_matters']}<br><br>"
-                            f"<strong>What it improves:</strong> {item['what_it_improves']}<br><br>"
-                            f"<strong>How to merge it:</strong> {item['merge_hint']}"
+                            f"<strong>{t('copilot.why_matters', st.session_state.lang)}:</strong> {item['why_it_matters']}<br><br>"
+                            f"<strong>{t('copilot.what_improves', st.session_state.lang)}:</strong> {item['what_it_improves']}<br><br>"
+                            f"<strong>{t('copilot.how_merge', st.session_state.lang)}:</strong> {item['merge_hint']}"
                         ),
                     )
             else:
-                render_card(t("copilot.missing_data", st.session_state.lang), "No additional data suggested.")
+                render_card(t("copilot.missing_data", st.session_state.lang), t("copilot.no_missing_data", st.session_state.lang))
         if answer["follow_up_questions"]:
             st.markdown(f"### {t('copilot.follow_up', st.session_state.lang)}")
             follow_cols = st.columns(len(answer["follow_up_questions"]))
@@ -864,7 +1007,7 @@ with tabs[8]:
 
 with tabs[9]:
     actions = ensure_actions(dataset_id)
-    if st.button("Generate consulting-style report", type="primary"):
+    if st.button(t("summary.generate", st.session_state.lang), type="primary"):
         st.session_state.summary = api_post(
             "/summary",
             json={
@@ -880,13 +1023,13 @@ with tabs[9]:
         render_card(summary["headline"], summary["executive_summary"])
         cols = st.columns(2, vertical_alignment="top")
         with cols[0]:
-            render_card("Key Insights", "<br>".join(f"- {item}" for item in summary["key_findings"]))
-            render_card("Drivers", "<br>".join(f"- {item}" for item in summary["main_drivers"]))
-            render_card("Opportunities", "<br>".join(f"- {item}" for item in summary["opportunities"]))
+            render_card(t("summary.key_insights", st.session_state.lang), html_bullets(summary["key_findings"]))
+            render_card(t("summary.drivers", st.session_state.lang), html_bullets(summary["main_drivers"]))
+            render_card(t("summary.opportunities", st.session_state.lang), html_bullets(summary["opportunities"]))
         with cols[1]:
-            render_card("Risks", "<br>".join(f"- {item}" for item in summary["risks"]))
-            render_card("Recommendations", "<br>".join(f"- {item}" for item in summary["recommendations"]))
-            render_card("Limitations", "<br>".join(f"- {item}" for item in summary["limitations"]))
+            render_card(t("summary.risks", st.session_state.lang), html_bullets(summary["risks"]))
+            render_card(t("summary.recommendations", st.session_state.lang), html_bullets(summary["recommendations"]))
+            render_card(t("summary.limitations", st.session_state.lang), html_bullets(summary["limitations"]))
 
         root_cause_payload = st.session_state.get("root_cause")
         export_ready = api_post(
@@ -902,14 +1045,14 @@ with tabs[9]:
         )
         st.session_state.report_export = export_ready
         st.download_button(
-            label="Download HTML report",
+            label=t("summary.download", st.session_state.lang),
             data=export_ready["html_content"],
             file_name="ai-decision-copilot-report.html",
             mime="text/html",
             use_container_width=True,
         )
-    st.markdown("### Recommended Actions")
+    st.markdown(f"### {t('summary.recommended_actions', st.session_state.lang)}")
     for item in actions["recommended_actions"]:
-        render_card(f"{item['title']} [{item['priority']}]", f"{item['rationale']}<br><br><strong>Expected effect:</strong> {item['expected_effect']}")
+        render_card(f"{item['title']} [{item['priority']}]", f"{item['rationale']}<br><br><strong>{t('decision_engine.expected_effect', st.session_state.lang)}:</strong> {item['expected_effect']}")
 
-st.caption("This analysis is based on statistical patterns, not causal inference.")
+st.caption(t("footer.disclaimer", st.session_state.lang))

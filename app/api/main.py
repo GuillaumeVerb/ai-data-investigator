@@ -54,6 +54,10 @@ from app.core.state import store
 
 
 app = FastAPI(title=get_settings().app_name)
+SAMPLE_DATASETS = {
+    "sales": "sample_sales.csv",
+    "marketing": "sample_marketing.csv",
+}
 
 
 @app.get("/health")
@@ -87,6 +91,15 @@ async def upload_dataset(file: UploadFile = File(...)) -> UploadResponse:
 @app.post("/upload/sample", response_model=UploadResponse)
 def upload_sample() -> UploadResponse:
     sample_path = Path(__file__).resolve().parents[2] / "data" / "sample_sales.csv"
+    return load_sample_dataset(str(sample_path))
+
+
+@app.post("/upload/sample/{sample_name}", response_model=UploadResponse)
+def upload_named_sample(sample_name: str) -> UploadResponse:
+    filename = SAMPLE_DATASETS.get(sample_name)
+    if not filename:
+        raise HTTPException(status_code=404, detail="Sample dataset not found.")
+    sample_path = Path(__file__).resolve().parents[2] / "data" / filename
     return load_sample_dataset(str(sample_path))
 
 
