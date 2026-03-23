@@ -18,7 +18,7 @@ def _find_target_candidates(df: pd.DataFrame) -> list[str]:
     return candidates[:5]
 
 
-def build_profile(dataset_id: str) -> ProfileResponse:
+def build_profile(dataset_id: str, language: str = "en") -> ProfileResponse:
     record = store.get_dataset(dataset_id)
     df = record.dataframe
     enriched_df, derived_features, derived_feature_details = build_derived_features(df)
@@ -34,17 +34,38 @@ def build_profile(dataset_id: str) -> ProfileResponse:
     quality_score = round(max(0.0, 100 - float(df.isna().mean().mean() * 100) - len(df.columns) * 0.5), 1)
     data_coverage_pct = round(float(100 - df.isna().mean().mean() * 100), 1)
 
+    lang = "fr" if language == "fr" else "en"
     headline_findings = [
-        f"{df.shape[0]} rows and {df.shape[1]} columns available for analysis.",
-        f"{len(numeric_columns)} numeric columns and {len(categorical_columns)} categorical columns detected.",
+        (
+            f"{df.shape[0]} rows and {df.shape[1]} columns available for analysis."
+            if lang == "en"
+            else f"{df.shape[0]} lignes et {df.shape[1]} colonnes sont disponibles pour l'analyse."
+        ),
+        (
+            f"{len(numeric_columns)} numeric columns and {len(categorical_columns)} categorical columns detected."
+            if lang == "en"
+            else f"{len(numeric_columns)} colonnes numeriques et {len(categorical_columns)} colonnes categorielles detectees."
+        ),
     ]
     if temporal_columns:
-        headline_findings.append(f"Temporal signal detected in: {', '.join(temporal_columns[:2])}.")
+        headline_findings.append(
+            f"Temporal signal detected in: {', '.join(temporal_columns[:2])}."
+            if lang == "en"
+            else f"Un signal temporel a ete detecte dans : {', '.join(temporal_columns[:2])}."
+        )
     high_missing = [col for col, pct in missing_pct.items() if pct >= 20]
     if high_missing:
-        headline_findings.append(f"Missing-value risk on: {', '.join(high_missing[:3])}.")
+        headline_findings.append(
+            f"Missing-value risk on: {', '.join(high_missing[:3])}."
+            if lang == "en"
+            else f"Risque de valeurs manquantes sur : {', '.join(high_missing[:3])}."
+        )
     else:
-        headline_findings.append("Data quality looks healthy enough for a baseline model.")
+        headline_findings.append(
+            "Data quality looks healthy enough for a baseline model."
+            if lang == "en"
+            else "La qualite des donnees semble suffisante pour un modele de base."
+        )
 
     return ProfileResponse(
         dataset_id=dataset_id,

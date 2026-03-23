@@ -658,7 +658,7 @@ def run_decision_engine(
     supporting_metrics = {
         model_record.primary_metric_name: model_record.primary_metric_value,
         "row_coverage_pct": row_coverage,
-        "baseline_mode": baseline_mode,
+        "baseline_mode": baseline_mode if lang == "en" else ("ligne_de_reference" if baseline_mode == "reference_row" else "cas_moyen"),
     }
     supporting_evidence = [
         f"{_confidence_label(confidence_level, lang)} confidence with {row_coverage:.1f}% row coverage.",
@@ -707,6 +707,7 @@ def run_decision_engine(
             "recommended_decision": recommended_decision,
             "main_risk": main_risk,
         },
+        lang=lang,
     )
 
     return DecisionEngineResponse(
@@ -727,7 +728,11 @@ def run_decision_engine(
         supporting_evidence=supporting_evidence,
         missing_useful_data=missing_useful_data,
         next_best_analysis=next_best_analysis,
-        simulation_basis_used=f"{baseline_mode} | {chosen_segment or 'none'} | {chosen_value or 'n/a'}",
+        simulation_basis_used=(
+            f"{baseline_mode} | {chosen_segment or 'none'} | {chosen_value or 'n/a'}"
+            if lang == "en"
+            else f"{'ligne_de_reference' if baseline_mode == 'reference_row' else 'cas_moyen'} | {chosen_segment or 'aucun'} | {chosen_value or 'n/d'}"
+        ),
         impact_views=impact_views,
         risk_summary=risk_summary,
         chart_specs=chart_specs,

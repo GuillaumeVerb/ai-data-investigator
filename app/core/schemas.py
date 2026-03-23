@@ -26,6 +26,7 @@ class DatasetListItem(AppBaseModel):
 
 class ProfileRequest(AppBaseModel):
     dataset_id: str
+    language: Literal["en", "fr"] = "en"
 
 
 class ProfileResponse(AppBaseModel):
@@ -56,6 +57,7 @@ class EnrichmentSuggestion(AppBaseModel):
 
 class EnrichmentRequest(AppBaseModel):
     dataset_id: str
+    language: Literal["en", "fr"] = "en"
 
 
 class EnrichmentResponse(AppBaseModel):
@@ -91,6 +93,7 @@ class InvestigationPathRequest(AppBaseModel):
     dataset_id: str
     suggestion_id: str
     payload: Dict[str, Any]
+    language: Literal["en", "fr"] = "en"
 
 
 class InvestigationPathResponse(AppBaseModel):
@@ -107,6 +110,7 @@ class RootCauseRequest(AppBaseModel):
     metric: str
     focus: Optional[str] = None
     model_id: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
 
 
 class RootCauseDriver(AppBaseModel):
@@ -133,6 +137,7 @@ class RecommendedAction(AppBaseModel):
 
 class InvestigateRequest(AppBaseModel):
     dataset_id: str
+    language: Literal["en", "fr"] = "en"
 
 
 class InvestigateResponse(AppBaseModel):
@@ -302,6 +307,7 @@ class ActionRequest(AppBaseModel):
     investigation: InvestigateResponse
     training: Optional[TrainResponse] = None
     simulation: Optional[SimulationResponse] = None
+    language: Literal["en", "fr"] = "en"
 
 
 class ActionResponse(AppBaseModel):
@@ -412,6 +418,7 @@ class ReportExportResponse(AppBaseModel):
 
 class SummaryRequest(AppBaseModel):
     dataset_id: str
+    language: Literal["en", "fr"] = "en"
     profile: ProfileResponse
     investigation: InvestigateResponse
     training: Optional[TrainResponse] = None

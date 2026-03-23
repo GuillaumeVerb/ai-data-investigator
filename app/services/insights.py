@@ -38,7 +38,7 @@ def _build_insight(
     )
 
 
-def _top_correlation_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]:
+def _top_correlation_insight(df: pd.DataFrame, coverage: float, lang: str) -> Optional[InsightItem]:
     numeric_df = df.select_dtypes(include=["number"])
     if numeric_df.shape[1] < 2:
         return None
@@ -50,8 +50,16 @@ def _top_correlation_insight(df: pd.DataFrame, coverage: float) -> Optional[Insi
 
     (left, right), score = upper.index[0], float(upper.iloc[0])
     return _build_insight(
-        title=f"Strong correlation between {left} and {right}",
-        description=f"The absolute correlation is {score:.2f}, suggesting a meaningful relationship worth deeper analysis.",
+        title=(
+            f"Strong correlation between {left} and {right}"
+            if lang == "en"
+            else f"Correlation forte entre {left} et {right}"
+        ),
+        description=(
+            f"The absolute correlation is {score:.2f}, suggesting a meaningful relationship worth deeper analysis."
+            if lang == "en"
+            else f"La correlation absolue est de {score:.2f}, ce qui suggere une relation importante a analyser plus en profondeur."
+        ),
         insight_type="correlation",
         signal_strength=min(1.0, score),
         business_relevance=0.84,
@@ -59,7 +67,7 @@ def _top_correlation_insight(df: pd.DataFrame, coverage: float) -> Optional[Insi
     )
 
 
-def _segment_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]:
+def _segment_insight(df: pd.DataFrame, coverage: float, lang: str) -> Optional[InsightItem]:
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
     categorical_columns = df.select_dtypes(exclude=["number", "datetime", "datetimetz"]).columns.tolist()
     if not numeric_columns or not categorical_columns:
@@ -73,8 +81,12 @@ def _segment_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]
     gap = float(grouped.iloc[0] - grouped.iloc[-1])
     normalized_gap = min(1.0, abs(gap) / max(1.0, abs(float(grouped.iloc[0]))))
     return _build_insight(
-        title=f"{top_segment} behaves differently from the rest",
-        description=f"Average {numeric_columns[0]} differs materially across {categorical_columns[0]} groups, with a top-to-bottom gap of {gap:.2f}.",
+        title=f"{top_segment} behaves differently from the rest" if lang == "en" else f"{top_segment} se comporte differemment du reste",
+        description=(
+            f"Average {numeric_columns[0]} differs materially across {categorical_columns[0]} groups, with a top-to-bottom gap of {gap:.2f}."
+            if lang == "en"
+            else f"La moyenne de {numeric_columns[0]} differe nettement selon les groupes de {categorical_columns[0]}, avec un ecart de {gap:.2f} entre le haut et le bas."
+        ),
         insight_type="trend",
         signal_strength=max(0.45, normalized_gap),
         business_relevance=0.76,
@@ -82,7 +94,7 @@ def _segment_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]
     )
 
 
-def _temporal_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem]:
+def _temporal_insight(df: pd.DataFrame, coverage: float, lang: str) -> Optional[InsightItem]:
     datetime_columns = df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist()
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
     if not datetime_columns or not numeric_columns:
@@ -97,8 +109,16 @@ def _temporal_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem
     recent_mean = recent_window[value_col].mean()
     pct = 0.0 if early_mean == 0 else ((recent_mean - early_mean) / early_mean) * 100
     return _build_insight(
-        title=f"{value_col.capitalize()} shifted across the observed period",
-        description=f"The latest period differs by {pct:.1f}% versus the earliest period in the dataset.",
+        title=(
+            f"{value_col.capitalize()} shifted across the observed period"
+            if lang == "en"
+            else f"{value_col.capitalize()} a evolue sur la periode observee"
+        ),
+        description=(
+            f"The latest period differs by {pct:.1f}% versus the earliest period in the dataset."
+            if lang == "en"
+            else f"La periode la plus recente differe de {pct:.1f}% par rapport a la premiere periode du dataset."
+        ),
         insight_type="trend",
         signal_strength=min(1.0, abs(pct) / 20),
         business_relevance=0.88,
@@ -106,13 +126,17 @@ def _temporal_insight(df: pd.DataFrame, coverage: float) -> Optional[InsightItem
     )
 
 
-def _anomaly_insight(anomalies: List[Dict], coverage: float) -> Optional[InsightItem]:
+def _anomaly_insight(anomalies: List[Dict], coverage: float, lang: str) -> Optional[InsightItem]:
     if not anomalies:
         return None
     anomaly_share = len(anomalies) / max(len(anomalies), 5)
     return _build_insight(
-        title="Anomalous rows require business review",
-        description=f"{len(anomalies)} unusual records were flagged and may reflect risks, exceptions, or data quality issues.",
+        title="Anomalous rows require business review" if lang == "en" else "Les lignes atypiques demandent une revue business",
+        description=(
+            f"{len(anomalies)} unusual records were flagged and may reflect risks, exceptions, or data quality issues."
+            if lang == "en"
+            else f"{len(anomalies)} observations inhabituelles ont ete detectees et peuvent signaler des risques, exceptions ou problemes de qualite de donnees."
+        ),
         insight_type="anomaly",
         signal_strength=min(1.0, anomaly_share),
         business_relevance=0.8,
@@ -136,17 +160,18 @@ def _detect_anomalies(df: pd.DataFrame) -> List[Dict]:
     return anomalies.to_dict(orient="records")
 
 
-def investigate_dataset(dataset_id: str) -> InvestigateResponse:
+def investigate_dataset(dataset_id: str, language: str = "en") -> InvestigateResponse:
     record = store.get_dataset(dataset_id)
     df = record.dataframe
+    lang = "fr" if language == "fr" else "en"
     anomalies = _detect_anomalies(df)
     coverage = max(0.0, 1.0 - float(df.isna().mean().mean()))
 
     insight_candidates = [
-        _top_correlation_insight(df, coverage),
-        _segment_insight(df, coverage),
-        _temporal_insight(df, coverage),
-        _anomaly_insight(anomalies, coverage),
+        _top_correlation_insight(df, coverage, lang),
+        _segment_insight(df, coverage, lang),
+        _temporal_insight(df, coverage, lang),
+        _anomaly_insight(anomalies, coverage, lang),
     ]
     insights = [item for item in insight_candidates if item is not None]
     insights = sorted(insights, key=lambda item: item.rank_score, reverse=True)[:5]
@@ -162,16 +187,17 @@ def investigate_dataset(dataset_id: str) -> InvestigateResponse:
         primary = "revenue" if "revenue" in numeric_columns else numeric_columns[0]
         key_stats["avg_primary_metric"] = float(df[primary].mean())
 
-    suggestions = build_investigation_suggestions(df)
+    suggestions = build_investigation_suggestions(df, lang)
     narration = narrate_investigation(
         {
             "dataset_id": dataset_id,
             "insights": [item.model_dump() for item in insights],
             "anomalies": anomalies,
             "key_stats": key_stats,
+            "language": lang,
         }
     )
-    actions = recommend_actions({"insights": [item.model_dump() for item in insights]})
+    actions = recommend_actions({"insights": [item.model_dump() for item in insights]}, lang=lang)
 
     return InvestigateResponse(
         dataset_id=dataset_id,
@@ -179,7 +205,7 @@ def investigate_dataset(dataset_id: str) -> InvestigateResponse:
         investigation_suggestions=suggestions,
         anomalies=anomalies,
         key_stats=key_stats,
-        chart_specs=build_chart_specs(df),
+        chart_specs=build_chart_specs(df, lang),
         executive_brief=narration["executive_brief"],
         opportunity_areas=narration["opportunity_areas"],
         anomaly_narrative=narration["anomaly_narrative"],

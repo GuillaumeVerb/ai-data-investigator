@@ -106,7 +106,7 @@ def upload_named_sample(sample_name: str) -> UploadResponse:
 @app.post("/profile", response_model=ProfileResponse)
 def profile_dataset(request: ProfileRequest) -> ProfileResponse:
     try:
-        return build_profile(request.dataset_id)
+        return build_profile(request.dataset_id, request.language)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -114,7 +114,7 @@ def profile_dataset(request: ProfileRequest) -> ProfileResponse:
 @app.post("/investigate", response_model=InvestigateResponse)
 def investigate(request: InvestigateRequest) -> InvestigateResponse:
     try:
-        return investigate_dataset(request.dataset_id)
+        return investigate_dataset(request.dataset_id, request.language)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -122,7 +122,7 @@ def investigate(request: InvestigateRequest) -> InvestigateResponse:
 @app.post("/investigate-path", response_model=InvestigationPathResponse)
 def investigate_single_path(request: InvestigationPathRequest) -> InvestigationPathResponse:
     try:
-        return investigate_path(request.dataset_id, request.suggestion_id, request.payload)
+        return investigate_path(request.dataset_id, request.suggestion_id, request.payload, request.language)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -130,7 +130,7 @@ def investigate_single_path(request: InvestigationPathRequest) -> InvestigationP
 @app.post("/root-cause", response_model=RootCauseResponse)
 def root_cause(request: RootCauseRequest) -> RootCauseResponse:
     try:
-        return explain_root_cause(request.dataset_id, request.metric, request.focus, request.model_id)
+        return explain_root_cause(request.dataset_id, request.metric, request.focus, request.model_id, request.language)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
     except ValueError as exc:
@@ -140,7 +140,7 @@ def root_cause(request: RootCauseRequest) -> RootCauseResponse:
 @app.post("/enrichment-suggestions", response_model=EnrichmentResponse)
 def enrichment_suggestions(request: EnrichmentRequest) -> EnrichmentResponse:
     try:
-        return suggest_enrichment(request.dataset_id)
+        return suggest_enrichment(request.dataset_id, request.language)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -207,6 +207,7 @@ def actions(request: ActionRequest) -> ActionResponse:
             investigation=request.investigation.model_dump(),
             training=request.training.model_dump() if request.training else None,
             simulation=request.simulation.model_dump() if request.simulation else None,
+            lang=request.language,
         ),
     )
 

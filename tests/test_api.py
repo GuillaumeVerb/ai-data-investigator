@@ -26,6 +26,21 @@ def test_profile_investigation_and_enrichment_flow() -> None:
     assert enrichment["suggestions"][0]["likely_join_key"]
 
 
+def test_french_localization_flow() -> None:
+    dataset = client.post("/upload/sample").json()
+
+    profile = client.post("/profile", json={"dataset_id": dataset["dataset_id"], "language": "fr"}).json()
+    assert "lignes" in profile["headline_findings"][0].lower()
+
+    investigation = client.post("/investigate", json={"dataset_id": dataset["dataset_id"], "language": "fr"}).json()
+    assert investigation["executive_brief"]
+    assert any("revenu" in item["title"].lower() or "anomal" in item["title"].lower() or "region" in item["title"].lower() for item in investigation["investigation_suggestions"])
+
+    enrichment = client.post("/enrichment-suggestions", json={"dataset_id": dataset["dataset_id"], "language": "fr"}).json()
+    assert enrichment["suggestions"]
+    assert any("donnees" in item["dataset_name"].lower() or "prix" in item["dataset_name"].lower() or "campagnes" in item["dataset_name"].lower() for item in enrichment["suggestions"])
+
+
 def test_copilot_session_context_and_report_export_flow() -> None:
     dataset = client.post("/upload/sample").json()
     session_id = "test-session-copilot"

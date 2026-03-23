@@ -72,28 +72,29 @@ def _pick_target(dataset_id: str, explicit_target: Optional[str]) -> str:
     return numeric[0]
 
 
-def _build_plan(intent: str) -> List[CopilotPlanStep]:
+def _build_plan(intent: str, language: str = "en") -> List[CopilotPlanStep]:
+    lang = "fr" if language == "fr" else "en"
     plans = {
         "diagnosis": [
-            CopilotPlanStep(step="1", purpose="Detect the business question type and retrieve the strongest signals", tool_name="intent_router"),
-            CopilotPlanStep(step="2", purpose="Run investigation and anomaly review on the current dataset", tool_name="investigate"),
-            CopilotPlanStep(step="3", purpose="Recommend the next best analysis path and business actions", tool_name="actions"),
+            CopilotPlanStep(step="1", purpose="Detect the business question type and retrieve the strongest signals" if lang == "en" else "Detecter le type de question business et recuperer les signaux les plus forts", tool_name="intent_router"),
+            CopilotPlanStep(step="2", purpose="Run investigation and anomaly review on the current dataset" if lang == "en" else "Lancer l'investigation et la revue d'anomalies sur le dataset courant", tool_name="investigate"),
+            CopilotPlanStep(step="3", purpose="Recommend the next best analysis path and business actions" if lang == "en" else "Recommander la meilleure analyse suivante et des actions business", tool_name="actions"),
         ],
         "root_cause": [
-            CopilotPlanStep(step="1", purpose="Frame the KPI drop or shift as a non-causal root-cause question", tool_name="intent_router"),
-            CopilotPlanStep(step="2", purpose="Quantify likely drivers, interactions, and supporting evidence", tool_name="root_cause"),
-            CopilotPlanStep(step="3", purpose="Translate the strongest patterns into recommended next moves", tool_name="actions"),
+            CopilotPlanStep(step="1", purpose="Frame the KPI drop or shift as a non-causal root-cause question" if lang == "en" else "Formuler la baisse ou variation du KPI comme une question de cause racine non causale", tool_name="intent_router"),
+            CopilotPlanStep(step="2", purpose="Quantify likely drivers, interactions, and supporting evidence" if lang == "en" else "Quantifier les leviers probables, interactions et preuves associées", tool_name="root_cause"),
+            CopilotPlanStep(step="3", purpose="Translate the strongest patterns into recommended next moves" if lang == "en" else "Traduire les motifs les plus forts en prochaines actions recommandees", tool_name="actions"),
         ],
         "prediction": [
-            CopilotPlanStep(step="1", purpose="Select the most relevant prediction target and model path", tool_name="intent_router"),
-            CopilotPlanStep(step="2", purpose="Train or reuse a predictive model and review top drivers", tool_name="train"),
-            CopilotPlanStep(step="3", purpose="Summarize reliability, trade-offs, and decision implications", tool_name="actions"),
+            CopilotPlanStep(step="1", purpose="Select the most relevant prediction target and model path" if lang == "en" else "Selectionner la cible de prediction et le chemin de modele le plus pertinent", tool_name="intent_router"),
+            CopilotPlanStep(step="2", purpose="Train or reuse a predictive model and review top drivers" if lang == "en" else "Entrainer ou reutiliser un modele predictif et examiner les principaux leviers", tool_name="train"),
+            CopilotPlanStep(step="3", purpose="Summarize reliability, trade-offs, and decision implications" if lang == "en" else "Resumer la fiabilite, les arbitrages et les implications pour la decision", tool_name="actions"),
         ],
         "simulation": [
-            CopilotPlanStep(step="1", purpose="Translate the business decision into a modeled scenario", tool_name="intent_router"),
-            CopilotPlanStep(step="2", purpose="Train or reuse the predictive model needed for simulation", tool_name="train"),
-            CopilotPlanStep(step="3", purpose="Compare baseline against the proposed scenario", tool_name="simulate"),
-            CopilotPlanStep(step="4", purpose="Recommend actions with guardrails and trade-offs", tool_name="actions"),
+            CopilotPlanStep(step="1", purpose="Translate the business decision into a modeled scenario" if lang == "en" else "Traduire la decision business en scenario modele", tool_name="intent_router"),
+            CopilotPlanStep(step="2", purpose="Train or reuse the predictive model needed for simulation" if lang == "en" else "Entrainer ou reutiliser le modele predictif necessaire a la simulation", tool_name="train"),
+            CopilotPlanStep(step="3", purpose="Compare baseline against the proposed scenario" if lang == "en" else "Comparer la reference au scenario propose", tool_name="simulate"),
+            CopilotPlanStep(step="4", purpose="Recommend actions with guardrails and trade-offs" if lang == "en" else "Recommander des actions avec garde-fous et arbitrages", tool_name="actions"),
         ],
         "prioritization": [
             CopilotPlanStep(step="1", purpose="Identify the prioritization question and the strongest candidate segments", tool_name="intent_router"),
@@ -126,18 +127,19 @@ def _build_plan(intent: str) -> List[CopilotPlanStep]:
     return plans[intent]
 
 
-def _follow_ups(intent: str) -> List[str]:
+def _follow_ups(intent: str, language: str = "en") -> List[str]:
+    lang = "fr" if language == "fr" else "en"
     mapping = {
-        "diagnosis": ["Why?", "Show me evidence", "What should we investigate next?"],
-        "root_cause": ["Show me evidence", "Simulate another pricing option", "What should we investigate next?"],
-        "prediction": ["Show me evidence", "Run a scenario", "What additional data would improve this analysis?"],
-        "simulation": ["Simulate another pricing option", "Show me evidence", "What should we investigate next?"],
-        "prioritization": ["Which segment should we prioritize?", "Run a scenario", "What additional data would improve this analysis?"],
-        "segment_analysis": ["Which segment should we prioritize?", "Show me evidence", "Run a scenario"],
-        "anomaly_investigation": ["Show me evidence", "What should we investigate next?", "What additional data would improve this analysis?"],
-        "data_gap": ["How should we merge that data?", "Run the analysis again", "What should we investigate next?"],
-        "enrichment": ["How should we merge that data?", "What should we investigate next?", "Run the analysis again"],
-        "merge": ["Which join keys should we trust?", "Run diagnosis after merge", "What additional data would improve this analysis?"],
+        "diagnosis": ["Why?", "Show me evidence", "What should we investigate next?"] if lang == "en" else ["Pourquoi ?", "Montre-moi les preuves", "Que faut-il investiguer ensuite ?"],
+        "root_cause": ["Show me evidence", "Simulate another pricing option", "What should we investigate next?"] if lang == "en" else ["Montre-moi les preuves", "Simule une autre option de prix", "Que faut-il investiguer ensuite ?"],
+        "prediction": ["Show me evidence", "Run a scenario", "What additional data would improve this analysis?"] if lang == "en" else ["Montre-moi les preuves", "Lance un scenario", "Quelles donnees supplementaires amelioreraient cette analyse ?"],
+        "simulation": ["Simulate another pricing option", "Show me evidence", "What should we investigate next?"] if lang == "en" else ["Simule une autre option de prix", "Montre-moi les preuves", "Que faut-il investiguer ensuite ?"],
+        "prioritization": ["Which segment should we prioritize?", "Run a scenario", "What additional data would improve this analysis?"] if lang == "en" else ["Quel segment faut-il prioriser ?", "Lance un scenario", "Quelles donnees supplementaires amelioreraient cette analyse ?"],
+        "segment_analysis": ["Which segment should we prioritize?", "Show me evidence", "Run a scenario"] if lang == "en" else ["Quel segment faut-il prioriser ?", "Montre-moi les preuves", "Lance un scenario"],
+        "anomaly_investigation": ["Show me evidence", "What should we investigate next?", "What additional data would improve this analysis?"] if lang == "en" else ["Montre-moi les preuves", "Que faut-il investiguer ensuite ?", "Quelles donnees supplementaires amelioreraient cette analyse ?"],
+        "data_gap": ["How should we merge that data?", "Run the analysis again", "What should we investigate next?"] if lang == "en" else ["Comment fusionner ces donnees ?", "Relance l'analyse", "Que faut-il investiguer ensuite ?"],
+        "enrichment": ["How should we merge that data?", "What should we investigate next?", "Run the analysis again"] if lang == "en" else ["Comment fusionner ces donnees ?", "Que faut-il investiguer ensuite ?", "Relance l'analyse"],
+        "merge": ["Which join keys should we trust?", "Run diagnosis after merge", "What additional data would improve this analysis?"] if lang == "en" else ["Quelles cles de jointure faut-il privilegier ?", "Lancer le diagnostic apres fusion", "Quelles donnees supplementaires amelioreraient cette analyse ?"],
     }
     return mapping[intent]
 
@@ -158,8 +160,8 @@ def _build_scenario_changes(reference_row: Dict[str, Any], question: str) -> Dic
     return changes
 
 
-def _build_missing_data_recommendations(dataset_id: str) -> List[MissingDataRecommendation]:
-    enrichment = suggest_enrichment(dataset_id)
+def _build_missing_data_recommendations(dataset_id: str, language: str = "en") -> List[MissingDataRecommendation]:
+    enrichment = suggest_enrichment(dataset_id, language)
     recommendations: List[MissingDataRecommendation] = []
     for item in enrichment.suggestions[:4]:
         recommendations.append(
@@ -167,7 +169,11 @@ def _build_missing_data_recommendations(dataset_id: str) -> List[MissingDataReco
                 dataset_name=item.dataset_name,
                 why_it_matters=item.why_it_matters,
                 what_it_improves=item.business_question_helped,
-                merge_hint=f"{item.integration_hint} Likely join key: {item.likely_join_key}",
+                merge_hint=(
+                    f"{item.integration_hint} Likely join key: {item.likely_join_key}"
+                    if language == "en"
+                    else f"{item.integration_hint} Cle de jointure probable : {item.likely_join_key}"
+                ),
             )
         )
     return recommendations
@@ -208,7 +214,7 @@ def answer_business_question(
     session = store.get_or_create_session(session_id, dataset_id)
     resolved_question = _resolve_follow_up_question(question, session)
     intent = _detect_intent(resolved_question)
-    plan = _build_plan(intent)
+    plan = _build_plan(intent, language)
     tools_used: List[CopilotToolCall] = []
     supporting_evidence: List[str] = []
     key_drivers: List[str] = []
@@ -219,19 +225,23 @@ def answer_business_question(
     suggested_next_investigation: List[str] = []
     data_coverage_pct: Optional[float] = None
     model_reliability: Optional[str] = None
-    guardrail = "This analysis is based on statistical patterns and model behavior, not causal inference."
+    guardrail = (
+        "This analysis is based on statistical patterns and model behavior, not causal inference."
+        if language == "en"
+        else "Cette analyse repose sur des tendances statistiques et sur le comportement du modele, pas sur une inference causale."
+    )
 
     resolved_model_id = model_id or session.active_model_id
-    missing_useful_data = _build_missing_data_recommendations(dataset_id)
+    missing_useful_data = _build_missing_data_recommendations(dataset_id, language)
 
     investigation = None
     training = None
     simulation = None
 
     if intent in {"diagnosis", "prioritization", "segment_analysis", "anomaly_investigation"}:
-        investigation = investigate_dataset(dataset_id)
+        investigation = investigate_dataset(dataset_id, language)
         tools_used.append(
-            CopilotToolCall(tool_name="investigate", status="completed", output_summary="Ranked insights, anomalies, and investigation suggestions were generated.")
+            CopilotToolCall(tool_name="investigate", status="completed", output_summary="Ranked insights, anomalies, and investigation suggestions were generated." if language == "en" else "Des insights classes, anomalies et suggestions d'investigation ont ete generes.")
         )
         key_drivers.extend([item.title for item in investigation.insights[:3]])
         supporting_evidence.extend([item.description for item in investigation.insights[:3]])
@@ -240,15 +250,18 @@ def answer_business_question(
 
     if intent == "root_cause":
         metric = target or "revenue"
-        root_cause = explain_root_cause(dataset_id, metric)
+        root_cause = explain_root_cause(dataset_id, metric, language=language)
         tools_used.append(
-            CopilotToolCall(tool_name="root_cause", status="completed", output_summary=f"Root-cause analysis completed for {metric}.")
+            CopilotToolCall(tool_name="root_cause", status="completed", output_summary=(f"Root-cause analysis completed for {metric}." if language == "en" else f"Analyse de cause racine terminee pour {metric}."))
         )
         short_answer = root_cause.explanation
         key_drivers.extend([driver.driver for driver in root_cause.main_drivers[:3]])
         supporting_evidence.extend(root_cause.evidence[:4])
-        recommended_actions = [f"Investigate {driver.driver} more deeply before acting broadly." for driver in root_cause.main_drivers[:3]]
-        suggested_next_investigation = ["Compare recent vs historical periods", "Review segment-level variance", "Run a directional scenario"]
+        recommended_actions = [
+            (f"Investigate {driver.driver} more deeply before acting broadly." if language == "en" else f"Investiguer {driver.driver} plus en profondeur avant d'agir a large echelle.")
+            for driver in root_cause.main_drivers[:3]
+        ]
+        suggested_next_investigation = ["Compare recent vs historical periods", "Review segment-level variance", "Run a directional scenario"] if language == "en" else ["Comparer la periode recente a l'historique", "Examiner la variance par segment", "Lancer un scenario directionnel"]
 
     if intent in {"prediction", "simulation", "prioritization"}:
         if resolved_model_id:
@@ -258,22 +271,30 @@ def answer_business_question(
             selected_target = _pick_target(dataset_id, target)
         training = train_model(dataset_id, selected_target)
         tools_used.append(
-            CopilotToolCall(tool_name="train", status="completed", output_summary=f"Predictive model prepared for {training.target}.")
+            CopilotToolCall(tool_name="train", status="completed", output_summary=(f"Predictive model prepared for {training.target}." if language == "en" else f"Modele predictif prepare pour {training.target}."))
         )
         key_drivers.extend(training.top_drivers[:3])
         supporting_evidence.append(
-            f"Model {training.model_name} trained with {training.primary_metric_name}={training.primary_metric_value} and {training.data_coverage_pct}% data coverage."
+            (
+                f"Model {training.model_name} trained with {training.primary_metric_name}={training.primary_metric_value} and {training.data_coverage_pct}% data coverage."
+                if language == "en"
+                else f"Le modele {training.model_name} a ete entraine avec {training.primary_metric_name}={training.primary_metric_value} et {training.data_coverage_pct}% de couverture de donnees."
+            )
         )
         confidence_level = training.confidence_level
         data_coverage_pct = training.data_coverage_pct
-        model_reliability = f"{training.model_name} with {training.primary_metric_name}={training.primary_metric_value}"
+        model_reliability = (
+            f"{training.model_name} with {training.primary_metric_name}={training.primary_metric_value}"
+            if language == "en"
+            else f"{training.model_name} avec {training.primary_metric_name}={training.primary_metric_value}"
+        )
 
     if intent in {"simulation", "prioritization"} and training:
         changes = _build_scenario_changes(training.reference_row, resolved_question)
         if changes:
             simulation = simulate_scenario(dataset_id, training.model_id, changes)
             tools_used.append(
-                CopilotToolCall(tool_name="simulate", status="completed", output_summary="Baseline versus alternative scenario comparison executed.")
+                CopilotToolCall(tool_name="simulate", status="completed", output_summary="Baseline versus alternative scenario comparison executed." if language == "en" else "Comparaison entre reference et scenario alternatif executee.")
             )
             simulation_result = simulation.impact_summary
             supporting_evidence.append(simulation.impact_summary)
@@ -282,7 +303,7 @@ def answer_business_question(
 
     if intent in {"data_gap", "enrichment"}:
         tools_used.append(
-            CopilotToolCall(tool_name="enrichment", status="completed", output_summary="Missing useful datasets and merge hints were generated.")
+            CopilotToolCall(tool_name="enrichment", status="completed", output_summary="Missing useful datasets and merge hints were generated." if language == "en" else "Des suggestions de donnees utiles manquantes et d'indices de fusion ont ete generees.")
         )
         short_answer = (
             "The current analysis can move forward, but a few additional datasets would make the explanation and recommendations more decision-ready."
@@ -303,7 +324,7 @@ def answer_business_question(
 
     if intent == "merge":
         tools_used.append(
-            CopilotToolCall(tool_name="datasets", status="completed", output_summary="Available datasets were reviewed for merge planning.")
+            CopilotToolCall(tool_name="datasets", status="completed", output_summary="Available datasets were reviewed for merge planning." if language == "en" else "Les datasets disponibles ont ete examines pour preparer une fusion.")
         )
         dataset_labels = [item.filename for item in store.list_datasets()[:3]]
         short_answer = (
@@ -313,7 +334,7 @@ def answer_business_question(
         )
         key_drivers.extend(dataset_labels)
         supporting_evidence.append(f"{len(store.list_datasets())} datasets are currently loaded in this session.")
-        recommended_actions = ["Open merge preview", "Validate overlap quality", "Re-run the investigation after merging"] if language == "en" else ["Ouvrir l'aperçu de fusion", "Valider la qualite du recouvrement", "Relancer l'investigation apres fusion"]
+        recommended_actions = ["Open merge preview", "Validate overlap quality", "Re-run the investigation after merging"] if language == "en" else ["Ouvrir l'apercu de fusion", "Valider la qualite du recouvrement", "Relancer l'investigation apres fusion"]
         suggested_next_investigation = ["Inspect shared keys", "Validate overlap quality", "Re-run insights after merge"] if language == "en" else ["Inspecter les cles partagees", "Valider la qualite du recouvrement", "Relancer les insights apres fusion"]
 
     if intent in {"diagnosis", "prioritization", "segment_analysis", "anomaly_investigation"}:
@@ -321,13 +342,14 @@ def answer_business_question(
             {"insights": [item.model_dump() for item in investigation.insights] if investigation else []},
             training.model_dump() if training else None,
             simulation.model_dump() if simulation else None,
+            language,
         )
         tools_used.append(
-            CopilotToolCall(tool_name="actions", status="completed", output_summary="Business recommendations were generated from the strongest signals.")
+            CopilotToolCall(tool_name="actions", status="completed", output_summary="Business recommendations were generated from the strongest signals." if language == "en" else "Des recommandations business ont ete generees a partir des signaux les plus forts.")
         )
         recommended_actions = [item.title for item in actions[:3]]
         if intent == "diagnosis":
-            short_answer = investigation.executive_brief if investigation else "The copilot found a small set of ranked signals worth investigating next."
+            short_answer = investigation.executive_brief if investigation else ("The copilot found a small set of ranked signals worth investigating next." if language == "en" else "Le copilote a trouve un petit ensemble de signaux classes qui meritent une investigation.")
         elif intent == "segment_analysis":
             short_answer = (
                 "The strongest evidence suggests concentrating attention on the segments with higher modeled upside and more resilient performance."
@@ -341,34 +363,62 @@ def answer_business_question(
                 else "Un petit ensemble d'observations inhabituelles semble contribuer de maniere disproportionnee a la performance actuelle."
             )
         else:
-            short_answer = "The strongest current evidence suggests prioritizing the segments and levers that already show stronger modeled performance and lower downside risk."
+            short_answer = (
+                "The strongest current evidence suggests prioritizing the segments and levers that already show stronger modeled performance and lower downside risk."
+                if language == "en"
+                else "Les preuves actuelles les plus fortes suggerent de prioriser les segments et leviers qui montrent deja une meilleure performance modelisee et un risque baissier plus faible."
+            )
             if simulation_result:
-                short_answer += f" The scenario view indicates: {simulation_result}"
+                short_answer += f" {'The scenario view indicates' if language == 'en' else 'La vue scenario indique'}: {simulation_result}"
 
     if intent == "prediction" and training:
-        recommended_actions = [
-            "Validate the top modeled driver with business stakeholders.",
-            "Run a scenario before broad rollout.",
-            "Use the model to prioritize the next business review.",
-        ]
-        short_answer = f"The predictive model suggests that {training.target} is mainly associated with {', '.join(training.top_drivers[:3])}."
-        suggested_next_investigation = ["Explain top features", "Run a scenario", "Check data gaps"]
+        recommended_actions = (
+            [
+                "Validate the top modeled driver with business stakeholders.",
+                "Run a scenario before broad rollout.",
+                "Use the model to prioritize the next business review.",
+            ]
+            if language == "en"
+            else [
+                "Valider le principal levier modele avec les equipes business.",
+                "Lancer un scenario avant tout deploiement large.",
+                "Utiliser le modele pour prioriser la prochaine revue business.",
+            ]
+        )
+        short_answer = (
+            f"The predictive model suggests that {training.target} is mainly associated with {', '.join(training.top_drivers[:3])}."
+            if language == "en"
+            else f"Le modele predictif suggere que {training.target} est principalement associe a {', '.join(training.top_drivers[:3])}."
+        )
+        suggested_next_investigation = ["Explain top features", "Run a scenario", "Check data gaps"] if language == "en" else ["Expliquer les principales variables", "Lancer un scenario", "Verifier les donnees manquantes"]
 
     if intent == "simulation" and simulation:
-        recommended_actions = [
-            "Test the strongest scenario in a controlled business environment.",
-            "Review the most sensitive model drivers before rollout.",
-            "Monitor segment-specific response after any change.",
-        ]
-        short_answer = f"The modeled scenario indicates: {simulation.impact_summary}"
-        suggested_next_investigation = ["Try another pricing option", "Inspect root cause", "Review segment sensitivity"]
+        recommended_actions = (
+            [
+                "Test the strongest scenario in a controlled business environment.",
+                "Review the most sensitive model drivers before rollout.",
+                "Monitor segment-specific response after any change.",
+            ]
+            if language == "en"
+            else [
+                "Tester le scenario le plus fort dans un environnement business controle.",
+                "Examiner les leviers du modele les plus sensibles avant de deployer.",
+                "Suivre la reponse par segment apres tout changement.",
+            ]
+        )
+        short_answer = f"{'The modeled scenario indicates' if language == 'en' else 'Le scenario modele indique'}: {simulation.impact_summary}"
+        suggested_next_investigation = ["Try another pricing option", "Inspect root cause", "Review segment sensitivity"] if language == "en" else ["Tester une autre option de prix", "Examiner la cause racine", "Revoir la sensibilite par segment"]
 
     if not key_drivers and investigation:
         key_drivers = [item.title for item in investigation.insights[:3]]
     if not supporting_evidence and investigation:
         supporting_evidence = [item.description for item in investigation.insights[:3]]
     if not short_answer:
-        short_answer = "The copilot reviewed the available evidence and recommends focusing next on the strongest ranked signals."
+        short_answer = (
+            "The copilot reviewed the available evidence and recommends focusing next on the strongest ranked signals."
+            if language == "en"
+            else "Le copilote a examine les preuves disponibles et recommande de se concentrer ensuite sur les signaux les mieux classes."
+        )
 
     copilot_narrative = narrate_copilot_answer(
         {
@@ -440,6 +490,6 @@ def answer_business_question(
         suggested_next_investigation=suggested_next_investigation[:5],
         missing_useful_data=missing_useful_data[:4],
         guardrail=guardrail,
-        follow_up_questions=_follow_ups(intent),
+        follow_up_questions=_follow_ups(intent, language),
     )
     return response, session_state

@@ -214,6 +214,10 @@ def confidence_label(level: str, lang: str) -> str:
     return level
 
 
+def priority_label(level: str, lang: str) -> str:
+    return confidence_label(level, lang)
+
+
 def detect_business_levers(profile: dict, lang: str) -> list[str]:
     columns = [column.lower() for column in profile["columns"]]
     levers: list[str] = []
@@ -291,14 +295,15 @@ def ensure_actions(dataset_id: str) -> dict:
                 "investigation": st.session_state.investigation,
                 "training": st.session_state.get("training"),
                 "simulation": st.session_state.get("simulation"),
+                "language": st.session_state.lang,
             },
         )
     return st.session_state.actions
 
 
 def load_dataset_context(dataset_id: str) -> tuple[dict, dict]:
-    profile = st.session_state.get("profile") or api_post("/profile", json={"dataset_id": dataset_id})
-    investigation = st.session_state.get("investigation") or api_post("/investigate", json={"dataset_id": dataset_id})
+    profile = st.session_state.get("profile") or api_post("/profile", json={"dataset_id": dataset_id, "language": st.session_state.lang})
+    investigation = st.session_state.get("investigation") or api_post("/investigate", json={"dataset_id": dataset_id, "language": st.session_state.lang})
     st.session_state.profile = profile
     st.session_state.investigation = investigation
     return profile, investigation
@@ -348,12 +353,16 @@ top_left, top_right = st.columns([1.0, 1.0], vertical_alignment="center")
 with top_left:
     uploaded_file = st.file_uploader(t("app.upload_csv", st.session_state.lang), type=["csv"])
 with top_right:
+    previous_lang = st.session_state.lang
     st.session_state.lang = st.selectbox(
         t("decision_engine.language", st.session_state.lang),
         options=["fr", "en"],
         index=0 if st.session_state.lang == "fr" else 1,
         format_func=lambda value: value.upper(),
     )
+    if st.session_state.lang != previous_lang:
+        for key in ["profile", "investigation", "focused_analysis", "root_cause", "enrichment", "summary", "decision_engine", "decision_engine_meta", "decision_engine_meta_signature", "copilot_answer"]:
+            st.session_state.pop(key, None)
     st.write(t("app.sample_hint", st.session_state.lang))
     demo_cols = st.columns(3)
     if demo_cols[0].button(t("app.load_sales_demo", st.session_state.lang), use_container_width=True):
@@ -502,6 +511,38 @@ with tabs[0]:
                 else "1. Charger le dataset exemple<br>2. Montrer l'extrait de donnees<br>3. Lire les suggestions d'investigation<br>4. Entrainer le moteur de prediction<br>5. Comparer les scenarios dans le moteur de decision<br>6. Interroger le copilote et ouvrir le pack de preuves"
             ),
         )
+    pricing_left, pricing_right = st.columns([1.1, 0.9], vertical_alignment="top")
+    with pricing_left:
+        render_card(
+            t("landing.offer", lang),
+            (
+                "<strong>Starter</strong>: diagnostics, insights, and guided investigation suggestions<br><br>"
+                "<strong>Pro</strong>: prediction, scenario simulation, bilingual decision cockpit, and evidence pack<br><br>"
+                "<strong>Advisory</strong>: premium onboarding, demo datasets, decision workflows, and executive reporting"
+                if lang == "en"
+                else "<strong>Starter</strong> : diagnostics, insights et suggestions d'investigation guidees<br><br>"
+                "<strong>Pro</strong> : prediction, simulation de scenarios, cockpit de decision bilingue et pack de preuves<br><br>"
+                "<strong>Advisory</strong> : onboarding premium, datasets de demo, workflows de decision et reporting executif"
+            ),
+        )
+    with pricing_right:
+        render_card(
+            t("landing.pricing", lang),
+            (
+                "<strong>Starter</strong>: 79 EUR / month<br><strong>Pro</strong>: 249 EUR / month<br><strong>Advisory</strong>: custom pricing + onboarding"
+                if lang == "en"
+                else "<strong>Starter</strong> : 79 EUR / mois<br><strong>Pro</strong> : 249 EUR / mois<br><strong>Advisory</strong> : tarification sur mesure + onboarding"
+            ),
+        )
+    cta_cols = st.columns(3)
+    if cta_cols[0].button(t("landing.cta_sales", lang), use_container_width=True):
+        load_named_sample("sales")
+        run_guided_demo(st.session_state.dataset["dataset_id"])
+    if cta_cols[1].button(t("landing.cta_marketing", lang), use_container_width=True):
+        load_named_sample("marketing")
+    if cta_cols[2].button(t("landing.cta_question", lang), use_container_width=True):
+        example_question = "Should we increase price?" if lang == "en" else "Faut-il augmenter le prix ?"
+        run_global_copilot_query(dataset_id, example_question, "revenue")
 
 with tabs[1]:
     cols = st.columns([0.95, 1.05], vertical_alignment="top")
@@ -532,7 +573,7 @@ with tabs[1]:
             use_container_width=True,
             hide_index=True,
         )
-    profile_quality_card = build_data_quality_chart(profile)
+    profile_quality_card = build_data_quality_chart(profile, st.session_state.lang)
     render_insight_panel(
         profile_quality_card["title"],
         profile_quality_card["insight"],
@@ -558,7 +599,7 @@ with tabs[2]:
                 payload["investigation_type"] = suggestion["investigation_type"]
                 st.session_state.focused_analysis = api_post(
                     "/investigate-path",
-                    json={"dataset_id": dataset_id, "suggestion_id": suggestion["suggestion_id"], "payload": payload},
+                    json={"dataset_id": dataset_id, "suggestion_id": suggestion["suggestion_id"], "payload": payload, "language": st.session_state.lang},
                 )
     focused = st.session_state.get("focused_analysis")
     if focused:
@@ -816,7 +857,7 @@ with tabs[4]:
             with summary_cols[0]:
                 render_card(t("decision_engine.recommended", lang), humanize_decision_choice(decision["recommended_decision"], lang))
                 render_card(t("decision_engine.main_risk", lang), decision["main_risk"])
-                render_card(t("decision_engine.robustness", lang), decision["robustness"])
+                render_card(t("decision_engine.robustness", lang), confidence_label(decision["robustness"], lang))
                 render_card(t("decision_engine.guardrails", lang), "<br>".join(f"- {item}" for item in decision["guardrails"]))
                 render_card(t("decision_engine.next_analysis", lang), decision["next_best_analysis"])
             with summary_cols[1]:
@@ -852,7 +893,7 @@ with tabs[4]:
             for action in decision["recommended_actions"]:
                 render_card(
                     action["title"],
-                    f"{action['rationale']}<br><br><strong>{t('decision_engine.expected_effect', lang)}:</strong> {action['expected_effect']}<br><strong>{t('decision_engine.priority', lang)}:</strong> {action['priority']}",
+                    f"{action['rationale']}<br><br><strong>{t('decision_engine.expected_effect', lang)}:</strong> {action['expected_effect']}<br><strong>{t('decision_engine.priority', lang)}:</strong> {priority_label(action['priority'], lang)}",
                 )
 
             with st.expander(t("decision_engine.evidence_pack", lang), expanded=False):
@@ -865,7 +906,7 @@ with tabs[4]:
 with tabs[5]:
     root_metric = st.selectbox(t("root_cause.metric", st.session_state.lang), [col for col in profile["columns"] if col in profile["numeric_columns"]] or profile["columns"])
     if st.button(t("root_cause.button", st.session_state.lang), type="primary"):
-        st.session_state.root_cause = api_post("/root-cause", json={"dataset_id": dataset_id, "metric": root_metric})
+        st.session_state.root_cause = api_post("/root-cause", json={"dataset_id": dataset_id, "metric": root_metric, "language": st.session_state.lang})
     root_cause = st.session_state.get("root_cause")
     if root_cause:
         lead_driver = root_cause["main_drivers"][0]["driver"] if root_cause["main_drivers"] else root_cause["metric"]
@@ -889,7 +930,7 @@ with tabs[5]:
 
 with tabs[6]:
     if st.button(t("enrichment.button", st.session_state.lang), type="primary"):
-        st.session_state.enrichment = api_post("/enrichment-suggestions", json={"dataset_id": dataset_id})
+        st.session_state.enrichment = api_post("/enrichment-suggestions", json={"dataset_id": dataset_id, "language": st.session_state.lang})
     enrichment = st.session_state.get("enrichment")
     if enrichment:
         for item in enrichment["suggestions"]:
@@ -1012,6 +1053,7 @@ with tabs[9]:
             "/summary",
             json={
                 "dataset_id": dataset_id,
+                "language": st.session_state.lang,
                 "profile": st.session_state.profile,
                 "investigation": st.session_state.investigation,
                 "training": st.session_state.get("training"),
@@ -1053,6 +1095,6 @@ with tabs[9]:
         )
     st.markdown(f"### {t('summary.recommended_actions', st.session_state.lang)}")
     for item in actions["recommended_actions"]:
-        render_card(f"{item['title']} [{item['priority']}]", f"{item['rationale']}<br><br><strong>{t('decision_engine.expected_effect', st.session_state.lang)}:</strong> {item['expected_effect']}")
+        render_card(f"{item['title']} [{priority_label(item['priority'], st.session_state.lang)}]", f"{item['rationale']}<br><br><strong>{t('decision_engine.expected_effect', st.session_state.lang)}:</strong> {item['expected_effect']}")
 
 st.caption(t("footer.disclaimer", st.session_state.lang))
