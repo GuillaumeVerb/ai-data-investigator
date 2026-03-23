@@ -363,15 +363,19 @@ with top_right:
     if st.session_state.lang != previous_lang:
         for key in ["profile", "investigation", "focused_analysis", "root_cause", "enrichment", "summary", "decision_engine", "decision_engine_meta", "decision_engine_meta_signature", "copilot_answer"]:
             st.session_state.pop(key, None)
+        st.rerun()
     st.write(t("app.sample_hint", st.session_state.lang))
     demo_cols = st.columns(3)
     if demo_cols[0].button(t("app.load_sales_demo", st.session_state.lang), use_container_width=True):
         load_named_sample("sales")
         run_guided_demo(st.session_state.dataset["dataset_id"])
+        st.rerun()
     if demo_cols[1].button(t("app.load_marketing_demo", st.session_state.lang), use_container_width=True):
         load_named_sample("marketing")
+        st.rerun()
     if demo_cols[2].button(t("app.reload_sample", st.session_state.lang), use_container_width=True):
         load_named_sample("sales")
+        st.rerun()
 
 global_question_cols = st.columns([1.8, 0.7, 0.5], vertical_alignment="bottom")
 with global_question_cols[0]:
@@ -393,6 +397,7 @@ if uploaded_file is not None and st.session_state.get("uploaded_file_name") != u
     st.session_state.dataset = dataset
     st.session_state.uploaded_file_name = uploaded_file.name
     register_dataset(dataset)
+    st.rerun()
 
 dataset = st.session_state.dataset
 dataset_id = dataset["dataset_id"]
@@ -538,8 +543,10 @@ with tabs[0]:
     if cta_cols[0].button(t("landing.cta_sales", lang), use_container_width=True):
         load_named_sample("sales")
         run_guided_demo(st.session_state.dataset["dataset_id"])
+        st.rerun()
     if cta_cols[1].button(t("landing.cta_marketing", lang), use_container_width=True):
         load_named_sample("marketing")
+        st.rerun()
     if cta_cols[2].button(t("landing.cta_question", lang), use_container_width=True):
         example_question = "Should we increase price?" if lang == "en" else "Faut-il augmenter le prix ?"
         run_global_copilot_query(dataset_id, example_question, "revenue")

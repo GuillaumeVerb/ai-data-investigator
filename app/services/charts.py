@@ -97,7 +97,7 @@ def _format_value(value: float) -> str:
     return f"{value:,.2f}" if abs(value) >= 100 else f"{value:.2f}"
 
 
-def build_data_quality_chart(profile: Dict[str, Any], lang: str = "en") -> dict[str, Any]:
+def build_data_quality_chart(profile: Dict[str, Any], lang: str = "en", *_args: Any, **_kwargs: Any) -> dict[str, Any]:
     missing_pct = profile["missing_pct"]
     ordered = (
         pd.Series(missing_pct)
