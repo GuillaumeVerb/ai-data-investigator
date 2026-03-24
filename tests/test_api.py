@@ -8,6 +8,16 @@ from app.api.main import app
 client = TestClient(app)
 
 
+def test_health_endpoint_exposes_llm_status() -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["llm_enabled"] in {"true", "false"}
+    assert body["llm_provider"] in {"openai", "fallback"}
+    assert body["llm_model"]
+
+
 def test_profile_investigation_and_enrichment_flow() -> None:
     dataset = client.post("/upload/sample").json()
 

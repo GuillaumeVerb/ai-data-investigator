@@ -44,7 +44,7 @@ from app.services.action_engine import recommend_actions
 from app.services.ingestion import load_sample_dataset, load_upload
 from app.services.investigation_agent import investigate_path
 from app.services.insights import investigate_dataset
-from app.services.llm_engine import generate_summary
+from app.services.llm_engine import generate_summary, llm_status
 from app.services.ml_engine import train_model
 from app.services.profiling import build_profile
 from app.services.report_export import export_html_report
@@ -62,7 +62,14 @@ SAMPLE_DATASETS = {
 
 @app.get("/health")
 def healthcheck() -> dict[str, str]:
-    return {"status": "ok"}
+    status = llm_status()
+    return {
+        "status": "ok",
+        "app_name": get_settings().app_name,
+        "llm_enabled": "true" if status["enabled"] else "false",
+        "llm_provider": status["provider"],
+        "llm_model": status["model"] or "fallback",
+    }
 
 
 @app.get("/datasets", response_model=list[DatasetListItem])

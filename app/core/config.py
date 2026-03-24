@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "AI Data Investigator"
     openai_api_key: Optional[str] = None
-    openai_model: str = "gpt-5-mini"
+    openai_model: str = "gpt-4o-mini"
+    auto_start_local_api: bool = True
     anomaly_contamination: float = 0.08
     max_preview_rows: int = 10
     api_base_url: str = "http://127.0.0.1:8000"

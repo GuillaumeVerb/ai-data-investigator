@@ -16,6 +16,16 @@ def _client() -> Optional[OpenAI]:
     return OpenAI(api_key=settings.openai_api_key)
 
 
+def llm_status() -> Dict[str, Any]:
+    settings = get_settings()
+    enabled = bool(settings.openai_api_key)
+    return {
+        "enabled": enabled,
+        "provider": "openai" if enabled else "fallback",
+        "model": settings.openai_model if enabled else None,
+    }
+
+
 def _extract_text(response: Any) -> str:
     return getattr(response, "output_text", "").strip()
 

@@ -72,6 +72,54 @@ uvicorn app.api.main:app --reload
 streamlit run app/ui/streamlit_app.py
 ```
 
+## Real LLM Setup
+
+The copilot can use OpenAI for:
+
+- executive summaries
+- copilot answers
+- business narration for investigation and simulation
+
+Configure:
+
+```bash
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+AUTO_START_LOCAL_API=true
+API_BASE_URL=http://127.0.0.1:8000
+```
+
+If `OPENAI_API_KEY` is missing, the app stays functional and falls back to deterministic narrative templates.
+
+## Streamlit Deployment
+
+For a simple portfolio deployment, use Streamlit and point the app entry file to:
+
+```text
+streamlit_app.py
+```
+
+This repo now includes:
+
+- a root Streamlit entrypoint
+- `.streamlit/config.toml`
+- auto-start of the local FastAPI backend when `API_BASE_URL` targets `127.0.0.1` or `localhost`
+
+Recommended Streamlit secrets or environment variables:
+
+```bash
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+AUTO_START_LOCAL_API=true
+API_BASE_URL=http://127.0.0.1:8000
+```
+
+Recommended deployment path:
+
+1. Deploy the Streamlit app first for demo speed.
+2. Keep `AUTO_START_LOCAL_API=true` for a single-service setup.
+3. Move the API to a separate service later if you need stronger scale, uptime, or enterprise isolation.
+
 ## Key API Endpoints
 
 - `POST /upload`
