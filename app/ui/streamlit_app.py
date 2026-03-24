@@ -641,7 +641,7 @@ def run_guided_demo(dataset_id: str) -> None:
 
 
 ensure_session()
-ensure_local_api_server(API_BASE_URL, SETTINGS.auto_start_local_api)
+ensure_local_api_server(API_BASE_URL, getattr(SETTINGS, "auto_start_local_api", True))
 api_health = _api_healthcheck(API_BASE_URL)
 if not api_health:
     st.error(
@@ -1030,36 +1030,36 @@ with tabs[0]:
         )
         render_card(t("app.guardrail", lang), t("app.guardrail_body", lang))
 
-    with st.expander("Portfolio and demo mode" if lang == "en" else "Mode portfolio et demo", expanded=False):
-        cta_cols = st.columns(3)
-        if cta_cols[0].button(t("landing.cta_sales", lang), use_container_width=True):
-            load_named_sample("sales")
-            run_guided_demo(st.session_state.dataset["dataset_id"])
-            st.rerun()
-        if cta_cols[1].button(t("landing.cta_marketing", lang), use_container_width=True):
-            load_named_sample("marketing")
-            st.rerun()
-        if cta_cols[2].button(t("landing.cta_question", lang), use_container_width=True):
-            example_question = "Should we increase price?" if lang == "en" else "Faut-il augmenter le prix ?"
-            run_global_copilot_query(dataset_id, example_question, "revenue")
+    st.markdown(f"#### {'Portfolio and demo mode' if lang == 'en' else 'Mode portfolio et demo'}")
+    cta_cols = st.columns(3)
+    if cta_cols[0].button(t("landing.cta_sales", lang), use_container_width=True):
+        load_named_sample("sales")
+        run_guided_demo(st.session_state.dataset["dataset_id"])
+        st.rerun()
+    if cta_cols[1].button(t("landing.cta_marketing", lang), use_container_width=True):
+        load_named_sample("marketing")
+        st.rerun()
+    if cta_cols[2].button(t("landing.cta_question", lang), use_container_width=True):
+        example_question = "Should we increase price?" if lang == "en" else "Faut-il augmenter le prix ?"
+        run_global_copilot_query(dataset_id, example_question, "revenue")
 
-        portfolio_cols = st.columns(2, vertical_alignment="top")
-        with portfolio_cols[0]:
-            render_card(t("landing.offer", lang), (
-                "<strong>Starter</strong>: diagnostics, insights, and guided investigation suggestions<br><br>"
-                "<strong>Pro</strong>: prediction, scenario simulation, bilingual decision cockpit, and evidence pack<br><br>"
-                "<strong>Advisory</strong>: premium onboarding, demo datasets, decision workflows, and executive reporting"
-                if lang == "en"
-                else "<strong>Starter</strong> : diagnostics, insights et suggestions d'investigation guidees<br><br>"
-                "<strong>Pro</strong> : prediction, simulation de scenarios, cockpit de decision bilingue et pack de preuves<br><br>"
-                "<strong>Advisory</strong> : onboarding premium, datasets de demo, workflows de decision et reporting executif"
-            ))
-        with portfolio_cols[1]:
-            render_card(t("landing.pricing", lang), (
-                "<strong>Starter</strong>: 79 EUR / month<br><strong>Pro</strong>: 249 EUR / month<br><strong>Advisory</strong>: custom pricing + onboarding"
-                if lang == "en"
-                else "<strong>Starter</strong> : 79 EUR / mois<br><strong>Pro</strong> : 249 EUR / mois<br><strong>Advisory</strong> : tarification sur mesure + onboarding"
-            ))
+    portfolio_cols = st.columns(2, vertical_alignment="top")
+    with portfolio_cols[0]:
+        render_card(t("landing.offer", lang), (
+            "<strong>Starter</strong>: diagnostics, insights, and guided investigation suggestions<br><br>"
+            "<strong>Pro</strong>: prediction, scenario simulation, bilingual decision cockpit, and evidence pack<br><br>"
+            "<strong>Advisory</strong>: premium onboarding, demo datasets, decision workflows, and executive reporting"
+            if lang == "en"
+            else "<strong>Starter</strong> : diagnostics, insights et suggestions d'investigation guidees<br><br>"
+            "<strong>Pro</strong> : prediction, simulation de scenarios, cockpit de decision bilingue et pack de preuves<br><br>"
+            "<strong>Advisory</strong> : onboarding premium, datasets de demo, workflows de decision et reporting executif"
+        ))
+    with portfolio_cols[1]:
+        render_card(t("landing.pricing", lang), (
+            "<strong>Starter</strong>: 79 EUR / month<br><strong>Pro</strong>: 249 EUR / month<br><strong>Advisory</strong>: custom pricing + onboarding"
+            if lang == "en"
+            else "<strong>Starter</strong> : 79 EUR / mois<br><strong>Pro</strong> : 249 EUR / mois<br><strong>Advisory</strong> : tarification sur mesure + onboarding"
+        ))
 
 with tabs[1]:
     st.markdown(f"### {t('investigation.suggestions', st.session_state.lang)}")
