@@ -1002,18 +1002,23 @@ with st.expander("Data details" if lang == "en" else "Details des donnees", expa
     render_chart_story_box(profile_quality_card, lang)
     st.plotly_chart(go.Figure(profile_quality_card["figure"]), use_container_width=True, key="data_quality_chart_top")
 
-with st.expander("Advanced analysis studio" if lang == "en" else "Studio d analyse avancee", expanded=False):
-    tabs = st.tabs(
-        [
-            "Overview" if lang == "en" else "Vue d'ensemble",
-            "Investigation" if lang == "en" else "Investigation",
-            "Prediction" if lang == "en" else "Prediction",
-            "Simulation" if lang == "en" else "Simulation",
-            t("decision_engine.title", lang),
-            t("decision_engine.evidence_pack", lang),
-            "Data & Details" if lang == "en" else "Donnees & details",
-        ]
-    )
+render_section_header(
+    "Advanced analysis studio" if lang == "en" else "Studio d analyse avancee",
+    "Advanced workflows for investigation, prediction, simulation, copilot review, and data details."
+    if lang == "en"
+    else "Workflows avances pour l investigation, la prediction, la simulation, la revue copilote et les details de donnees.",
+)
+tabs = st.tabs(
+    [
+        "Overview" if lang == "en" else "Vue d'ensemble",
+        "Investigation" if lang == "en" else "Investigation",
+        "Prediction" if lang == "en" else "Prediction",
+        "Simulation" if lang == "en" else "Simulation",
+        t("decision_engine.title", lang),
+        t("decision_engine.evidence_pack", lang),
+        "Data & Details" if lang == "en" else "Donnees & details",
+    ]
+)
 
 with tabs[0]:
     overview_cols = st.columns([1.15, 0.85], vertical_alignment="top")
