@@ -120,6 +120,56 @@ Recommended deployment path:
 2. Keep `AUTO_START_LOCAL_API=true` for a single-service setup.
 3. Move the API to a separate service later if you need stronger scale, uptime, or enterprise isolation.
 
+## Render Deployment For The API
+
+For a more stable deployment, deploy the FastAPI backend separately on Render.
+
+This repo now includes:
+
+- [render.yaml](/Users/guillaumeverbiguie/Desktop/AI%20Data%20Investigator/render.yaml)
+- [Procfile](/Users/guillaumeverbiguie/Desktop/AI%20Data%20Investigator/Procfile)
+
+Recommended Render setup:
+
+1. Create a new Web Service from this repo.
+2. Use the Blueprint from `render.yaml` or configure manually.
+3. Start command:
+
+```bash
+uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
+```
+
+4. Health check path:
+
+```text
+/health
+```
+
+5. Required environment variables:
+
+```bash
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+APP_NAME=AI Data Investigator
+ANOMALY_CONTAMINATION=0.08
+MAX_PREVIEW_ROWS=10
+```
+
+Once the backend is live, point the frontend to the public API:
+
+```bash
+API_BASE_URL=https://your-render-service.onrender.com
+AUTO_START_LOCAL_API=false
+```
+
+Recommended architecture:
+
+1. Deploy FastAPI on Render.
+2. Keep Streamlit only as the UI layer.
+3. Update the Streamlit secrets to use the public Render API URL.
+
+This is the fastest path to a more reliable online demo without rewriting the frontend.
+
 ## Key API Endpoints
 
 - `POST /upload`

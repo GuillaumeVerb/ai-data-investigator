@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ai-data-investigator-api
+    runtime: python
+    plan: starter
+    rootDir: .
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: APP_NAME
+        value: AI Data Investigator
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: ANOMALY_CONTAMINATION
+        value: "0.08"
+      - key: MAX_PREVIEW_ROWS
+        value: "10"
