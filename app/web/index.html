@@ -23,6 +23,20 @@
         <p id="hero-copy" class="hero-copy">
           Un copilote d'analyse et de decision qui transforme un CSV en diagnostic, recommandations et actions.
         </p>
+        <div id="hero-band" class="hero-band">
+          <div class="hero-chip">
+            <span class="small-meta" id="band-status-label">System</span>
+            <strong id="band-status-value">API ready</strong>
+          </div>
+          <div class="hero-chip">
+            <span class="small-meta" id="band-llm-label">LLM</span>
+            <strong id="band-llm-value">OpenAI connected</strong>
+          </div>
+          <div class="hero-chip">
+            <span class="small-meta" id="band-mode-label">Mode</span>
+            <strong id="band-mode-value">Decision-first workflow</strong>
+          </div>
+        </div>
       </header>
 
       <div class="layout">
@@ -43,6 +57,13 @@
             <p class="panel-title" id="copilot-title">Copilote</p>
             <textarea id="question-input" rows="5" placeholder="Faut-il augmenter le prix ? Quel segment prioriser ?"></textarea>
             <button id="ask-copilot" class="primary-btn" type="button">Interroger le copilote</button>
+          </div>
+
+          <div class="panel-card">
+            <p class="panel-title" id="analysis-title">Signal du moment</p>
+            <div id="focused-analysis" class="stack">
+              <div class="answer-card" id="focused-analysis-empty">Choisis une piste d'investigation pour afficher l'analyse detaillee.</div>
+            </div>
           </div>
         </aside>
 
@@ -91,11 +112,27 @@
 
             <section class="panel-card">
               <div class="section-head">
-                <p class="eyebrow" id="chart-kicker">Key chart</p>
+                <p class="eyebrow" id="suggestions-kicker">Investigation suggestions</p>
+                <h2 id="suggestions-title">Where to investigate next</h2>
+              </div>
+              <div id="suggestions-grid" class="suggestion-grid"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="chart-kicker">Key charts</p>
                 <h2 id="chart-title">Signal principal</h2>
               </div>
-              <div id="chart-story" class="story-box"></div>
-              <div id="chart-host" class="chart-host"></div>
+              <div class="chart-grid">
+                <div>
+                  <div id="chart-story" class="story-box"></div>
+                  <div id="chart-host" class="chart-host"></div>
+                </div>
+                <div>
+                  <div id="chart-story-secondary" class="story-box"></div>
+                  <div id="chart-host-secondary" class="chart-host"></div>
+                </div>
+              </div>
             </section>
 
             <section class="panel-card">
@@ -112,10 +149,29 @@
 
             <section class="panel-card">
               <div class="section-head">
+                <p class="eyebrow" id="actions-kicker">Recommended actions</p>
+                <h2 id="actions-title">Actions recommandees</h2>
+              </div>
+              <div id="actions-grid" class="insight-grid"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
                 <p class="eyebrow" id="copilot-result-kicker">Copilot answer</p>
                 <h2 id="copilot-result-title">Reponse du copilote</h2>
               </div>
               <div id="copilot-answer" class="stack"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="evidence-kicker">Evidence pack</p>
+                <h2 id="evidence-title">Pack de preuves</h2>
+              </div>
+              <details class="details-block">
+                <summary id="evidence-summary">Afficher les signaux utilises</summary>
+                <div id="evidence-pack" class="evidence-grid"></div>
+              </details>
             </section>
           </section>
         </main>

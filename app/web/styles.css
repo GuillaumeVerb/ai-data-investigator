@@ -79,6 +79,20 @@ body {
   line-height: 1.6;
 }
 
+.hero-band {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hero-chip {
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 14px 16px;
+}
+
 .lang-switch {
   display: flex;
   gap: 10px;
@@ -189,7 +203,10 @@ textarea {
 
 .decision-grid,
 .metric-grid,
-.insight-grid {
+.insight-grid,
+.suggestion-grid,
+.evidence-grid,
+.chart-grid {
   display: grid;
   gap: 16px;
 }
@@ -207,10 +224,26 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.suggestion-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.chart-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.evidence-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
 .decision-card,
 .metric-card,
 .insight-card,
-.answer-card {
+.answer-card,
+.suggestion-card,
+.evidence-card {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid var(--border);
   border-radius: 22px;
@@ -277,6 +310,51 @@ textarea {
   min-height: 340px;
 }
 
+.suggestion-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.suggestion-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pill-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(23, 52, 40, 0.08);
+  color: var(--text);
+}
+
+.pill.high {
+  background: rgba(182, 83, 75, 0.14);
+  color: #8d3b35;
+}
+
+.pill.medium {
+  background: rgba(211, 131, 54, 0.16);
+  color: #9c5c1d;
+}
+
+.pill.low {
+  background: rgba(47, 109, 73, 0.14);
+  color: #245239;
+}
+
 .prediction-row {
   display: flex;
   gap: 12px;
@@ -334,7 +412,11 @@ td {
 
   .decision-grid,
   .metric-grid,
-  .insight-grid {
+  .insight-grid,
+  .suggestion-grid,
+  .evidence-grid,
+  .chart-grid,
+  .hero-band {
     grid-template-columns: 1fr;
   }
 }
