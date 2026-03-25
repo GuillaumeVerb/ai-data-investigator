@@ -384,17 +384,23 @@ def ensure_local_api_server(api_base_url: str, auto_start: bool) -> subprocess.P
 def api_get(path: str) -> list | dict:
     if BACKEND_MODE == "direct":
         return _local_api_get(path)
-    response = requests.get(f"{API_BASE_URL}{path}", timeout=90)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(f"{API_BASE_URL}{path}", timeout=90)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError(f"API request failed for GET {path} via {API_BASE_URL}: {exc}") from exc
 
 
 def api_post(path: str, json: dict | None = None, files: dict | None = None) -> dict:
     if BACKEND_MODE == "direct":
         return _local_api_post(path, json=json, files=files)
-    response = requests.post(f"{API_BASE_URL}{path}", json=json, files=files, timeout=90)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.post(f"{API_BASE_URL}{path}", json=json, files=files, timeout=90)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError(f"API request failed for POST {path} via {API_BASE_URL}: {exc}") from exc
 
 
 def ensure_session() -> str:
@@ -435,16 +441,25 @@ def reset_analysis_state() -> None:
 
 def bootstrap_sample() -> None:
     if "dataset" not in st.session_state:
-        dataset = api_post("/upload/sample")
-        st.session_state.dataset = dataset
-        register_dataset(dataset)
+        try:
+            dataset = api_post("/upload/sample")
+            st.session_state.dataset = dataset
+            register_dataset(dataset)
+            st.session_state.pop("startup_error", None)
+        except Exception as exc:
+            st.session_state.startup_error = str(exc)
 
 
 def load_named_sample(sample_name: str) -> None:
     reset_analysis_state()
-    dataset = api_post(f"/upload/sample/{sample_name}")
-    st.session_state.dataset = dataset
-    register_dataset(dataset)
+    try:
+        dataset = api_post(f"/upload/sample/{sample_name}")
+        st.session_state.dataset = dataset
+        register_dataset(dataset)
+        st.session_state.pop("startup_error", None)
+    except Exception as exc:
+        st.session_state.pop("dataset", None)
+        st.session_state.startup_error = str(exc)
 
 
 def render_card(title: str, body: str) -> None:
@@ -810,9 +825,7 @@ else:
     )
     st.stop()
 bootstrap_sample()
-dataset = st.session_state.dataset
-dataset_id = dataset["dataset_id"]
-profile, investigation = load_dataset_context(dataset_id)
+dataset = st.session_state.get("dataset")
 
 with st.sidebar:
     st.markdown(f"### {t('app.hero_kicker', st.session_state.lang)}")
@@ -849,15 +862,49 @@ with st.sidebar:
 if uploaded_file is not None and st.session_state.get("uploaded_file_name") != uploaded_file.name:
     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")}
     reset_analysis_state()
-    dataset = api_post("/upload", files=files)
-    st.session_state.dataset = dataset
-    st.session_state.uploaded_file_name = uploaded_file.name
-    register_dataset(dataset)
-    st.rerun()
+    try:
+        dataset = api_post("/upload", files=files)
+        st.session_state.dataset = dataset
+        st.session_state.uploaded_file_name = uploaded_file.name
+        st.session_state.pop("startup_error", None)
+        register_dataset(dataset)
+        st.rerun()
+    except Exception as exc:
+        st.session_state.startup_error = str(exc)
 
-dataset = st.session_state.dataset
+dataset = st.session_state.get("dataset")
+if not dataset:
+    startup_error = st.session_state.get("startup_error")
+    st.markdown("## AI Data Investigator")
+    st.caption(
+        "Connect the copilot to a dataset to start the investigation workflow."
+        if st.session_state.lang == "en"
+        else "Connectez le copilote a un jeu de donnees pour lancer le workflow d investigation."
+    )
+    if startup_error:
+        st.error(
+            "The app could not load the initial dataset from the API. Use the sidebar buttons to retry or upload a CSV."
+            if st.session_state.lang == "en"
+            else "L application n a pas pu charger le jeu de donnees initial depuis l API. Utilisez la barre laterale pour reessayer ou importez un CSV."
+        )
+        with st.expander("Technical details" if st.session_state.lang == "en" else "Details techniques", expanded=False):
+            st.code(startup_error)
+    st.stop()
+
 dataset_id = dataset["dataset_id"]
-profile, investigation = load_dataset_context(dataset_id)
+try:
+    profile, investigation = load_dataset_context(dataset_id)
+    st.session_state.pop("dataset_context_error", None)
+except Exception as exc:
+    st.session_state.dataset_context_error = str(exc)
+    st.error(
+        "The dataset loaded, but the analysis context could not be initialized. Retry from the sidebar."
+        if st.session_state.lang == "en"
+        else "Le jeu de donnees est charge, mais le contexte d analyse n a pas pu etre initialise. Reessayez depuis la barre laterale."
+    )
+    with st.expander("Technical details" if st.session_state.lang == "en" else "Details techniques", expanded=False):
+        st.code(st.session_state.dataset_context_error)
+    st.stop()
 target_options = normalize_target_options(profile)
 lang = st.session_state.lang
 hero_subtitle = (
