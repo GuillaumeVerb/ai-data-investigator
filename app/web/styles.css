@@ -493,6 +493,36 @@ textarea {
   margin-bottom: 18px;
 }
 
+.result-toolbar,
+.history-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.result-toolbar {
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.history-head {
+  margin-top: 22px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-item {
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px 16px;
+}
+
 .prediction-row select {
   flex: 1;
 }
@@ -611,7 +641,9 @@ td {
   .layout,
   .hero-top,
   .prediction-row,
-  .builder-toolbar {
+  .builder-toolbar,
+  .result-toolbar,
+  .history-item {
     flex-direction: column;
   }
 

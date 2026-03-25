@@ -9,6 +9,7 @@ const state = {
   decisionResult: null,
   copilot: null,
   sqlQuery: null,
+  sqlHistory: [],
   focusedAnalysis: null,
   health: null,
 };
@@ -127,12 +128,26 @@ const copy = {
     queryTitle: "Interroger les donnees",
     queryPlaceholder: "Quel est le revenu moyen par region ?",
     queryRun: "Generer le SQL",
+    queryRoute: "Router la question",
+    queryRouterCopy: "Choisit automatiquement entre SQL, prediction, simulation ou copilote.",
     queryKicker: "AI Builder",
     queryResultTitle: "Natural language to SQL",
     queryEmpty: "Pose une question sur les donnees pour afficher le SQL genere, le resultat et l'explication.",
     querySql: "SQL genere",
     queryRows: "Lignes retournees",
     queryWarning: "Avertissements",
+    queryExplain: "Expliquer ce SQL",
+    queryExplainDone: "Explication SQL mise a jour.",
+    queryExport: "Exporter CSV",
+    queryExportDone: "Resultat SQL exporte en CSV.",
+    queryHistoryKicker: "History",
+    queryHistoryTitle: "Historique des requetes",
+    queryHistoryEmpty: "Les requetes SQL executees apparaitront ici.",
+    queryHistoryReplay: "Relancer",
+    routeSqlDone: "Question routee vers SQL.",
+    routePredictionDone: "Question routee vers prediction.",
+    routeSimulationDone: "Question routee vers simulation.",
+    routeCopilotDone: "Question routee vers copilote.",
   },
   en: {
     heroCopy: "An AI decision copilot that turns a CSV into diagnosis, recommendations, and next actions.",
@@ -247,12 +262,26 @@ const copy = {
     queryTitle: "Ask the data",
     queryPlaceholder: "What is the average revenue by region?",
     queryRun: "Generate SQL",
+    queryRoute: "Route the question",
+    queryRouterCopy: "Automatically chooses between SQL, prediction, simulation, or copilot.",
     queryKicker: "AI Builder",
     queryResultTitle: "Natural language to SQL",
     queryEmpty: "Ask a question about the data to display the generated SQL, the result, and the explanation.",
     querySql: "Generated SQL",
     queryRows: "Returned rows",
     queryWarning: "Warnings",
+    queryExplain: "Explain this SQL",
+    queryExplainDone: "SQL explanation updated.",
+    queryExport: "Export CSV",
+    queryExportDone: "SQL result exported as CSV.",
+    queryHistoryKicker: "History",
+    queryHistoryTitle: "Query history",
+    queryHistoryEmpty: "Executed SQL queries will appear here.",
+    queryHistoryReplay: "Replay",
+    routeSqlDone: "Question routed to SQL.",
+    routePredictionDone: "Question routed to prediction.",
+    routeSimulationDone: "Question routed to simulation.",
+    routeCopilotDone: "Question routed to copilot.",
   },
 };
 
@@ -299,6 +328,8 @@ async function hydrateDataset(dataset) {
   state.decisionMeta = null;
   state.decisionResult = null;
   state.copilot = null;
+  state.sqlQuery = null;
+  state.sqlHistory = [];
   state.focusedAnalysis = null;
   setStatus(`${currentCopy().uploadDone} ${dataset.filename}`);
   render();
@@ -366,6 +397,45 @@ function downloadHtml(filename, html) {
   URL.revokeObjectURL(url);
 }
 
+function downloadCsv(filename, rows, columns) {
+  if (!rows?.length || !columns?.length) return;
+  const escapeCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const csv = [
+    columns.map(escapeCell).join(","),
+    ...rows.map((row) => columns.map((column) => escapeCell(row[column])).join(",")),
+  ].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function upsertSqlHistory(entry) {
+  state.sqlHistory = [
+    entry,
+    ...state.sqlHistory.filter((item) => !(item.question === entry.question && item.sql === entry.sql)),
+  ].slice(0, 6);
+}
+
+function classifyQuestion(question) {
+  const lower = question.toLowerCase();
+  if (/(average|avg|mean|sum|total|count|top|list|show|breakdown|group by|combien|moyen|moyenne|total|somme|liste|montre)/.test(lower)) {
+    return "sql";
+  }
+  if (/(predict|prediction|forecast|forecasting|driver|driver[s]?|prevoir|predire|prediction|modele)/.test(lower)) {
+    return "prediction";
+  }
+  if (/(simulate|simulation|scenario|what if|what-if|si on|impact|increase price|decrease price|augmenter le prix|baisser le prix)/.test(lower)) {
+    return "simulation";
+  }
+  return "copilot";
+}
+
 function renderStaticCopy() {
   const c = currentCopy();
   const baselineMode = $("baseline-mode-select")?.value || "reference_row";
@@ -377,6 +447,8 @@ function renderStaticCopy() {
   $("query-title").textContent = c.queryTitle;
   $("sql-question-input").placeholder = c.queryPlaceholder;
   $("run-sql-query").textContent = c.queryRun;
+  $("route-query").textContent = c.queryRoute;
+  $("query-router-copy").textContent = c.queryRouterCopy;
   $("export-title").textContent = c.exportTitle;
   $("export-copy").textContent = c.exportCopy;
   $("export-report").textContent = c.exportReport;
@@ -417,6 +489,10 @@ function renderStaticCopy() {
   $("copilot-result-title").textContent = c.copilotResultTitle;
   $("query-kicker").textContent = c.queryKicker;
   $("query-result-title").textContent = c.queryResultTitle;
+  $("explain-sql").textContent = c.queryExplain;
+  $("export-query-csv").textContent = c.queryExport;
+  $("query-history-kicker").textContent = c.queryHistoryKicker;
+  $("query-history-title").textContent = c.queryHistoryTitle;
   $("suggestions-kicker").textContent = c.suggestionsKicker;
   $("suggestions-title").textContent = c.suggestionsTitle;
   $("actions-kicker").textContent = c.actionsKicker;
@@ -967,6 +1043,29 @@ function renderSqlQuery() {
   `;
 }
 
+function renderSqlHistory() {
+  const c = currentCopy();
+  if (!state.sqlHistory.length) {
+    $("query-history").innerHTML = `<div class="answer-card">${c.queryHistoryEmpty}</div>`;
+    return;
+  }
+  $("query-history").innerHTML = state.sqlHistory
+    .map(
+      (item, index) => `
+        <article class="history-item">
+          <div>
+            <strong>${item.question}</strong>
+            <div class="small-meta">${item.row_count} ${c.rows.toLowerCase()}</div>
+          </div>
+          <button class="ghost-btn history-replay-btn" type="button" data-history-index="${index}">
+            ${c.queryHistoryReplay}
+          </button>
+        </article>
+      `,
+    )
+    .join("");
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
@@ -992,6 +1091,7 @@ function render() {
   renderEvidencePack();
   renderCopilot();
   renderSqlQuery();
+  renderSqlHistory();
   bindDynamicEvents();
 }
 
@@ -1130,11 +1230,12 @@ async function investigateSuggestion(suggestionId) {
   }
 }
 
-async function askCopilot() {
+async function askCopilot(questionOverride = null) {
   if (!state.dataset) return;
-  const question = $("question-input").value.trim();
+  const question = (questionOverride || $("question-input").value).trim();
   if (!question) return;
   try {
+    $("question-input").value = question;
     const payload = {
       dataset_id: state.dataset.dataset_id,
       question,
@@ -1177,12 +1278,13 @@ async function exportReport() {
   }
 }
 
-async function runSqlQuery() {
+async function runSqlQuery(questionOverride = null) {
   const c = currentCopy();
   if (!state.dataset) return;
-  const question = $("sql-question-input").value.trim();
+  const question = (questionOverride || $("sql-question-input").value).trim();
   if (!question) return;
   try {
+    $("sql-question-input").value = question;
     state.sqlQuery = await api("/query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1192,8 +1294,99 @@ async function runSqlQuery() {
         language: state.lang,
       }),
     });
+    upsertSqlHistory({
+      question,
+      sql: state.sqlQuery.sql,
+      columns: state.sqlQuery.columns,
+      row_count: state.sqlQuery.row_count,
+      result_preview: state.sqlQuery.result_preview,
+      explanation: state.sqlQuery.explanation,
+      warnings: state.sqlQuery.warnings || [],
+    });
     setStatus(c.queryResultTitle);
     renderSqlQuery();
+    renderSqlHistory();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function explainCurrentSql() {
+  const c = currentCopy();
+  if (!state.sqlQuery) return;
+  try {
+    const result = await api("/query/explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question: state.sqlQuery.question,
+        sql: state.sqlQuery.sql,
+        language: state.lang,
+        columns: state.sqlQuery.columns || [],
+        row_count: state.sqlQuery.row_count || 0,
+        result_preview: state.sqlQuery.result_preview || [],
+      }),
+    });
+    state.sqlQuery.explanation = result.explanation;
+    state.sqlHistory = state.sqlHistory.map((item) =>
+      item.question === state.sqlQuery.question && item.sql === state.sqlQuery.sql
+        ? { ...item, explanation: result.explanation }
+        : item,
+    );
+    setStatus(c.queryExplainDone);
+    renderSqlQuery();
+    renderSqlHistory();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+function exportCurrentQueryCsv() {
+  const c = currentCopy();
+  if (!state.sqlQuery?.result_preview?.length || !state.sqlQuery?.columns?.length) return;
+  downloadCsv("query-result.csv", state.sqlQuery.result_preview, state.sqlQuery.columns);
+  setStatus(c.queryExportDone);
+}
+
+function replaySqlHistory(index) {
+  const entry = state.sqlHistory[index];
+  if (!entry) return;
+  $("sql-question-input").value = entry.question;
+  state.sqlQuery = { ...entry };
+  renderSqlQuery();
+}
+
+async function routeQuestion() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  const question = $("sql-question-input").value.trim();
+  if (!question) return;
+  const route = classifyQuestion(question);
+  try {
+    if (route === "sql") {
+      await runSqlQuery(question);
+      setStatus(c.routeSqlDone);
+      return;
+    }
+    if (route === "prediction") {
+      if (!state.training) {
+        await trainModel();
+      }
+      await askCopilot(question);
+      setStatus(c.routePredictionDone);
+      return;
+    }
+    if (route === "simulation") {
+      if (!state.training) {
+        await trainModel();
+      }
+      await runGuidedSimulation();
+      await askCopilot(question);
+      setStatus(c.routeSimulationDone);
+      return;
+    }
+    await askCopilot(question);
+    setStatus(c.routeCopilotDone);
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1212,6 +1405,9 @@ function bindEvents() {
   $("run-decision-engine").addEventListener("click", runDecisionEngine);
   $("ask-copilot").addEventListener("click", askCopilot);
   $("run-sql-query").addEventListener("click", runSqlQuery);
+  $("route-query").addEventListener("click", routeQuestion);
+  $("explain-sql").addEventListener("click", explainCurrentSql);
+  $("export-query-csv").addEventListener("click", exportCurrentQueryCsv);
   $("export-report").addEventListener("click", exportReport);
   $("lang-fr").addEventListener("click", () => {
     state.lang = "fr";
@@ -1234,6 +1430,9 @@ function bindEvents() {
 function bindDynamicEvents() {
   document.querySelectorAll(".investigate-btn").forEach((button) => {
     button.onclick = () => investigateSuggestion(button.dataset.suggestionId);
+  });
+  document.querySelectorAll(".history-replay-btn").forEach((button) => {
+    button.onclick = () => replaySqlHistory(Number(button.dataset.historyIndex));
   });
   document.querySelectorAll('input[type="range"][data-control-type="slider"]').forEach((input) => {
     input.oninput = () => {

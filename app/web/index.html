@@ -71,7 +71,11 @@
           <div class="panel-card">
             <p class="panel-title" id="query-title">Ask the data</p>
             <textarea id="sql-question-input" rows="4" placeholder="Quel est le revenu moyen par region ?"></textarea>
-            <button id="run-sql-query" class="secondary-btn" type="button">Generer le SQL</button>
+            <div class="button-stack">
+              <button id="run-sql-query" class="secondary-btn" type="button">Generer le SQL</button>
+              <button id="route-query" class="ghost-btn" type="button">Router la question</button>
+            </div>
+            <p id="query-router-copy" class="panel-copy">Choisit automatiquement entre SQL, prediction, simulation ou copilote.</p>
           </div>
 
           <div class="panel-card">
@@ -225,7 +229,16 @@
                 <p class="eyebrow" id="query-kicker">AI Builder</p>
                 <h2 id="query-result-title">Natural language to SQL</h2>
               </div>
+              <div class="result-toolbar">
+                <button id="explain-sql" class="ghost-btn" type="button">Expliquer ce SQL</button>
+                <button id="export-query-csv" class="ghost-btn" type="button">Exporter CSV</button>
+              </div>
               <div id="query-result" class="stack"></div>
+              <div class="section-head history-head">
+                <p class="eyebrow" id="query-history-kicker">History</p>
+                <h3 id="query-history-title">Historique des requetes</h3>
+              </div>
+              <div id="query-history" class="history-list"></div>
             </section>
 
             <section class="panel-card">

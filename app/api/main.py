@@ -26,6 +26,8 @@ from app.core.schemas import (
     MergePreviewResponse,
     ProfileRequest,
     ProfileResponse,
+    QueryExplainRequest,
+    QueryExplainResponse,
     QueryRequest,
     QueryResponse,
     RootCauseRequest,
@@ -48,7 +50,7 @@ from app.services.action_engine import recommend_actions
 from app.services.ingestion import load_sample_dataset, load_upload
 from app.services.investigation_agent import investigate_path
 from app.services.insights import investigate_dataset
-from app.services.llm_engine import generate_summary, llm_status
+from app.services.llm_engine import explain_sql_query, generate_summary, llm_status
 from app.services.ml_engine import train_model
 from app.services.profiling import build_profile
 from app.services.report_export import export_html_report
@@ -166,6 +168,13 @@ def query_dataset(request: QueryRequest) -> QueryResponse:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/query/explain", response_model=QueryExplainResponse)
+def explain_query(request: QueryExplainRequest) -> QueryExplainResponse:
+    return QueryExplainResponse(
+        explanation=explain_sql_query(request.model_dump()).get("explanation", "")
+    )
 
 
 @app.post("/enrichment-suggestions", response_model=EnrichmentResponse)

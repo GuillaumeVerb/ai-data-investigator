@@ -452,3 +452,16 @@ class QueryResponse(AppBaseModel):
     columns: List[str]
     row_count: int
     warnings: List[str] = []
+
+
+class QueryExplainRequest(AppBaseModel):
+    question: str
+    sql: str
+    language: Literal["en", "fr"] = "en"
+    columns: List[str] = []
+    row_count: int = 0
+    result_preview: List[Dict[str, Any]] = []
+
+
+class QueryExplainResponse(AppBaseModel):
+    explanation: str

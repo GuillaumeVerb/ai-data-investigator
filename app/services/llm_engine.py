@@ -321,3 +321,26 @@ def summarize_query_result(payload: Dict[str, Any]) -> Dict[str, str]:
     if not response:
         return fallback
     return {"explanation": response.get("explanation", fallback["explanation"])}
+
+
+def explain_sql_query(payload: Dict[str, Any]) -> Dict[str, str]:
+    language = payload.get("language", "en")
+    fallback = {
+        "explanation": (
+            "This SQL reads the dataset, applies filters or aggregations, and returns only the rows needed to answer the question."
+            if language == "en"
+            else "Ce SQL lit le dataset, applique les filtres ou agregations utiles, puis retourne uniquement les lignes necessaires pour repondre a la question."
+        )
+    }
+    response = _safe_completion(
+        (
+            "You explain SQL to business users. "
+            "Return JSON with explanation only. "
+            "Explain what the SQL is doing, what the result means, and any caution about interpretation. "
+            f"Write in {language} and keep it concise."
+        ),
+        payload,
+    )
+    if not response:
+        return fallback
+    return {"explanation": response.get("explanation", fallback["explanation"])}

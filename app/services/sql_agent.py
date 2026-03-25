@@ -136,7 +136,7 @@ def answer_with_sql(dataset_id: str, question: str, language: str = "en") -> Que
         warnings.append("Generated SQL was adjusted to a safe fallback query.")
 
     result = result.astype(object).where(pd.notnull(result), None)
-    preview = result.head(50).to_dict(orient="records")
+    preview = result.to_dict(orient="records")
     summary = summarize_query_result(
         {
             "language": language,

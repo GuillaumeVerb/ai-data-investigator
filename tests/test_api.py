@@ -43,6 +43,23 @@ def test_natural_language_query_endpoint_returns_sql_and_rows() -> None:
     assert isinstance(body["result_preview"], list)
 
 
+def test_query_explanation_endpoint_returns_explanation() -> None:
+    response = client.post(
+        "/query/explain",
+        json={
+            "question": "Show average revenue by region",
+            "sql": "SELECT region, AVG(revenue) AS avg_revenue FROM dataset GROUP BY region",
+            "language": "en",
+            "columns": ["region", "avg_revenue"],
+            "row_count": 4,
+            "result_preview": [{"region": "West", "avg_revenue": 1032.4}],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["explanation"]
+
+
 def test_profile_investigation_and_enrichment_flow() -> None:
     dataset = client.post("/upload/sample").json()
 
