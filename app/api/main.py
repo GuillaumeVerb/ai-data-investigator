@@ -30,6 +30,9 @@ from app.core.schemas import (
     PreparationAgentResponse,
     ProfileRequest,
     ProfileResponse,
+    ObservabilityResponse,
+    QuantOptimizeRequest,
+    QuantOptimizeResponse,
     QueryExplainRequest,
     QueryExplainResponse,
     QueryRequest,
@@ -61,8 +64,10 @@ from app.services.join_assistant import analyze_join_candidates
 from app.services.insights import investigate_dataset
 from app.services.llm_engine import explain_sql_query, generate_summary, llm_status
 from app.services.ml_engine import train_model
+from app.services.observability import get_observability_snapshot
 from app.services.preparation_agent import build_preparation_plan
 from app.services.profiling import build_profile
+from app.services.quant_optimizer import optimize_decision_levers
 from app.services.report_export import export_html_report
 from app.services.root_cause import explain_root_cause
 from app.services.scenario_engine import simulate_scenario
@@ -175,12 +180,20 @@ def root_cause(request: RootCauseRequest) -> RootCauseResponse:
 @app.post("/query", response_model=QueryResponse)
 def query_dataset(request: QueryRequest) -> QueryResponse:
     try:
-        return answer_with_sql(
+        result = answer_with_sql(
             request.dataset_id,
             request.question,
             request.language,
             request.additional_dataset_ids,
         )
+        store.log_operation(
+            tool_name="sql_agent",
+            status="fallback" if result.warnings else "completed",
+            route="sql",
+            dataset_id=request.dataset_id,
+            detail=result.sql,
+        )
+        return result
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
     except ValueError as exc:
@@ -213,7 +226,15 @@ def merge_preview(request: MergePreviewRequest) -> MergePreviewResponse:
 @app.post("/join-assistant", response_model=JoinAssistantResponse)
 def join_assistant(request: JoinAssistantRequest) -> JoinAssistantResponse:
     try:
-        return analyze_join_candidates(request.dataset_id, request.language)
+        result = analyze_join_candidates(request.dataset_id, request.language)
+        store.log_operation(
+            tool_name="join_assistant",
+            status="completed",
+            route="join",
+            dataset_id=request.dataset_id,
+            detail=result.recommended_next_step,
+        )
+        return result
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -221,7 +242,15 @@ def join_assistant(request: JoinAssistantRequest) -> JoinAssistantResponse:
 @app.post("/semantic-layer", response_model=SemanticLayerResponse)
 def semantic_layer(request: SemanticLayerRequest) -> SemanticLayerResponse:
     try:
-        return build_semantic_layer(request.dataset_id, request.language)
+        result = build_semantic_layer(request.dataset_id, request.language)
+        store.log_operation(
+            tool_name="semantic_layer",
+            status="completed",
+            route="semantic",
+            dataset_id=request.dataset_id,
+            detail=", ".join(result.recommended_kpis[:2]) or "semantic layer refreshed",
+        )
+        return result
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -229,7 +258,15 @@ def semantic_layer(request: SemanticLayerRequest) -> SemanticLayerResponse:
 @app.post("/prep-agent", response_model=PreparationAgentResponse)
 def prep_agent(request: PreparationAgentRequest) -> PreparationAgentResponse:
     try:
-        return build_preparation_plan(request.dataset_id, request.language)
+        result = build_preparation_plan(request.dataset_id, request.language)
+        store.log_operation(
+            tool_name="prep_agent",
+            status="completed",
+            route="prep",
+            dataset_id=request.dataset_id,
+            detail=result.recommended_next_step,
+        )
+        return result
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 
@@ -237,9 +274,46 @@ def prep_agent(request: PreparationAgentRequest) -> PreparationAgentResponse:
 @app.post("/workflow-builder", response_model=WorkflowBuilderResponse)
 def workflow_builder(request: WorkflowBuilderRequest) -> WorkflowBuilderResponse:
     try:
-        return build_workflow(request.dataset_id, request.goal, request.language, request.model_id)
+        result = build_workflow(request.dataset_id, request.goal, request.language, request.model_id)
+        store.log_operation(
+            tool_name="workflow_builder",
+            status="completed",
+            route="workflow",
+            dataset_id=request.dataset_id,
+            detail=result.goal,
+        )
+        return result
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/quant-optimize", response_model=QuantOptimizeResponse)
+def quant_optimize(request: QuantOptimizeRequest) -> QuantOptimizeResponse:
+    try:
+        result = optimize_decision_levers(
+            request.dataset_id,
+            request.model_id,
+            request.objective,
+            request.reference_index,
+            request.language,
+        )
+        store.log_operation(
+            tool_name="quant_optimizer",
+            status="completed",
+            route="quant",
+            dataset_id=request.dataset_id,
+            detail=f"{request.objective}: {result.recommended_changes}",
+        )
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/observability", response_model=ObservabilityResponse)
+def observability() -> ObservabilityResponse:
+    return get_observability_snapshot()
 
 
 @app.post("/train", response_model=TrainResponse)

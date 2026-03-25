@@ -86,6 +86,11 @@
               <button id="run-semantic-layer" class="ghost-btn" type="button">Construire la couche semantique</button>
               <button id="run-prep-agent" class="ghost-btn" type="button">Lancer le prep agent</button>
             </div>
+            <select id="optimizer-objective-select">
+              <option value="maximize_prediction">Maximize prediction</option>
+              <option value="maximize_efficiency">Maximize efficiency</option>
+            </select>
+            <button id="run-quant-optimizer" class="secondary-btn" type="button">Lancer l optimizer</button>
             <select id="workflow-goal-select">
               <option value="pricing_decision">Pricing decision</option>
               <option value="diagnosis">Diagnosis</option>
@@ -273,6 +278,8 @@
                 <div id="semantic-layer-result" class="stack"></div>
                 <div id="prep-agent-result" class="stack"></div>
                 <div id="workflow-builder-result" class="stack"></div>
+                <div id="quant-optimizer-result" class="stack"></div>
+                <div id="observability-result" class="stack"></div>
               </div>
             </section>
 

@@ -417,6 +417,40 @@ class WorkflowBuilderResponse(AppBaseModel):
     automation_potential: str
 
 
+class QuantOptimizeRequest(AppBaseModel):
+    dataset_id: str
+    model_id: str
+    objective: Literal["maximize_prediction", "maximize_efficiency"] = "maximize_prediction"
+    reference_index: Optional[int] = None
+    language: Literal["en", "fr"] = "en"
+
+
+class QuantOptimizeResponse(AppBaseModel):
+    dataset_id: str
+    model_id: str
+    objective: str
+    recommended_changes: Dict[str, Any]
+    baseline_prediction: Union[float, str]
+    optimized_prediction: Union[float, str]
+    improvement: Union[float, str]
+    tested_scenarios: int
+    narrative: str
+    guardrails: List[str]
+
+
+class OperationLogItem(AppBaseModel):
+    tool_name: str
+    status: Literal["completed", "fallback", "failed"]
+    route: str
+    dataset_id: Optional[str] = None
+    detail: str
+    latency_ms: Optional[int] = None
+
+
+class ObservabilityResponse(AppBaseModel):
+    items: List[OperationLogItem]
+
+
 class CopilotAskRequest(AppBaseModel):
     dataset_id: str
     question: str

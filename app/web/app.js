@@ -23,6 +23,8 @@ const state = {
   semanticLayer: null,
   prepAgent: null,
   workflowBuilder: null,
+  quantOptimizer: null,
+  observability: null,
 };
 
 const copy = {
@@ -178,6 +180,8 @@ const copy = {
     semanticLayerTitle: "Semantic layer",
     prepAgentTitle: "Prep agent",
     workflowBuilderTitle: "Decision workflow builder",
+    quantOptimizerTitle: "Quant optimizer",
+    observabilityTitle: "Observability console",
     builderEmpty: "Charge un dataset pour activer ce module.",
     workflowGoalPricing: "Decision pricing",
     workflowGoalDiagnosis: "Diagnostic",
@@ -187,6 +191,9 @@ const copy = {
     recommendedNextStep: "Prochaine etape recommandee",
     automationPotential: "Potentiel d automatisation",
     blockers: "Blocages",
+    runQuantOptimizer: "Lancer l optimizer",
+    optimizerPrediction: "Maximiser la prediction",
+    optimizerEfficiency: "Maximiser l efficience",
   },
   en: {
     heroCopy: "An AI decision copilot that turns a CSV into diagnosis, recommendations, and next actions.",
@@ -340,6 +347,8 @@ const copy = {
     semanticLayerTitle: "Semantic layer",
     prepAgentTitle: "Prep agent",
     workflowBuilderTitle: "Decision workflow builder",
+    quantOptimizerTitle: "Quant optimizer",
+    observabilityTitle: "Observability console",
     builderEmpty: "Load a dataset to unlock this module.",
     workflowGoalPricing: "Pricing decision",
     workflowGoalDiagnosis: "Diagnosis",
@@ -349,6 +358,9 @@ const copy = {
     recommendedNextStep: "Recommended next step",
     automationPotential: "Automation potential",
     blockers: "Blockers",
+    runQuantOptimizer: "Run optimizer",
+    optimizerPrediction: "Maximize prediction",
+    optimizerEfficiency: "Maximize efficiency",
   },
 };
 
@@ -404,6 +416,8 @@ async function hydrateDataset(dataset) {
   state.semanticLayer = null;
   state.prepAgent = null;
   state.workflowBuilder = null;
+  state.quantOptimizer = null;
+  state.observability = null;
   setStatus(`${currentCopy().uploadDone} ${dataset.filename}`);
   render();
 }
@@ -522,6 +536,7 @@ function renderStaticCopy() {
   const baselineMode = $("baseline-mode-select")?.value || "reference_row";
   const referenceIndex = $("reference-index-input")?.value || "0";
   const workflowGoal = $("workflow-goal-select")?.value || "pricing_decision";
+  const optimizerGoal = $("optimizer-objective-select")?.value || "maximize_prediction";
   document.documentElement.lang = state.lang;
   $("hero-copy").textContent = c.heroCopy;
   $("controls-title").textContent = c.controlsTitle;
@@ -537,6 +552,7 @@ function renderStaticCopy() {
   $("run-semantic-layer").textContent = c.runSemanticLayer;
   $("run-prep-agent").textContent = c.runPrepAgent;
   $("run-workflow-builder").textContent = c.runWorkflowBuilder;
+  $("run-quant-optimizer").textContent = c.runQuantOptimizer;
   $("export-title").textContent = c.exportTitle;
   $("export-copy").textContent = c.exportCopy;
   $("export-report").textContent = c.exportReport;
@@ -615,6 +631,11 @@ function renderStaticCopy() {
     <option value="segment_prioritization">${c.workflowGoalSegment}</option>
   `;
   $("workflow-goal-select").value = workflowGoal;
+  $("optimizer-objective-select").innerHTML = `
+    <option value="maximize_prediction">${c.optimizerPrediction}</option>
+    <option value="maximize_efficiency">${c.optimizerEfficiency}</option>
+  `;
+  $("optimizer-objective-select").value = optimizerGoal;
   if (!state.dataset) {
     setStatus(c.noData);
   }
@@ -1261,6 +1282,41 @@ function renderWorkflowBuilder() {
   `;
 }
 
+function renderQuantOptimizer() {
+  const c = currentCopy();
+  if (!state.quantOptimizer) {
+    $("quant-optimizer-result").innerHTML = `<div class="answer-card"><strong>${c.quantOptimizerTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("quant-optimizer-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.quantOptimizerTitle}</strong>
+      <p>${state.quantOptimizer.narrative}</p>
+      <p><strong>Baseline:</strong> ${state.quantOptimizer.baseline_prediction}</p>
+      <p><strong>Optimized:</strong> ${state.quantOptimizer.optimized_prediction}</p>
+      <p><strong>Improvement:</strong> ${state.quantOptimizer.improvement}</p>
+      <p><strong>Changes:</strong><br />${Object.entries(state.quantOptimizer.recommended_changes || {}).map(([key, value]) => `${key}: ${value}`).join("<br />") || "-"}</p>
+    </article>
+  `;
+}
+
+function renderObservability() {
+  const c = currentCopy();
+  if (!state.observability?.items?.length) {
+    $("observability-result").innerHTML = `<div class="answer-card"><strong>${c.observabilityTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("observability-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.observabilityTitle}</strong>
+      <p>${state.observability.items
+        .slice(0, 6)
+        .map((item) => `[${item.route}] ${item.tool_name} - ${item.status} - ${item.detail}`)
+        .join("<br />")}</p>
+    </article>
+  `;
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
@@ -1292,6 +1348,8 @@ function render() {
   renderSemanticLayer();
   renderPrepAgent();
   renderWorkflowBuilder();
+  renderQuantOptimizer();
+  renderObservability();
   bindDynamicEvents();
 }
 
@@ -1523,8 +1581,10 @@ async function runSqlQuery(questionOverride = null) {
       warnings: state.sqlQuery.warnings || [],
     });
     setStatus(c.queryResultTitle);
+    await refreshObservability();
     renderSqlQuery();
     renderSqlHistory();
+    renderObservability();
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1627,7 +1687,9 @@ async function runJoinAssistant() {
       body: JSON.stringify({ dataset_id: state.dataset.dataset_id, language: state.lang }),
     });
     setStatus(c.joinAssistantTitle);
+    await refreshObservability();
     renderJoinAssistant();
+    renderObservability();
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1643,7 +1705,9 @@ async function runSemanticLayer() {
       body: JSON.stringify({ dataset_id: state.dataset.dataset_id, language: state.lang }),
     });
     setStatus(c.semanticLayerTitle);
+    await refreshObservability();
     renderSemanticLayer();
+    renderObservability();
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1659,7 +1723,9 @@ async function runPrepAgent() {
       body: JSON.stringify({ dataset_id: state.dataset.dataset_id, language: state.lang }),
     });
     setStatus(c.prepAgentTitle);
+    await refreshObservability();
     renderPrepAgent();
+    renderObservability();
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1680,9 +1746,42 @@ async function runWorkflowBuilder() {
       }),
     });
     setStatus(c.workflowBuilderTitle);
+    await refreshObservability();
     renderWorkflowBuilder();
+    renderObservability();
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runQuantOptimizer() {
+  const c = currentCopy();
+  if (!state.dataset || !state.training) return;
+  try {
+    state.quantOptimizer = await api("/quant-optimize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        model_id: state.training.model_id,
+        objective: $("optimizer-objective-select").value,
+        language: state.lang,
+      }),
+    });
+    setStatus(c.quantOptimizerTitle);
+    await refreshObservability();
+    renderQuantOptimizer();
+    renderObservability();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function refreshObservability() {
+  try {
+    state.observability = await api("/observability");
+  } catch (_error) {
+    state.observability = null;
   }
 }
 
@@ -1704,6 +1803,7 @@ function bindEvents() {
   $("run-semantic-layer").addEventListener("click", runSemanticLayer);
   $("run-prep-agent").addEventListener("click", runPrepAgent);
   $("run-workflow-builder").addEventListener("click", runWorkflowBuilder);
+  $("run-quant-optimizer").addEventListener("click", runQuantOptimizer);
   $("explain-sql").addEventListener("click", explainCurrentSql);
   $("export-query-csv").addEventListener("click", exportCurrentQueryCsv);
   $("export-report").addEventListener("click", exportReport);
@@ -1743,6 +1843,7 @@ function bindDynamicEvents() {
 async function init() {
   await refreshHealth();
   await refreshDatasets();
+  await refreshObservability();
   bindEvents();
   render();
 }

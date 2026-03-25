@@ -125,6 +125,31 @@ def test_prep_agent_and_workflow_builder_endpoints() -> None:
     assert workflow_body["automation_potential"]
 
 
+def test_quant_optimizer_and_observability_endpoints() -> None:
+    dataset = client.post("/upload/sample").json()
+    training = client.post("/train", json={"dataset_id": dataset["dataset_id"], "target": "revenue"}).json()
+
+    optimizer_response = client.post(
+        "/quant-optimize",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "model_id": training["model_id"],
+            "objective": "maximize_prediction",
+            "language": "en",
+        },
+    )
+    assert optimizer_response.status_code == 200
+    optimizer_body = optimizer_response.json()
+    assert "recommended_changes" in optimizer_body
+    assert optimizer_body["tested_scenarios"] >= 1
+
+    observability_response = client.get("/observability")
+    assert observability_response.status_code == 200
+    observability_body = observability_response.json()
+    assert observability_body["items"]
+    assert any(item["tool_name"] == "quant_optimizer" for item in observability_body["items"])
+
+
 def test_profile_investigation_and_enrichment_flow() -> None:
     dataset = client.post("/upload/sample").json()
 

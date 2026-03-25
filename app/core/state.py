@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pandas as pd
 
-from app.core.schemas import CopilotSessionState, DatasetListItem
+from app.core.schemas import CopilotSessionState, DatasetListItem, OperationLogItem
 
 
 @dataclass
@@ -62,11 +62,32 @@ class CopilotSessionRecord:
         )
 
 
+@dataclass
+class OperationLogRecord:
+    tool_name: str
+    status: str
+    route: str
+    detail: str
+    dataset_id: Optional[str] = None
+    latency_ms: Optional[int] = None
+
+    def to_schema(self) -> OperationLogItem:
+        return OperationLogItem(
+            tool_name=self.tool_name,
+            status=self.status,
+            route=self.route,
+            detail=self.detail,
+            dataset_id=self.dataset_id,
+            latency_ms=self.latency_ms,
+        )
+
+
 class InMemoryStore:
     def __init__(self) -> None:
         self.datasets: Dict[str, DatasetRecord] = {}
         self.models: Dict[str, ModelRecord] = {}
         self.copilot_sessions: Dict[str, CopilotSessionRecord] = {}
+        self.operation_logs: List[OperationLogRecord] = []
 
     def save_dataset(self, record: DatasetRecord) -> None:
         self.datasets[record.dataset_id] = record
@@ -104,6 +125,31 @@ class InMemoryStore:
         record = CopilotSessionRecord(session_id=session_id, active_dataset_id=dataset_id)
         self.copilot_sessions[session_id] = record
         return record.to_schema()
+
+    def log_operation(
+        self,
+        *,
+        tool_name: str,
+        status: str,
+        route: str,
+        detail: str,
+        dataset_id: Optional[str] = None,
+        latency_ms: Optional[int] = None,
+    ) -> None:
+        self.operation_logs = [
+            OperationLogRecord(
+                tool_name=tool_name,
+                status=status,
+                route=route,
+                detail=detail,
+                dataset_id=dataset_id,
+                latency_ms=latency_ms,
+            ),
+            *self.operation_logs,
+        ][:20]
+
+    def list_operation_logs(self) -> List[OperationLogItem]:
+        return [item.to_schema() for item in self.operation_logs]
 
 
 store = InMemoryStore()
