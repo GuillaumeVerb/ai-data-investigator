@@ -150,6 +150,44 @@ def test_quant_optimizer_and_observability_endpoints() -> None:
     assert any(item["tool_name"] == "quant_optimizer" for item in observability_body["items"])
 
 
+def test_constraint_solver_experiment_designer_and_evaluation_console() -> None:
+    dataset = client.post("/upload/sample").json()
+    training = client.post("/train", json={"dataset_id": dataset["dataset_id"], "target": "revenue"}).json()
+
+    constraint_response = client.post(
+        "/constraint-solver",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "model_id": training["model_id"],
+            "objective": "maximize_prediction",
+            "language": "en",
+        },
+    )
+    assert constraint_response.status_code == 200
+    constraint_body = constraint_response.json()
+    assert constraint_body["constraints_applied"]
+    assert "recommended_changes" in constraint_body
+
+    experiment_response = client.post(
+        "/experiment-designer",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "model_id": training["model_id"],
+            "language": "en",
+        },
+    )
+    assert experiment_response.status_code == 200
+    experiment_body = experiment_response.json()
+    assert experiment_body["recommendations"]
+    assert experiment_body["recommended_order"]
+
+    evaluation_response = client.get("/evaluation-console")
+    assert evaluation_response.status_code == 200
+    evaluation_body = evaluation_response.json()
+    assert evaluation_body["total_operations"] >= 1
+    assert evaluation_body["top_tools"]
+
+
 def test_profile_investigation_and_enrichment_flow() -> None:
     dataset = client.post("/upload/sample").json()
 

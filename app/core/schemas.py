@@ -451,6 +451,52 @@ class ObservabilityResponse(AppBaseModel):
     items: List[OperationLogItem]
 
 
+class ConstraintSolveRequest(AppBaseModel):
+    dataset_id: str
+    model_id: str
+    objective: Literal["maximize_prediction", "maximize_efficiency"] = "maximize_prediction"
+    language: Literal["en", "fr"] = "en"
+
+
+class ConstraintSolveResponse(AppBaseModel):
+    dataset_id: str
+    model_id: str
+    objective: str
+    recommended_changes: Dict[str, Any]
+    constrained_prediction: Union[float, str]
+    constraints_applied: List[str]
+    rationale: str
+
+
+class ExperimentRecommendation(AppBaseModel):
+    title: str
+    hypothesis: str
+    primary_metric: str
+    guardrail: str
+    target_segment: str
+
+
+class ExperimentDesignerRequest(AppBaseModel):
+    dataset_id: str
+    model_id: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
+
+
+class ExperimentDesignerResponse(AppBaseModel):
+    dataset_id: str
+    recommendations: List[ExperimentRecommendation]
+    recommended_order: List[str]
+
+
+class EvaluationConsoleResponse(AppBaseModel):
+    total_operations: int
+    success_rate_pct: float
+    fallback_rate_pct: float
+    top_routes: List[str]
+    top_tools: List[str]
+    readiness_label: str
+
+
 class CopilotAskRequest(AppBaseModel):
     dataset_id: str
     question: str

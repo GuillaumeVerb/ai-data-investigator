@@ -10,6 +10,8 @@ from app.core.config import get_settings
 from app.core.schemas import (
     ActionRequest,
     ActionResponse,
+    ConstraintSolveRequest,
+    ConstraintSolveResponse,
     CopilotAskRequest,
     CopilotAskResponse,
     CopilotSessionState,
@@ -18,6 +20,9 @@ from app.core.schemas import (
     DatasetListItem,
     EnrichmentRequest,
     EnrichmentResponse,
+    EvaluationConsoleResponse,
+    ExperimentDesignerRequest,
+    ExperimentDesignerResponse,
     InvestigationPathRequest,
     InvestigationPathResponse,
     InvestigateRequest,
@@ -53,10 +58,13 @@ from app.core.schemas import (
     WorkflowBuilderRequest,
     WorkflowBuilderResponse,
 )
+from app.services.constraint_solver import solve_with_constraints
 from app.services.copilot_agent import answer_business_question
 from app.services.decision_engine import run_decision_engine
 from app.services.dataset_merge import preview_merge
 from app.services.enrichment_agent import suggest_enrichment
+from app.services.evaluation_console import build_evaluation_console
+from app.services.experiment_designer import build_experiment_plan
 from app.services.action_engine import recommend_actions
 from app.services.ingestion import load_sample_dataset, load_upload
 from app.services.investigation_agent import investigate_path
@@ -314,6 +322,45 @@ def quant_optimize(request: QuantOptimizeRequest) -> QuantOptimizeResponse:
 @app.get("/observability", response_model=ObservabilityResponse)
 def observability() -> ObservabilityResponse:
     return get_observability_snapshot()
+
+
+@app.post("/constraint-solver", response_model=ConstraintSolveResponse)
+def constraint_solver(request: ConstraintSolveRequest) -> ConstraintSolveResponse:
+    try:
+        result = solve_with_constraints(request.dataset_id, request.model_id, request.objective, request.language)
+        store.log_operation(
+            tool_name="constraint_solver",
+            status="completed",
+            route="constraint",
+            dataset_id=request.dataset_id,
+            detail=str(result.recommended_changes),
+        )
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/experiment-designer", response_model=ExperimentDesignerResponse)
+def experiment_designer(request: ExperimentDesignerRequest) -> ExperimentDesignerResponse:
+    try:
+        result = build_experiment_plan(request.dataset_id, request.model_id, request.language)
+        store.log_operation(
+            tool_name="experiment_designer",
+            status="completed",
+            route="experiment",
+            dataset_id=request.dataset_id,
+            detail=result.recommendations[0].title if result.recommendations else "no recommendation",
+        )
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
+
+
+@app.get("/evaluation-console", response_model=EvaluationConsoleResponse)
+def evaluation_console() -> EvaluationConsoleResponse:
+    return build_evaluation_console()
 
 
 @app.post("/train", response_model=TrainResponse)

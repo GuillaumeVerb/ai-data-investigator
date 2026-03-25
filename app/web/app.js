@@ -25,6 +25,9 @@ const state = {
   workflowBuilder: null,
   quantOptimizer: null,
   observability: null,
+  constraintSolver: null,
+  experimentDesigner: null,
+  evaluationConsole: null,
 };
 
 const copy = {
@@ -182,6 +185,9 @@ const copy = {
     workflowBuilderTitle: "Decision workflow builder",
     quantOptimizerTitle: "Quant optimizer",
     observabilityTitle: "Observability console",
+    constraintSolverTitle: "Constraint solver",
+    experimentDesignerTitle: "Experiment designer",
+    evaluationConsoleTitle: "Evaluation console",
     builderEmpty: "Charge un dataset pour activer ce module.",
     workflowGoalPricing: "Decision pricing",
     workflowGoalDiagnosis: "Diagnostic",
@@ -192,6 +198,9 @@ const copy = {
     automationPotential: "Potentiel d automatisation",
     blockers: "Blocages",
     runQuantOptimizer: "Lancer l optimizer",
+    runConstraintSolver: "Lancer le constraint solver",
+    runExperimentDesigner: "Construire les experiments",
+    runEvaluationConsole: "Rafraichir l evaluation",
     optimizerPrediction: "Maximiser la prediction",
     optimizerEfficiency: "Maximiser l efficience",
   },
@@ -349,6 +358,9 @@ const copy = {
     workflowBuilderTitle: "Decision workflow builder",
     quantOptimizerTitle: "Quant optimizer",
     observabilityTitle: "Observability console",
+    constraintSolverTitle: "Constraint solver",
+    experimentDesignerTitle: "Experiment designer",
+    evaluationConsoleTitle: "Evaluation console",
     builderEmpty: "Load a dataset to unlock this module.",
     workflowGoalPricing: "Pricing decision",
     workflowGoalDiagnosis: "Diagnosis",
@@ -359,6 +371,9 @@ const copy = {
     automationPotential: "Automation potential",
     blockers: "Blockers",
     runQuantOptimizer: "Run optimizer",
+    runConstraintSolver: "Run constraint solver",
+    runExperimentDesigner: "Build experiments",
+    runEvaluationConsole: "Refresh evaluation",
     optimizerPrediction: "Maximize prediction",
     optimizerEfficiency: "Maximize efficiency",
   },
@@ -418,6 +433,9 @@ async function hydrateDataset(dataset) {
   state.workflowBuilder = null;
   state.quantOptimizer = null;
   state.observability = null;
+  state.constraintSolver = null;
+  state.experimentDesigner = null;
+  state.evaluationConsole = null;
   setStatus(`${currentCopy().uploadDone} ${dataset.filename}`);
   render();
 }
@@ -553,6 +571,9 @@ function renderStaticCopy() {
   $("run-prep-agent").textContent = c.runPrepAgent;
   $("run-workflow-builder").textContent = c.runWorkflowBuilder;
   $("run-quant-optimizer").textContent = c.runQuantOptimizer;
+  $("run-constraint-solver").textContent = c.runConstraintSolver;
+  $("run-experiment-designer").textContent = c.runExperimentDesigner;
+  $("run-evaluation-console").textContent = c.runEvaluationConsole;
   $("export-title").textContent = c.exportTitle;
   $("export-copy").textContent = c.exportCopy;
   $("export-report").textContent = c.exportReport;
@@ -1317,6 +1338,54 @@ function renderObservability() {
   `;
 }
 
+function renderConstraintSolver() {
+  const c = currentCopy();
+  if (!state.constraintSolver) {
+    $("constraint-solver-result").innerHTML = `<div class="answer-card"><strong>${c.constraintSolverTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("constraint-solver-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.constraintSolverTitle}</strong>
+      <p>${state.constraintSolver.rationale}</p>
+      <p><strong>Changes:</strong><br />${Object.entries(state.constraintSolver.recommended_changes || {}).map(([key, value]) => `${key}: ${value}`).join("<br />") || "-"}</p>
+      <p><strong>Constraints:</strong><br />${(state.constraintSolver.constraints_applied || []).join("<br />") || "-"}</p>
+    </article>
+  `;
+}
+
+function renderExperimentDesigner() {
+  const c = currentCopy();
+  if (!state.experimentDesigner) {
+    $("experiment-designer-result").innerHTML = `<div class="answer-card"><strong>${c.experimentDesignerTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("experiment-designer-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.experimentDesignerTitle}</strong>
+      <p>${(state.experimentDesigner.recommendations || []).map((item) => `<strong>${item.title}</strong><br />${item.hypothesis}<br />Metric: ${item.primary_metric}<br />Guardrail: ${item.guardrail}`).join("<br /><br />")}</p>
+    </article>
+  `;
+}
+
+function renderEvaluationConsole() {
+  const c = currentCopy();
+  if (!state.evaluationConsole) {
+    $("evaluation-console-result").innerHTML = `<div class="answer-card"><strong>${c.evaluationConsoleTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("evaluation-console-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.evaluationConsoleTitle}</strong>
+      <p>Total ops: ${state.evaluationConsole.total_operations}</p>
+      <p>Success rate: ${state.evaluationConsole.success_rate_pct}%</p>
+      <p>Fallback rate: ${state.evaluationConsole.fallback_rate_pct}%</p>
+      <p>Top routes: ${(state.evaluationConsole.top_routes || []).join(", ") || "-"}</p>
+      <p>${state.evaluationConsole.readiness_label}</p>
+    </article>
+  `;
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
@@ -1350,6 +1419,9 @@ function render() {
   renderWorkflowBuilder();
   renderQuantOptimizer();
   renderObservability();
+  renderConstraintSolver();
+  renderExperimentDesigner();
+  renderEvaluationConsole();
   bindDynamicEvents();
 }
 
@@ -1785,6 +1857,70 @@ async function refreshObservability() {
   }
 }
 
+async function refreshEvaluationConsole() {
+  try {
+    state.evaluationConsole = await api("/evaluation-console");
+  } catch (_error) {
+    state.evaluationConsole = null;
+  }
+}
+
+async function runConstraintSolver() {
+  const c = currentCopy();
+  if (!state.dataset || !state.training) return;
+  try {
+    state.constraintSolver = await api("/constraint-solver", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        model_id: state.training.model_id,
+        objective: $("optimizer-objective-select").value,
+        language: state.lang,
+      }),
+    });
+    setStatus(c.constraintSolverTitle);
+    await refreshObservability();
+    await refreshEvaluationConsole();
+    renderConstraintSolver();
+    renderObservability();
+    renderEvaluationConsole();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runExperimentDesigner() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.experimentDesigner = await api("/experiment-designer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        model_id: state.training?.model_id || null,
+        language: state.lang,
+      }),
+    });
+    setStatus(c.experimentDesignerTitle);
+    await refreshObservability();
+    await refreshEvaluationConsole();
+    renderExperimentDesigner();
+    renderObservability();
+    renderEvaluationConsole();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runEvaluationConsole() {
+  const c = currentCopy();
+  await refreshEvaluationConsole();
+  setStatus(c.evaluationConsoleTitle);
+  renderEvaluationConsole();
+}
+
 function bindEvents() {
   $("load-sales").addEventListener("click", () => loadSample("sales"));
   $("load-marketing").addEventListener("click", () => loadSample("marketing"));
@@ -1804,6 +1940,9 @@ function bindEvents() {
   $("run-prep-agent").addEventListener("click", runPrepAgent);
   $("run-workflow-builder").addEventListener("click", runWorkflowBuilder);
   $("run-quant-optimizer").addEventListener("click", runQuantOptimizer);
+  $("run-constraint-solver").addEventListener("click", runConstraintSolver);
+  $("run-experiment-designer").addEventListener("click", runExperimentDesigner);
+  $("run-evaluation-console").addEventListener("click", runEvaluationConsole);
   $("explain-sql").addEventListener("click", explainCurrentSql);
   $("export-query-csv").addEventListener("click", exportCurrentQueryCsv);
   $("export-report").addEventListener("click", exportReport);
@@ -1844,6 +1983,7 @@ async function init() {
   await refreshHealth();
   await refreshDatasets();
   await refreshObservability();
+  await refreshEvaluationConsole();
   bindEvents();
   render();
 }

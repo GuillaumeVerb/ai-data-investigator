@@ -91,6 +91,8 @@
               <option value="maximize_efficiency">Maximize efficiency</option>
             </select>
             <button id="run-quant-optimizer" class="secondary-btn" type="button">Lancer l optimizer</button>
+            <button id="run-constraint-solver" class="ghost-btn" type="button">Lancer le constraint solver</button>
+            <button id="run-experiment-designer" class="ghost-btn" type="button">Construire les experiments</button>
             <select id="workflow-goal-select">
               <option value="pricing_decision">Pricing decision</option>
               <option value="diagnosis">Diagnosis</option>
@@ -98,6 +100,7 @@
               <option value="segment_prioritization">Segment prioritization</option>
             </select>
             <button id="run-workflow-builder" class="primary-btn" type="button">Construire le workflow</button>
+            <button id="run-evaluation-console" class="ghost-btn" type="button">Rafraichir l evaluation</button>
           </div>
 
           <div class="panel-card">
@@ -280,6 +283,9 @@
                 <div id="workflow-builder-result" class="stack"></div>
                 <div id="quant-optimizer-result" class="stack"></div>
                 <div id="observability-result" class="stack"></div>
+                <div id="constraint-solver-result" class="stack"></div>
+                <div id="experiment-designer-result" class="stack"></div>
+                <div id="evaluation-console-result" class="stack"></div>
               </div>
             </section>
 
