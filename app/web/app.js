@@ -17,6 +17,11 @@ const copy = {
     heroCopy: "Un copilote d'analyse et de decision qui transforme un CSV en diagnostic, recommandations et actions.",
     controlsTitle: "Demarrer",
     controlsCopy: "Charge une demo ou importe un CSV pour lancer l'investigation.",
+    workflowLoad: "Charger les donnees",
+    workflowInsights: "Lire les insights",
+    workflowTrain: "Entrainer le modele",
+    workflowSimulate: "Simuler",
+    workflowDecide: "Decider",
     salesDemo: "Charger la demo ventes",
     marketingDemo: "Charger la demo marketing",
     upload: "Importer un CSV",
@@ -100,6 +105,12 @@ const copy = {
     evidenceTargets: "Cibles detectees",
     evidenceDerived: "Signaux crees",
     evidenceQuality: "Qualite et couverture",
+    confidenceKicker: "Confidence",
+    confidenceTitle: "Confiance et limites",
+    confidenceScore: "Score de confiance",
+    confidenceWhy: "Pourquoi on y croit",
+    confidenceLimit: "Limite principale",
+    confidenceNext: "Ce qui renforcerait la reco",
     systemLabel: "Systeme",
     systemReady: "API operationnelle",
     llmLabel: "LLM",
@@ -108,11 +119,20 @@ const copy = {
     modeValue: "Decision-first workflow",
     noAnswer: "Pose une question pour voir la reponse du copilote.",
     noTraining: "Entraine un modele pour afficher les signaux predictifs.",
+    exportTitle: "Rapport executif",
+    exportCopy: "Exporte une synthese HTML a partager en revue client ou management.",
+    exportReport: "Exporter le rapport",
+    exportReady: "Rapport exporte",
   },
   en: {
     heroCopy: "An AI decision copilot that turns a CSV into diagnosis, recommendations, and next actions.",
     controlsTitle: "Get started",
     controlsCopy: "Load a demo or upload a CSV to launch the investigation.",
+    workflowLoad: "Load data",
+    workflowInsights: "Review insights",
+    workflowTrain: "Train model",
+    workflowSimulate: "Simulate",
+    workflowDecide: "Decide",
     salesDemo: "Load sales demo",
     marketingDemo: "Load marketing demo",
     upload: "Upload a CSV",
@@ -196,6 +216,12 @@ const copy = {
     evidenceTargets: "Detected targets",
     evidenceDerived: "Created signals",
     evidenceQuality: "Quality and coverage",
+    confidenceKicker: "Confidence",
+    confidenceTitle: "Confidence and limitations",
+    confidenceScore: "Confidence score",
+    confidenceWhy: "Why this is credible",
+    confidenceLimit: "Main limitation",
+    confidenceNext: "What would strengthen it",
     systemLabel: "System",
     systemReady: "API ready",
     llmLabel: "LLM",
@@ -204,6 +230,10 @@ const copy = {
     modeValue: "Decision-first workflow",
     noAnswer: "Ask a question to display the copilot answer.",
     noTraining: "Train a model to display predictive signals.",
+    exportTitle: "Executive report",
+    exportCopy: "Export an HTML summary you can share in a client or management review.",
+    exportReport: "Export report",
+    exportReady: "Report exported",
   },
 };
 
@@ -305,6 +335,18 @@ function readSegmentControls() {
   };
 }
 
+function downloadHtml(filename, html) {
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function renderStaticCopy() {
   const c = currentCopy();
   const baselineMode = $("baseline-mode-select")?.value || "reference_row";
@@ -313,6 +355,9 @@ function renderStaticCopy() {
   $("hero-copy").textContent = c.heroCopy;
   $("controls-title").textContent = c.controlsTitle;
   $("controls-copy").textContent = c.controlsCopy;
+  $("export-title").textContent = c.exportTitle;
+  $("export-copy").textContent = c.exportCopy;
+  $("export-report").textContent = c.exportReport;
   $("load-sales").textContent = c.salesDemo;
   $("load-marketing").textContent = c.marketingDemo;
   $("upload-label").textContent = c.upload;
@@ -322,6 +367,8 @@ function renderStaticCopy() {
   $("decision-kicker").textContent = c.decisionKicker;
   $("decision-title").textContent = c.decisionTitle;
   $("decision-subtitle").textContent = c.decisionSubtitle;
+  $("confidence-kicker").textContent = c.confidenceKicker;
+  $("confidence-title").textContent = c.confidenceTitle;
   $("snapshot-kicker").textContent = c.snapshotKicker;
   $("snapshot-title").textContent = c.snapshotTitle;
   $("preview-summary").textContent = c.previewSummary;
@@ -374,6 +421,27 @@ function renderStaticCopy() {
   }
 }
 
+function renderWorkflow() {
+  const c = currentCopy();
+  const steps = [
+    { key: "load", label: c.workflowLoad, complete: Boolean(state.dataset), active: !state.dataset },
+    { key: "insights", label: c.workflowInsights, complete: Boolean(state.investigation), active: Boolean(state.dataset && !state.training) },
+    { key: "train", label: c.workflowTrain, complete: Boolean(state.training), active: Boolean(state.dataset && !state.training) },
+    { key: "simulate", label: c.workflowSimulate, complete: Boolean(state.simulation), active: Boolean(state.training && !state.simulation) },
+    { key: "decide", label: c.workflowDecide, complete: Boolean(state.decisionResult), active: Boolean(state.simulation && !state.decisionResult) },
+  ];
+  $("workflow-steps").innerHTML = steps
+    .map(
+      (step, index) => `
+        <article class="workflow-step ${step.complete ? "complete" : ""} ${step.active ? "active" : ""}">
+          <div class="workflow-step-number">${index + 1}</div>
+          <div class="small-meta">${step.label}</div>
+        </article>
+      `,
+    )
+    .join("");
+}
+
 function renderDecisionCards() {
   const c = currentCopy();
   const insight = state.investigation?.insights?.[0];
@@ -397,6 +465,34 @@ function renderDecisionCards() {
       `,
     )
     .join("");
+}
+
+function renderConfidence() {
+  const c = currentCopy();
+  const confidenceLevel = state.decisionResult?.confidence?.level || state.training?.confidence_level || "medium";
+  const confidenceValue = state.decisionResult?.confidence?.row_coverage_pct || state.training?.data_coverage_pct || state.profile?.data_coverage_pct || "-";
+  const mainLimit = state.decisionResult?.main_risk || state.investigation?.anomaly_narrative || "-";
+  const support = state.decisionResult?.supporting_evidence?.[0] || state.profile?.headline_findings?.[0] || state.investigation?.executive_brief || "-";
+  const nextStrength = state.decisionResult?.next_best_analysis || state.investigation?.investigation_suggestions?.[0]?.title || "-";
+  $("confidence-grid").innerHTML = `
+    <article class="confidence-card">
+      <strong>${c.confidenceScore}</strong>
+      <p>${confidenceLevel}</p>
+      <div class="small-meta">${confidenceValue}%</div>
+    </article>
+    <article class="confidence-card">
+      <strong>${c.confidenceWhy}</strong>
+      <p>${support}</p>
+    </article>
+    <article class="confidence-card">
+      <strong>${c.confidenceLimit}</strong>
+      <p>${mainLimit}</p>
+    </article>
+    <article class="confidence-card">
+      <strong>${c.confidenceNext}</strong>
+      <p>${nextStrength}</p>
+    </article>
+  `;
 }
 
 function renderDatasetMetrics() {
@@ -814,6 +910,7 @@ function renderCopilot() {
 
 function render() {
   renderStaticCopy();
+  renderWorkflow();
   const hasData = Boolean(state.dataset && state.profile && state.investigation);
   $("empty-state").hidden = hasData;
   $("dashboard").hidden = !hasData;
@@ -821,6 +918,7 @@ function render() {
     return;
   }
   renderDecisionCards();
+  renderConfidence();
   renderDatasetMetrics();
   renderInsights();
   renderSuggestions();
@@ -995,6 +1093,30 @@ async function askCopilot() {
   }
 }
 
+async function exportReport() {
+  const c = currentCopy();
+  if (!state.dataset || !state.profile || !state.investigation) return;
+  try {
+    const payload = {
+      dataset_id: state.dataset.dataset_id,
+      profile: state.profile,
+      investigation: state.investigation,
+      training: state.training || null,
+      simulation: state.simulation || null,
+      root_cause: null,
+    };
+    const report = await api("/report/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    downloadHtml(`${report.title || "ai-data-investigator-report"}.html`, report.html_content);
+    setStatus(c.exportReady);
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
 function bindEvents() {
   $("load-sales").addEventListener("click", () => loadSample("sales"));
   $("load-marketing").addEventListener("click", () => loadSample("marketing"));
@@ -1007,6 +1129,7 @@ function bindEvents() {
   $("prepare-decision-engine").addEventListener("click", prepareDecisionEngine);
   $("run-decision-engine").addEventListener("click", runDecisionEngine);
   $("ask-copilot").addEventListener("click", askCopilot);
+  $("export-report").addEventListener("click", exportReport);
   $("lang-fr").addEventListener("click", () => {
     state.lang = "fr";
     if (state.dataset) {

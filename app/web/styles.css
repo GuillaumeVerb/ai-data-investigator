@@ -35,6 +35,57 @@ body {
   z-index: 2;
 }
 
+.workflow-strip {
+  margin-bottom: 20px;
+}
+
+.workflow-steps,
+.confidence-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.workflow-steps {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.workflow-step,
+.confidence-card {
+  background: rgba(255, 252, 247, 0.72);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.workflow-step.active {
+  border-color: rgba(47, 109, 73, 0.28);
+  background: linear-gradient(180deg, rgba(241, 248, 243, 0.96), rgba(232, 242, 235, 0.88));
+}
+
+.workflow-step.complete {
+  border-color: rgba(33, 76, 52, 0.18);
+}
+
+.workflow-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(47, 109, 73, 0.12);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.confidence-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .ambient {
   position: fixed;
   inset: auto;
@@ -315,7 +366,8 @@ textarea {
 .decision-card strong,
 .metric-card strong,
 .insight-card strong,
-.answer-card strong {
+.answer-card strong,
+.confidence-card strong {
   display: block;
   margin-bottom: 8px;
 }
@@ -563,6 +615,8 @@ td {
   .suggestion-grid,
   .evidence-grid,
   .chart-grid,
+  .confidence-grid,
+  .workflow-steps,
   .hero-band,
   .scenario-builder-grid,
   .decision-result-grid,

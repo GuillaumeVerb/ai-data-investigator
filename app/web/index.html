@@ -44,6 +44,10 @@
         </div>
       </header>
 
+      <section class="workflow-strip">
+        <div id="workflow-steps" class="workflow-steps"></div>
+      </section>
+
       <div class="layout">
         <aside class="control-panel">
           <div class="panel-card">
@@ -62,6 +66,12 @@
             <p class="panel-title" id="copilot-title">Copilote</p>
             <textarea id="question-input" rows="5" placeholder="Faut-il augmenter le prix ? Quel segment prioriser ?"></textarea>
             <button id="ask-copilot" class="primary-btn" type="button">Interroger le copilote</button>
+          </div>
+
+          <div class="panel-card">
+            <p class="panel-title" id="export-title">Rapport executif</p>
+            <p class="panel-copy" id="export-copy">Exporte une synthese HTML a partager en revue client ou management.</p>
+            <button id="export-report" class="secondary-btn" type="button">Exporter le rapport</button>
           </div>
 
           <div class="panel-card">
@@ -91,6 +101,14 @@
                 </p>
               </div>
               <div id="decision-cards" class="decision-grid"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="confidence-kicker">Confidence</p>
+                <h2 id="confidence-title">Confiance et limites</h2>
+              </div>
+              <div id="confidence-grid" class="confidence-grid"></div>
             </section>
 
             <section class="panel-card">
