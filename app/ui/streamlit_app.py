@@ -553,6 +553,24 @@ def render_dataset_preview(dataset: dict) -> None:
         st.info(t("app.no_preview", st.session_state.lang))
 
 
+def normalize_target_options(profile: dict) -> list[str]:
+    raw_options = profile.get("target_candidates") or profile.get("columns") or ["revenue"]
+    options: list[str] = []
+    for item in raw_options:
+        if item is None:
+            continue
+        text = str(item).strip()
+        if text and text not in options:
+            options.append(text)
+    return options or ["revenue"]
+
+
+def resolve_target_default(options: list[str], preferred: str = "revenue") -> str:
+    if preferred in options:
+        return preferred
+    return options[0]
+
+
 def get_decision_summary_payload(lang: str, investigation: dict, decision: dict | None, answer: dict | None) -> dict[str, str]:
     if decision:
         next_analysis = decision.get("next_best_analysis") or t("app.not_available", lang)
@@ -699,7 +717,7 @@ if uploaded_file is not None and st.session_state.get("uploaded_file_name") != u
 dataset = st.session_state.dataset
 dataset_id = dataset["dataset_id"]
 profile, investigation = load_dataset_context(dataset_id)
-target_options = profile["target_candidates"] or profile["columns"] or ["revenue"]
+target_options = normalize_target_options(profile)
 lang = st.session_state.lang
 hero_subtitle = (
     "Ask one business question, compare scenarios, and get a recommendation with guardrails."
@@ -718,7 +736,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-default_global_target = "revenue" if "revenue" in target_options else target_options[0]
+default_global_target = resolve_target_default(target_options)
+if st.session_state.get("global_target_override") not in target_options:
+    st.session_state.global_target_override = default_global_target
 global_question_cols = st.columns([1.7, 0.75, 0.55], vertical_alignment="bottom")
 with global_question_cols[0]:
     global_question = st.text_input(
@@ -1118,7 +1138,14 @@ with tabs[1]:
 
 with tabs[2]:
     target_candidates = target_options
-    selected_target = st.selectbox(t("prediction.choose_target", st.session_state.lang), target_candidates)
+    if st.session_state.get("prediction_target_override") not in target_candidates:
+        st.session_state.prediction_target_override = resolve_target_default(target_candidates)
+    selected_target = st.selectbox(
+        t("prediction.choose_target", st.session_state.lang),
+        target_candidates,
+        index=target_candidates.index(st.session_state.prediction_target_override),
+        key="prediction_target_override",
+    )
     if st.button(t("prediction.train_button", st.session_state.lang), type="primary"):
         st.session_state.training = api_post("/train", json={"dataset_id": dataset_id, "target": selected_target})
         st.session_state.actions = None
@@ -1499,7 +1526,9 @@ with tabs[6]:
 
 with tabs[5]:
     question = st.text_area(t("app.top_question", st.session_state.lang), placeholder=t("app.top_question_placeholder", st.session_state.lang))
-    default_copilot_target = "revenue" if "revenue" in target_options else target_options[0]
+    default_copilot_target = resolve_target_default(target_options)
+    if st.session_state.get("copilot_target_override") not in target_options:
+        st.session_state.copilot_target_override = default_copilot_target
     copilot_target = st.selectbox(
         t("app.target_override", st.session_state.lang),
         target_options,
