@@ -80,6 +80,51 @@ def test_multi_dataset_query_can_use_joined_context() -> None:
     assert body["row_count"] >= 1
 
 
+def test_join_assistant_and_semantic_layer_endpoints() -> None:
+    sales = client.post("/upload/sample").json()
+    marketing = client.post("/upload/sample/marketing").json()
+
+    join_response = client.post(
+        "/join-assistant",
+        json={"dataset_id": sales["dataset_id"], "language": "en"},
+    )
+    assert join_response.status_code == 200
+    join_body = join_response.json()
+    assert join_body["candidates"]
+    assert any(item["right_dataset_id"] == marketing["dataset_id"] for item in join_body["candidates"])
+
+    semantic_response = client.post(
+        "/semantic-layer",
+        json={"dataset_id": sales["dataset_id"], "language": "en"},
+    )
+    assert semantic_response.status_code == 200
+    semantic_body = semantic_response.json()
+    assert semantic_body["measures"]
+    assert semantic_body["recommended_kpis"]
+
+
+def test_prep_agent_and_workflow_builder_endpoints() -> None:
+    dataset = client.post("/upload/sample").json()
+
+    prep_response = client.post(
+        "/prep-agent",
+        json={"dataset_id": dataset["dataset_id"], "language": "en"},
+    )
+    assert prep_response.status_code == 200
+    prep_body = prep_response.json()
+    assert "typed_columns" in prep_body
+    assert prep_body["feature_opportunities"]
+
+    workflow_response = client.post(
+        "/workflow-builder",
+        json={"dataset_id": dataset["dataset_id"], "goal": "pricing_decision", "language": "en"},
+    )
+    assert workflow_response.status_code == 200
+    workflow_body = workflow_response.json()
+    assert workflow_body["steps"]
+    assert workflow_body["automation_potential"]
+
+
 def test_profile_investigation_and_enrichment_flow() -> None:
     dataset = client.post("/upload/sample").json()
 

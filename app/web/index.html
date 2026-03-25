@@ -79,6 +79,23 @@
           </div>
 
           <div class="panel-card">
+            <p class="panel-title" id="builder-studio-title">AI Builder Studio</p>
+            <p class="panel-copy" id="builder-studio-copy">Explore joins, semantic layer, preparation plan, and workflow orchestration.</p>
+            <div class="button-stack">
+              <button id="run-join-assistant" class="secondary-btn" type="button">Analyser les jointures</button>
+              <button id="run-semantic-layer" class="ghost-btn" type="button">Construire la couche semantique</button>
+              <button id="run-prep-agent" class="ghost-btn" type="button">Lancer le prep agent</button>
+            </div>
+            <select id="workflow-goal-select">
+              <option value="pricing_decision">Pricing decision</option>
+              <option value="diagnosis">Diagnosis</option>
+              <option value="marketing_optimization">Marketing optimization</option>
+              <option value="segment_prioritization">Segment prioritization</option>
+            </select>
+            <button id="run-workflow-builder" class="primary-btn" type="button">Construire le workflow</button>
+          </div>
+
+          <div class="panel-card">
             <p class="panel-title" id="export-title">Rapport executif</p>
             <p class="panel-copy" id="export-copy">Exporte une synthese HTML a partager en revue client ou management.</p>
             <button id="export-report" class="secondary-btn" type="button">Exporter le rapport</button>
@@ -244,6 +261,19 @@
                 <h3 id="builder-ops-title">Pilotage AI Builder</h3>
               </div>
               <div id="builder-ops" class="metric-grid"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="builder-studio-kicker">AI Builder Studio</p>
+                <h2 id="builder-studio-result-title">Builder copilots</h2>
+              </div>
+              <div id="builder-studio-grid" class="suggestion-grid builder-grid">
+                <div id="join-assistant-result" class="stack"></div>
+                <div id="semantic-layer-result" class="stack"></div>
+                <div id="prep-agent-result" class="stack"></div>
+                <div id="workflow-builder-result" class="stack"></div>
+              </div>
             </section>
 
             <section class="panel-card">

@@ -22,8 +22,12 @@ from app.core.schemas import (
     InvestigationPathResponse,
     InvestigateRequest,
     InvestigateResponse,
+    JoinAssistantRequest,
+    JoinAssistantResponse,
     MergePreviewRequest,
     MergePreviewResponse,
+    PreparationAgentRequest,
+    PreparationAgentResponse,
     ProfileRequest,
     ProfileResponse,
     QueryExplainRequest,
@@ -32,6 +36,8 @@ from app.core.schemas import (
     QueryResponse,
     RootCauseRequest,
     RootCauseResponse,
+    SemanticLayerRequest,
+    SemanticLayerResponse,
     ReportExportRequest,
     ReportExportResponse,
     SimulationRequest,
@@ -41,6 +47,8 @@ from app.core.schemas import (
     TrainRequest,
     TrainResponse,
     UploadResponse,
+    WorkflowBuilderRequest,
+    WorkflowBuilderResponse,
 )
 from app.services.copilot_agent import answer_business_question
 from app.services.decision_engine import run_decision_engine
@@ -49,14 +57,18 @@ from app.services.enrichment_agent import suggest_enrichment
 from app.services.action_engine import recommend_actions
 from app.services.ingestion import load_sample_dataset, load_upload
 from app.services.investigation_agent import investigate_path
+from app.services.join_assistant import analyze_join_candidates
 from app.services.insights import investigate_dataset
 from app.services.llm_engine import explain_sql_query, generate_summary, llm_status
 from app.services.ml_engine import train_model
+from app.services.preparation_agent import build_preparation_plan
 from app.services.profiling import build_profile
 from app.services.report_export import export_html_report
 from app.services.root_cause import explain_root_cause
 from app.services.scenario_engine import simulate_scenario
+from app.services.semantic_layer import build_semantic_layer
 from app.services.sql_agent import answer_with_sql
+from app.services.workflow_builder import build_workflow
 from app.core.state import store
 
 
@@ -194,6 +206,38 @@ def enrichment_suggestions(request: EnrichmentRequest) -> EnrichmentResponse:
 def merge_preview(request: MergePreviewRequest) -> MergePreviewResponse:
     try:
         return preview_merge(request.left_dataset_id, request.right_dataset_id, request.join_keys)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/join-assistant", response_model=JoinAssistantResponse)
+def join_assistant(request: JoinAssistantRequest) -> JoinAssistantResponse:
+    try:
+        return analyze_join_candidates(request.dataset_id, request.language)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/semantic-layer", response_model=SemanticLayerResponse)
+def semantic_layer(request: SemanticLayerRequest) -> SemanticLayerResponse:
+    try:
+        return build_semantic_layer(request.dataset_id, request.language)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/prep-agent", response_model=PreparationAgentResponse)
+def prep_agent(request: PreparationAgentRequest) -> PreparationAgentResponse:
+    try:
+        return build_preparation_plan(request.dataset_id, request.language)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/workflow-builder", response_model=WorkflowBuilderResponse)
+def workflow_builder(request: WorkflowBuilderRequest) -> WorkflowBuilderResponse:
+    try:
+        return build_workflow(request.dataset_id, request.goal, request.language, request.model_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
 

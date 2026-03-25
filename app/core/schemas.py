@@ -336,6 +336,87 @@ class MergePreviewResponse(AppBaseModel):
     preview: List[Dict[str, Any]]
 
 
+class JoinAssistantRequest(AppBaseModel):
+    dataset_id: str
+    language: Literal["en", "fr"] = "en"
+
+
+class JoinCandidate(AppBaseModel):
+    right_dataset_id: str
+    filename: str
+    suggested_join_keys: List[str]
+    merge_readiness: Literal["high", "medium", "low"]
+    estimated_overlap_rows: int
+    business_value: str
+    explanation: str
+    compatibility_warnings: List[str]
+
+
+class JoinAssistantResponse(AppBaseModel):
+    dataset_id: str
+    candidates: List[JoinCandidate]
+    recommended_next_step: str
+
+
+class SemanticLayerRequest(AppBaseModel):
+    dataset_id: str
+    language: Literal["en", "fr"] = "en"
+
+
+class SemanticLayerResponse(AppBaseModel):
+    dataset_id: str
+    entities: List[str]
+    dimensions: List[str]
+    time_dimensions: List[str]
+    measures: List[str]
+    recommended_kpis: List[str]
+    business_questions: List[str]
+
+
+class PreparationTask(AppBaseModel):
+    title: str
+    rationale: str
+    priority: Literal["high", "medium", "low"]
+
+
+class PreparationAgentRequest(AppBaseModel):
+    dataset_id: str
+    language: Literal["en", "fr"] = "en"
+
+
+class PreparationAgentResponse(AppBaseModel):
+    dataset_id: str
+    typed_columns: Dict[str, str]
+    cleanup_tasks: List[PreparationTask]
+    feature_opportunities: List[PreparationTask]
+    enrichment_priorities: List[PreparationTask]
+    readiness_score: float
+    recommended_next_step: str
+
+
+class WorkflowBuilderRequest(AppBaseModel):
+    dataset_id: str
+    goal: Literal["diagnosis", "pricing_decision", "marketing_optimization", "segment_prioritization"] = "pricing_decision"
+    model_id: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
+
+
+class WorkflowStep(AppBaseModel):
+    step_key: str
+    title: str
+    tool: str
+    status: Literal["ready", "recommended", "blocked"]
+    rationale: str
+
+
+class WorkflowBuilderResponse(AppBaseModel):
+    dataset_id: str
+    goal: str
+    steps: List[WorkflowStep]
+    blockers: List[str]
+    automation_potential: str
+
+
 class CopilotAskRequest(AppBaseModel):
     dataset_id: str
     question: str

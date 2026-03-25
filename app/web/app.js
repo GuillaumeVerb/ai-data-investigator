@@ -19,6 +19,10 @@ const state = {
     queryCount: 0,
     usedTables: [],
   },
+  joinAssistant: null,
+  semanticLayer: null,
+  prepAgent: null,
+  workflowBuilder: null,
 };
 
 const copy = {
@@ -162,6 +166,27 @@ const copy = {
     builderTables: "Tables utilisees",
     builderQueries: "Requetes",
     builderRouteEmpty: "Aucune action routee pour le moment.",
+    builderStudioTitle: "AI Builder Studio",
+    builderStudioCopy: "Explore les jointures, la couche semantique, le plan de preparation et l orchestration du workflow.",
+    builderStudioKicker: "AI Builder Studio",
+    builderStudioResultTitle: "Builder copilots",
+    runJoinAssistant: "Analyser les jointures",
+    runSemanticLayer: "Construire la couche semantique",
+    runPrepAgent: "Lancer le prep agent",
+    runWorkflowBuilder: "Construire le workflow",
+    joinAssistantTitle: "Join assistant",
+    semanticLayerTitle: "Semantic layer",
+    prepAgentTitle: "Prep agent",
+    workflowBuilderTitle: "Decision workflow builder",
+    builderEmpty: "Charge un dataset pour activer ce module.",
+    workflowGoalPricing: "Decision pricing",
+    workflowGoalDiagnosis: "Diagnostic",
+    workflowGoalMarketing: "Optimisation marketing",
+    workflowGoalSegment: "Priorisation segment",
+    readinessScore: "Score de preparation",
+    recommendedNextStep: "Prochaine etape recommandee",
+    automationPotential: "Potentiel d automatisation",
+    blockers: "Blocages",
   },
   en: {
     heroCopy: "An AI decision copilot that turns a CSV into diagnosis, recommendations, and next actions.",
@@ -303,6 +328,27 @@ const copy = {
     builderTables: "Used tables",
     builderQueries: "Queries",
     builderRouteEmpty: "No routed action yet.",
+    builderStudioTitle: "AI Builder Studio",
+    builderStudioCopy: "Explore joins, semantic layer, preparation planning, and workflow orchestration.",
+    builderStudioKicker: "AI Builder Studio",
+    builderStudioResultTitle: "Builder copilots",
+    runJoinAssistant: "Analyze joins",
+    runSemanticLayer: "Build semantic layer",
+    runPrepAgent: "Run prep agent",
+    runWorkflowBuilder: "Build workflow",
+    joinAssistantTitle: "Join assistant",
+    semanticLayerTitle: "Semantic layer",
+    prepAgentTitle: "Prep agent",
+    workflowBuilderTitle: "Decision workflow builder",
+    builderEmpty: "Load a dataset to unlock this module.",
+    workflowGoalPricing: "Pricing decision",
+    workflowGoalDiagnosis: "Diagnosis",
+    workflowGoalMarketing: "Marketing optimization",
+    workflowGoalSegment: "Segment prioritization",
+    readinessScore: "Readiness score",
+    recommendedNextStep: "Recommended next step",
+    automationPotential: "Automation potential",
+    blockers: "Blockers",
   },
 };
 
@@ -354,6 +400,10 @@ async function hydrateDataset(dataset) {
   state.sqlHistory = [];
   state.focusedAnalysis = null;
   state.builderOps.usedTables = [];
+  state.joinAssistant = null;
+  state.semanticLayer = null;
+  state.prepAgent = null;
+  state.workflowBuilder = null;
   setStatus(`${currentCopy().uploadDone} ${dataset.filename}`);
   render();
 }
@@ -471,6 +521,7 @@ function renderStaticCopy() {
   const c = currentCopy();
   const baselineMode = $("baseline-mode-select")?.value || "reference_row";
   const referenceIndex = $("reference-index-input")?.value || "0";
+  const workflowGoal = $("workflow-goal-select")?.value || "pricing_decision";
   document.documentElement.lang = state.lang;
   $("hero-copy").textContent = c.heroCopy;
   $("controls-title").textContent = c.controlsTitle;
@@ -480,6 +531,12 @@ function renderStaticCopy() {
   $("run-sql-query").textContent = c.queryRun;
   $("route-query").textContent = c.queryRoute;
   $("query-router-copy").textContent = c.queryRouterCopy;
+  $("builder-studio-title").textContent = c.builderStudioTitle;
+  $("builder-studio-copy").textContent = c.builderStudioCopy;
+  $("run-join-assistant").textContent = c.runJoinAssistant;
+  $("run-semantic-layer").textContent = c.runSemanticLayer;
+  $("run-prep-agent").textContent = c.runPrepAgent;
+  $("run-workflow-builder").textContent = c.runWorkflowBuilder;
   $("export-title").textContent = c.exportTitle;
   $("export-copy").textContent = c.exportCopy;
   $("export-report").textContent = c.exportReport;
@@ -526,6 +583,8 @@ function renderStaticCopy() {
   $("query-history-title").textContent = c.queryHistoryTitle;
   $("builder-ops-kicker").textContent = c.builderOpsKicker;
   $("builder-ops-title").textContent = c.builderOpsTitle;
+  $("builder-studio-kicker").textContent = c.builderStudioKicker;
+  $("builder-studio-result-title").textContent = c.builderStudioResultTitle;
   $("suggestions-kicker").textContent = c.suggestionsKicker;
   $("suggestions-title").textContent = c.suggestionsTitle;
   $("actions-kicker").textContent = c.actionsKicker;
@@ -549,6 +608,13 @@ function renderStaticCopy() {
   $("band-mode-value").textContent = c.modeValue;
   $("lang-fr").classList.toggle("active", state.lang === "fr");
   $("lang-en").classList.toggle("active", state.lang === "en");
+  $("workflow-goal-select").innerHTML = `
+    <option value="pricing_decision">${c.workflowGoalPricing}</option>
+    <option value="diagnosis">${c.workflowGoalDiagnosis}</option>
+    <option value="marketing_optimization">${c.workflowGoalMarketing}</option>
+    <option value="segment_prioritization">${c.workflowGoalSegment}</option>
+  `;
+  $("workflow-goal-select").value = workflowGoal;
   if (!state.dataset) {
     setStatus(c.noData);
   }
@@ -1124,6 +1190,77 @@ function renderBuilderOps() {
   `;
 }
 
+function renderJoinAssistant() {
+  const c = currentCopy();
+  if (!state.joinAssistant) {
+    $("join-assistant-result").innerHTML = `<div class="answer-card"><strong>${c.joinAssistantTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  const candidate = state.joinAssistant.candidates?.[0];
+  $("join-assistant-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.joinAssistantTitle}</strong>
+      <p>${state.joinAssistant.recommended_next_step}</p>
+      ${
+        candidate
+          ? `<p><strong>${candidate.filename}</strong><br />${candidate.merge_readiness} readiness • ${candidate.estimated_overlap_rows} overlap rows<br />${candidate.explanation}</p>`
+          : ""
+      }
+    </article>
+  `;
+}
+
+function renderSemanticLayer() {
+  const c = currentCopy();
+  if (!state.semanticLayer) {
+    $("semantic-layer-result").innerHTML = `<div class="answer-card"><strong>${c.semanticLayerTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("semantic-layer-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.semanticLayerTitle}</strong>
+      <p><strong>Entities:</strong><br />${(state.semanticLayer.entities || []).join("<br />") || "-"}</p>
+      <p><strong>Dimensions:</strong><br />${(state.semanticLayer.dimensions || []).join("<br />") || "-"}</p>
+      <p><strong>Measures:</strong><br />${(state.semanticLayer.measures || []).join("<br />") || "-"}</p>
+      <p><strong>KPI:</strong><br />${(state.semanticLayer.recommended_kpis || []).join("<br />") || "-"}</p>
+    </article>
+  `;
+}
+
+function renderPrepAgent() {
+  const c = currentCopy();
+  if (!state.prepAgent) {
+    $("prep-agent-result").innerHTML = `<div class="answer-card"><strong>${c.prepAgentTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("prep-agent-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.prepAgentTitle}</strong>
+      <p><strong>${c.readinessScore}:</strong> ${state.prepAgent.readiness_score}</p>
+      <p><strong>Cleanup:</strong><br />${(state.prepAgent.cleanup_tasks || []).map((item) => item.title).join("<br />") || "-"}</p>
+      <p><strong>Features:</strong><br />${(state.prepAgent.feature_opportunities || []).map((item) => item.title).join("<br />") || "-"}</p>
+      <p><strong>${c.recommendedNextStep}:</strong><br />${state.prepAgent.recommended_next_step}</p>
+    </article>
+  `;
+}
+
+function renderWorkflowBuilder() {
+  const c = currentCopy();
+  if (!state.workflowBuilder) {
+    $("workflow-builder-result").innerHTML = `<div class="answer-card"><strong>${c.workflowBuilderTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("workflow-builder-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.workflowBuilderTitle}</strong>
+      <p>${state.workflowBuilder.goal}</p>
+      <p>${(state.workflowBuilder.steps || []).map((step) => `${step.status.toUpperCase()} - ${step.title}`).join("<br />")}</p>
+      <p><strong>${c.blockers}:</strong><br />${(state.workflowBuilder.blockers || []).join("<br />") || "-"}</p>
+      <p><strong>${c.automationPotential}:</strong><br />${state.workflowBuilder.automation_potential}</p>
+    </article>
+  `;
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
@@ -1151,6 +1288,10 @@ function render() {
   renderSqlQuery();
   renderSqlHistory();
   renderBuilderOps();
+  renderJoinAssistant();
+  renderSemanticLayer();
+  renderPrepAgent();
+  renderWorkflowBuilder();
   bindDynamicEvents();
 }
 
@@ -1476,6 +1617,75 @@ async function routeQuestion() {
   }
 }
 
+async function runJoinAssistant() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.joinAssistant = await api("/join-assistant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataset_id: state.dataset.dataset_id, language: state.lang }),
+    });
+    setStatus(c.joinAssistantTitle);
+    renderJoinAssistant();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runSemanticLayer() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.semanticLayer = await api("/semantic-layer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataset_id: state.dataset.dataset_id, language: state.lang }),
+    });
+    setStatus(c.semanticLayerTitle);
+    renderSemanticLayer();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runPrepAgent() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.prepAgent = await api("/prep-agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataset_id: state.dataset.dataset_id, language: state.lang }),
+    });
+    setStatus(c.prepAgentTitle);
+    renderPrepAgent();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runWorkflowBuilder() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.workflowBuilder = await api("/workflow-builder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        goal: $("workflow-goal-select").value,
+        language: state.lang,
+        model_id: state.training?.model_id || null,
+      }),
+    });
+    setStatus(c.workflowBuilderTitle);
+    renderWorkflowBuilder();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
 function bindEvents() {
   $("load-sales").addEventListener("click", () => loadSample("sales"));
   $("load-marketing").addEventListener("click", () => loadSample("marketing"));
@@ -1490,6 +1700,10 @@ function bindEvents() {
   $("ask-copilot").addEventListener("click", askCopilot);
   $("run-sql-query").addEventListener("click", runSqlQuery);
   $("route-query").addEventListener("click", routeQuestion);
+  $("run-join-assistant").addEventListener("click", runJoinAssistant);
+  $("run-semantic-layer").addEventListener("click", runSemanticLayer);
+  $("run-prep-agent").addEventListener("click", runPrepAgent);
+  $("run-workflow-builder").addEventListener("click", runWorkflowBuilder);
   $("explain-sql").addEventListener("click", explainCurrentSql);
   $("export-query-csv").addEventListener("click", exportCurrentQueryCsv);
   $("export-report").addEventListener("click", exportReport);
