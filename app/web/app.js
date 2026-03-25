@@ -4,6 +4,9 @@ const state = {
   profile: null,
   investigation: null,
   training: null,
+  simulation: null,
+  decisionMeta: null,
+  decisionResult: null,
   copilot: null,
   focusedAnalysis: null,
   health: null,
@@ -34,6 +37,29 @@ const copy = {
     predictionKicker: "Prediction",
     predictionTitle: "Prediction engine",
     trainModel: "Entrainer le modele",
+    simulationKicker: "Scenario simulation",
+    simulationTitle: "Simulation guidee",
+    runGuidedSimulation: "Lancer le scenario guide",
+    simulationReady: "Simulation disponible",
+    simulationBefore: "Avant",
+    simulationAfter: "Apres",
+    simulationDelta: "Delta",
+    simulationDeltaPct: "Delta %",
+    engineKicker: "Decision engine",
+    engineTitle: "Moteur de decision",
+    engineCopy: "Compare deux scenarios, visualise le risque et fais remonter la meilleure action.",
+    baselineModeReference: "Ligne de reference",
+    baselineModeAverage: "Moyenne dataset",
+    referenceIndex: "Index de reference",
+    prepareEngine: "Preparer les controles",
+    runEngine: "Lancer le moteur de decision",
+    scenarioA: "Scenario A",
+    scenarioB: "Scenario B",
+    unavailableInputs: "Entrees indisponibles",
+    decisionReady: "Comparaison de scenarios disponible",
+    noSimulation: "Lance une simulation guidee pour afficher un avant/apres sur la ligne de reference.",
+    noDecisionBuilder: "Entraine un modele puis prepare le moteur de decision pour comparer deux scenarios.",
+    noDecisionResult: "Le moteur de decision affichera ici la recommandation, le risque et les graphiques compares.",
     copilotTitle: "Copilote",
     copilotAsk: "Interroger le copilote",
     analysisTitle: "Signal du moment",
@@ -107,6 +133,29 @@ const copy = {
     predictionKicker: "Prediction",
     predictionTitle: "Prediction engine",
     trainModel: "Train model",
+    simulationKicker: "Scenario simulation",
+    simulationTitle: "Guided simulation",
+    runGuidedSimulation: "Run guided scenario",
+    simulationReady: "Simulation ready",
+    simulationBefore: "Before",
+    simulationAfter: "After",
+    simulationDelta: "Delta",
+    simulationDeltaPct: "Delta %",
+    engineKicker: "Decision engine",
+    engineTitle: "Decision engine",
+    engineCopy: "Compare two scenarios, surface the risk, and highlight the most robust action.",
+    baselineModeReference: "Reference row",
+    baselineModeAverage: "Dataset average",
+    referenceIndex: "Reference index",
+    prepareEngine: "Prepare controls",
+    runEngine: "Run decision engine",
+    scenarioA: "Scenario A",
+    scenarioB: "Scenario B",
+    unavailableInputs: "Unavailable inputs",
+    decisionReady: "Scenario comparison ready",
+    noSimulation: "Run a guided simulation to display a clear before/after effect on the reference row.",
+    noDecisionBuilder: "Train a model, then prepare the decision engine to compare two scenarios.",
+    noDecisionResult: "The decision engine will display the recommendation, key risk, and comparison charts here.",
     copilotTitle: "Copilot",
     copilotAsk: "Ask the copilot",
     analysisTitle: "Focus insight",
@@ -197,6 +246,9 @@ async function hydrateDataset(dataset) {
   state.profile = profile;
   state.investigation = investigation;
   state.training = null;
+  state.simulation = null;
+  state.decisionMeta = null;
+  state.decisionResult = null;
   state.copilot = null;
   state.focusedAnalysis = null;
   setStatus(`${currentCopy().uploadDone} ${dataset.filename}`);
@@ -211,8 +263,52 @@ async function refreshHealth() {
   }
 }
 
+function getGuidedSimulationChanges(referenceRow) {
+  const changes = {};
+  if (!referenceRow) return changes;
+  if (referenceRow.price !== undefined && referenceRow.price !== null) {
+    changes.price = Number(referenceRow.price) * 1.08;
+  }
+  if (referenceRow.marketing_spend !== undefined && referenceRow.marketing_spend !== null) {
+    changes.marketing_spend = Number(referenceRow.marketing_spend) * 1.05;
+  }
+  const discountKey = referenceRow.discount_pct !== undefined ? "discount_pct" : referenceRow.discount !== undefined ? "discount" : null;
+  if (discountKey && referenceRow[discountKey] !== null) {
+    changes.discount = Math.max(0, Number(referenceRow[discountKey]) - 1);
+  }
+  return changes;
+}
+
+function currentBaselineMode() {
+  return $("baseline-mode-select")?.value || "reference_row";
+}
+
+function currentReferenceIndex() {
+  const raw = $("reference-index-input")?.value;
+  return currentBaselineMode() === "reference_row" ? Number(raw || 0) : null;
+}
+
+function readScenarioValues(scope) {
+  const values = {};
+  document.querySelectorAll(`[data-scope="${scope}"]`).forEach((input) => {
+    const key = input.dataset.key;
+    if (!key) return;
+    values[key] = input.dataset.controlType === "slider" ? Number(input.value) : input.value;
+  });
+  return values;
+}
+
+function readSegmentControls() {
+  return {
+    segment_column: $("decision-segment-column")?.value || null,
+    segment_value: $("decision-segment-value")?.value || null,
+  };
+}
+
 function renderStaticCopy() {
   const c = currentCopy();
+  const baselineMode = $("baseline-mode-select")?.value || "reference_row";
+  const referenceIndex = $("reference-index-input")?.value || "0";
   document.documentElement.lang = state.lang;
   $("hero-copy").textContent = c.heroCopy;
   $("controls-title").textContent = c.controlsTitle;
@@ -236,6 +332,14 @@ function renderStaticCopy() {
   $("prediction-kicker").textContent = c.predictionKicker;
   $("prediction-title").textContent = c.predictionTitle;
   $("train-model").textContent = c.trainModel;
+  $("simulation-kicker").textContent = c.simulationKicker;
+  $("simulation-title").textContent = c.simulationTitle;
+  $("run-guided-simulation").textContent = c.runGuidedSimulation;
+  $("engine-kicker").textContent = c.engineKicker;
+  $("engine-title").textContent = c.engineTitle;
+  $("engine-copy").textContent = c.engineCopy;
+  $("prepare-decision-engine").textContent = c.prepareEngine;
+  $("run-decision-engine").textContent = c.runEngine;
   $("copilot-title").textContent = c.copilotTitle;
   $("analysis-title").textContent = c.analysisTitle;
   $("focused-analysis-empty").textContent = c.focusedAnalysisEmpty;
@@ -249,6 +353,13 @@ function renderStaticCopy() {
   $("evidence-kicker").textContent = c.evidenceKicker;
   $("evidence-title").textContent = c.evidenceTitle;
   $("evidence-summary").textContent = c.evidenceSummary;
+  $("baseline-mode-select").innerHTML = `
+    <option value="reference_row">${c.baselineModeReference}</option>
+    <option value="dataset_average">${c.baselineModeAverage}</option>
+  `;
+  $("baseline-mode-select").value = baselineMode;
+  $("reference-index-input").placeholder = c.referenceIndex;
+  $("reference-index-input").value = referenceIndex;
   $("question-input").placeholder = c.questionPlaceholder;
   $("band-status-label").textContent = c.systemLabel;
   $("band-status-value").textContent = state.health?.status === "ok" ? c.systemReady : c.connectError;
@@ -409,6 +520,189 @@ function renderTraining() {
   `;
 }
 
+function renderSimulation() {
+  const c = currentCopy();
+  if (!state.training) {
+    $("simulation-summary").innerHTML = `<div class="answer-card">${c.noSimulation}</div>`;
+    $("simulation-status").textContent = "";
+    return;
+  }
+  if (!state.simulation) {
+    $("simulation-summary").innerHTML = `<div class="answer-card">${c.noSimulation}</div>`;
+    $("simulation-status").textContent = "";
+    return;
+  }
+  $("simulation-status").textContent = c.simulationReady;
+  $("simulation-summary").innerHTML = `
+    <div class="metric-grid">
+      <article class="metric-card">
+        <div class="small-meta">${c.simulationBefore}</div>
+        <div class="metric-value">${state.simulation.prediction_before}</div>
+      </article>
+      <article class="metric-card">
+        <div class="small-meta">${c.simulationAfter}</div>
+        <div class="metric-value">${state.simulation.prediction_after}</div>
+      </article>
+      <article class="metric-card">
+        <div class="small-meta">${c.simulationDelta}</div>
+        <div class="metric-value">${state.simulation.delta}</div>
+      </article>
+      <article class="metric-card">
+        <div class="small-meta">${c.simulationDeltaPct}</div>
+        <div class="metric-value">${state.simulation.delta_pct ?? "-"}</div>
+      </article>
+    </div>
+    <article class="answer-card">
+      <strong>${state.simulation.impact_summary}</strong>
+      <p>${state.simulation.narrative}</p>
+      <p class="small-meta">${state.simulation.guardrail_note}</p>
+    </article>
+  `;
+}
+
+function renderDecisionBuilder() {
+  const c = currentCopy();
+  const host = $("decision-builder");
+  if (!state.training || !state.decisionMeta) {
+    host.innerHTML = `<div class="answer-card">${c.noDecisionBuilder}</div>`;
+    return;
+  }
+  const availableInputs = (state.decisionMeta.available_inputs || []).filter((item) => item.available !== false);
+  const unavailableInputs = (state.decisionMeta.available_inputs || []).filter((item) => item.available === false);
+  const segmentColumnControl = availableInputs.find((item) => item.key === "segment_column");
+  const segmentValueControl = availableInputs.find((item) => item.key === "segment_value");
+  const scenarioControls = availableInputs.filter((item) => !["segment_column", "segment_value"].includes(item.key));
+
+  const renderControl = (scope, control, prefix) => {
+    if (control.control_type === "slider") {
+      return `
+        <div class="control-block">
+          <label>${prefix} - ${control.label}</label>
+          <input
+            type="range"
+            min="${control.min_value ?? 0}"
+            max="${control.max_value ?? 100}"
+            step="0.1"
+            value="${control.default_value ?? 0}"
+            data-scope="${scope}"
+            data-key="${control.key}"
+            data-control-type="slider"
+          />
+          <div class="small-meta">${control.default_value ?? 0}</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="control-block">
+        <label>${prefix} - ${control.label}</label>
+        <select data-scope="${scope}" data-key="${control.key}" data-control-type="selectbox">
+          ${(control.options || [])
+            .map((option) => `<option value="${option}" ${String(option) === String(control.default_value) ? "selected" : ""}>${option}</option>`)
+            .join("")}
+        </select>
+      </div>
+    `;
+  };
+
+  host.innerHTML = `
+    ${
+      segmentColumnControl || segmentValueControl
+        ? `
+      <div class="scenario-column">
+        <strong>${c.impact}</strong>
+        ${segmentColumnControl ? `
+          <div class="control-block">
+            <label>${segmentColumnControl.label}</label>
+            <select id="decision-segment-column">
+              ${(segmentColumnControl.options || [])
+                .map((option) => `<option value="${option}" ${String(option) === String(segmentColumnControl.default_value) ? "selected" : ""}>${option}</option>`)
+                .join("")}
+            </select>
+          </div>
+        ` : ""}
+        ${segmentValueControl ? `
+          <div class="control-block">
+            <label>${segmentValueControl.label}</label>
+            <select id="decision-segment-value">
+              ${(segmentValueControl.options || [])
+                .map((option) => `<option value="${option}" ${String(option) === String(segmentValueControl.default_value) ? "selected" : ""}>${option}</option>`)
+                .join("")}
+            </select>
+          </div>
+        ` : ""}
+      </div>
+    `
+        : ""
+    }
+    <div class="scenario-builder-grid">
+      <div class="scenario-column">
+        <strong>${c.scenarioA}</strong>
+        ${scenarioControls.map((control) => renderControl("scenario_a", control, c.scenarioA)).join("")}
+      </div>
+      <div class="scenario-column">
+        <strong>${c.scenarioB}</strong>
+        ${scenarioControls.map((control) => renderControl("scenario_b", control, c.scenarioB)).join("")}
+      </div>
+    </div>
+    ${
+      unavailableInputs.length
+        ? `
+      <article class="answer-card">
+        <strong>${c.unavailableInputs}</strong>
+        <p>${unavailableInputs.map((item) => `${item.label}: ${item.reason || "-"}`).join("<br />")}</p>
+      </article>
+    `
+        : ""
+    }
+  `;
+}
+
+function renderDecisionResult() {
+  const c = currentCopy();
+  const host = $("decision-result");
+  if (!state.decisionResult) {
+    host.innerHTML = `<div class="answer-card">${c.noDecisionResult}</div>`;
+    return;
+  }
+  host.innerHTML = `
+    <div class="decision-result-grid">
+      <article class="answer-card">
+        <strong>${c.recommendation}</strong>
+        <p>${state.decisionResult.recommended_decision}</p>
+      </article>
+      <article class="answer-card">
+        <strong>${c.risk}</strong>
+        <p>${state.decisionResult.main_risk}</p>
+      </article>
+      <article class="answer-card">
+        <strong>${c.confidence}</strong>
+        <p>${state.decisionResult.confidence.level}</p>
+      </article>
+      <article class="answer-card">
+        <strong>${c.nextStep}</strong>
+        <p>${state.decisionResult.next_best_analysis}</p>
+      </article>
+    </div>
+    <article class="answer-card">
+      <strong>${c.actionsTitle}</strong>
+      <p>${(state.decisionResult.supporting_evidence || []).join("<br />")}</p>
+    </article>
+    <div id="decision-result-charts" class="decision-chart-grid"></div>
+  `;
+  const chartHost = $("decision-result-charts");
+  chartHost.innerHTML = "";
+  (state.decisionResult.chart_specs || []).slice(0, 2).forEach((chart, index) => {
+    const box = document.createElement("div");
+    box.className = "decision-chart-box";
+    box.innerHTML = `<strong>${chart.title || `Chart ${index + 1}`}</strong><div id="decision-chart-${index}" class="decision-chart-host"></div>`;
+    chartHost.appendChild(box);
+    Plotly.newPlot(`decision-chart-${index}`, chart.figure.data || chart.figure, chart.figure.layout || {}, {
+      responsive: true,
+      displayModeBar: false,
+    });
+  });
+}
+
 function renderActions() {
   $("actions-grid").innerHTML = (state.investigation?.recommended_actions || [])
     .slice(0, 3)
@@ -533,6 +827,9 @@ function render() {
   renderChart();
   renderTargetOptions();
   renderTraining();
+  renderSimulation();
+  renderDecisionBuilder();
+  renderDecisionResult();
   renderActions();
   renderFocusedAnalysis();
   renderEvidencePack();
@@ -571,8 +868,83 @@ async function trainModel() {
       body: JSON.stringify({ dataset_id: state.dataset.dataset_id, target }),
     });
     state.training = training;
+    state.simulation = null;
+    state.decisionMeta = null;
+    state.decisionResult = null;
     setStatus(currentCopy().trainingDone);
+    await prepareDecisionEngine();
     render();
+  } catch (error) {
+    setStatus(`${currentCopy().connectError} ${error.message}`, true);
+  }
+}
+
+async function runGuidedSimulation() {
+  if (!state.dataset || !state.training) return;
+  try {
+    const changes = getGuidedSimulationChanges(state.training.reference_row);
+    state.simulation = await api("/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        model_id: state.training.model_id,
+        changes,
+      }),
+    });
+    setStatus(currentCopy().simulationReady);
+    renderSimulation();
+  } catch (error) {
+    setStatus(`${currentCopy().connectError} ${error.message}`, true);
+  }
+}
+
+async function prepareDecisionEngine() {
+  if (!state.dataset || !state.training) return;
+  try {
+    state.decisionMeta = await api("/decision-engine", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        model_id: state.training.model_id,
+        baseline_mode: currentBaselineMode(),
+        reference_index: currentReferenceIndex(),
+        language: state.lang,
+        scenario_a: {},
+        scenario_b: {},
+      }),
+    });
+    state.decisionResult = null;
+    setStatus(currentCopy().decisionReady);
+    renderDecisionBuilder();
+    renderDecisionResult();
+  } catch (error) {
+    setStatus(`${currentCopy().connectError} ${error.message}`, true);
+  }
+}
+
+async function runDecisionEngine() {
+  if (!state.dataset || !state.training) return;
+  try {
+    const segmentControls = readSegmentControls();
+    state.decisionResult = await api("/decision-engine", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        model_id: state.training.model_id,
+        baseline_mode: currentBaselineMode(),
+        reference_index: currentReferenceIndex(),
+        segment_column: segmentControls.segment_column,
+        segment_value: segmentControls.segment_value,
+        language: state.lang,
+        scenario_a: readScenarioValues("scenario_a"),
+        scenario_b: readScenarioValues("scenario_b"),
+      }),
+    });
+    setStatus(currentCopy().decisionReady);
+    renderDecisionResult();
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -631,6 +1003,9 @@ function bindEvents() {
     if (file) uploadFile(file);
   });
   $("train-model").addEventListener("click", trainModel);
+  $("run-guided-simulation").addEventListener("click", runGuidedSimulation);
+  $("prepare-decision-engine").addEventListener("click", prepareDecisionEngine);
+  $("run-decision-engine").addEventListener("click", runDecisionEngine);
   $("ask-copilot").addEventListener("click", askCopilot);
   $("lang-fr").addEventListener("click", () => {
     state.lang = "fr";
@@ -653,6 +1028,12 @@ function bindEvents() {
 function bindDynamicEvents() {
   document.querySelectorAll(".investigate-btn").forEach((button) => {
     button.onclick = () => investigateSuggestion(button.dataset.suggestionId);
+  });
+  document.querySelectorAll('input[type="range"][data-control-type="slider"]').forEach((input) => {
+    input.oninput = () => {
+      const meta = input.nextElementSibling;
+      if (meta) meta.textContent = input.value;
+    };
   });
 }
 

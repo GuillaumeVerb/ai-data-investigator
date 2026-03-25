@@ -39,18 +39,24 @@ This is not just a "chat with CSV" app. It behaves like an AI business analyst t
 ## Architecture
 
 ```text
-User -> Streamlit UI -> FastAPI API
-                      -> ingestion
-                      -> profiling
-                      -> investigation_agent
-                      -> root_cause
-                      -> ml_engine
-                      -> scenario_engine
-                      -> action_engine
-                      -> enrichment_agent
-                      -> copilot_agent
-                      -> report_export
+User -> Web frontend served by FastAPI
+     -> FastAPI API
+     -> ingestion
+     -> profiling
+     -> investigation_agent
+     -> root_cause
+     -> ml_engine
+     -> scenario_engine
+     -> action_engine
+     -> enrichment_agent
+     -> copilot_agent
+     -> report_export
 ```
+
+The FastAPI app now serves a lightweight web frontend at `/`, so the Railway deployment can expose both:
+
+- the API endpoints
+- the portfolio/demo interface
 
 ## Quick Demo Flow
 

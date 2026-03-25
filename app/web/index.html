@@ -149,6 +149,34 @@
 
             <section class="panel-card">
               <div class="section-head">
+                <p class="eyebrow" id="simulation-kicker">Scenario simulation</p>
+                <h2 id="simulation-title">Simulation guidee</h2>
+              </div>
+              <div class="prediction-row">
+                <button id="run-guided-simulation" class="secondary-btn" type="button">Lancer le scenario guide</button>
+                <div id="simulation-status" class="small-meta"></div>
+              </div>
+              <div id="simulation-summary" class="stack"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="engine-kicker">Decision engine</p>
+                <h2 id="engine-title">Moteur de decision</h2>
+                <p id="engine-copy" class="section-copy">Compare deux scenarios, visualise le risque et fais remonter la meilleure action.</p>
+              </div>
+              <div class="builder-toolbar">
+                <select id="baseline-mode-select"></select>
+                <input id="reference-index-input" type="number" min="0" step="1" value="0" />
+                <button id="prepare-decision-engine" class="secondary-btn" type="button">Preparer les controles</button>
+              </div>
+              <div id="decision-builder" class="stack"></div>
+              <button id="run-decision-engine" class="primary-btn" type="button">Lancer le moteur de decision</button>
+              <div id="decision-result" class="stack"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
                 <p class="eyebrow" id="actions-kicker">Recommended actions</p>
                 <h2 id="actions-title">Actions recommandees</h2>
               </div>
