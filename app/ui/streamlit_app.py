@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import atexit
+from io import BytesIO
 import os
 from pathlib import Path
 import subprocess
@@ -13,13 +15,53 @@ import pandas as pd
 import plotly.graph_objects as go
 import requests
 import streamlit as st
+from fastapi import HTTPException, UploadFile
+from pydantic import BaseModel
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from app.api.main import (
+    actions as api_actions_local,
+    copilot_ask as api_copilot_ask_local,
+    decision_engine as api_decision_engine_local,
+    enrichment_suggestions as api_enrichment_local,
+    get_copilot_session as api_get_copilot_session_local,
+    healthcheck as api_healthcheck_local,
+    investigate as api_investigate_local,
+    investigate_single_path as api_investigate_path_local,
+    list_datasets as api_list_datasets_local,
+    merge_preview as api_merge_preview_local,
+    profile_dataset as api_profile_local,
+    report_export as api_report_export_local,
+    reset_copilot_session as api_reset_copilot_session_local,
+    root_cause as api_root_cause_local,
+    simulate as api_simulate_local,
+    summary as api_summary_local,
+    train as api_train_local,
+    upload_dataset as api_upload_dataset_local,
+    upload_named_sample as api_upload_named_sample_local,
+    upload_sample as api_upload_sample_local,
+)
 from app.core.config import get_settings
+from app.core.schemas import (
+    ActionRequest,
+    CopilotAskRequest,
+    DecisionEngineRequest,
+    EnrichmentRequest,
+    InvestigateRequest,
+    InvestigationPathRequest,
+    MergePreviewRequest,
+    ProfileRequest,
+    ReportExportRequest,
+    RootCauseRequest,
+    SimulationRequest,
+    SummaryRequest,
+    TrainRequest,
+)
 from app.services.charts import build_data_quality_chart
+from app.services.llm_engine import llm_status
 from app.ui.i18n import t
 
 
@@ -205,6 +247,7 @@ st.markdown(
 
 SETTINGS = get_settings()
 API_BASE_URL = SETTINGS.api_base_url.rstrip("/")
+BACKEND_MODE = "http"
 
 
 def _is_local_api_url(api_base_url: str) -> bool:
@@ -219,6 +262,88 @@ def _api_healthcheck(api_base_url: str, timeout: float = 1.0) -> dict | None:
         return response.json()
     except Exception:
         return None
+
+
+def _serialize_local_response(value: object) -> object:
+    if isinstance(value, BaseModel):
+        return value.model_dump()
+    if isinstance(value, list):
+        return [_serialize_local_response(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _serialize_local_response(item) for key, item in value.items()}
+    return value
+
+
+def _run_local_upload(files: dict) -> dict:
+    filename, content, _mime = files["file"]
+    upload = UploadFile(filename=filename, file=BytesIO(content))
+    return _serialize_local_response(asyncio.run(api_upload_dataset_local(upload)))  # type: ignore[arg-type]
+
+
+def _local_api_get(path: str) -> list | dict:
+    try:
+        if path == "/health":
+            health = api_healthcheck_local()
+            return {
+                **health,
+                "llm_enabled": "true" if llm_status()["enabled"] else "false",
+                "llm_provider": llm_status()["provider"],
+                "llm_model": llm_status()["model"] or "fallback",
+            }
+        if path == "/datasets":
+            return _serialize_local_response(api_list_datasets_local())  # type: ignore[return-value]
+        if path.startswith("/copilot/session/"):
+            session_id = path.rsplit("/", 1)[-1]
+            return _serialize_local_response(api_get_copilot_session_local(session_id))  # type: ignore[return-value]
+    except HTTPException as exc:
+        raise RuntimeError(exc.detail) from exc
+    raise ValueError(f"Unsupported local GET path: {path}")
+
+
+def _local_api_post(path: str, json: dict | None = None, files: dict | None = None) -> dict:
+    payload = json or {}
+    try:
+        if path == "/upload/sample":
+            return _serialize_local_response(api_upload_sample_local())  # type: ignore[return-value]
+        if path.startswith("/upload/sample/"):
+            sample_name = path.rsplit("/", 1)[-1]
+            return _serialize_local_response(api_upload_named_sample_local(sample_name))  # type: ignore[return-value]
+        if path == "/upload":
+            if not files:
+                raise ValueError("File payload is required for /upload.")
+            return _run_local_upload(files)
+        if path == "/profile":
+            return _serialize_local_response(api_profile_local(ProfileRequest(**payload)))  # type: ignore[return-value]
+        if path == "/investigate":
+            return _serialize_local_response(api_investigate_local(InvestigateRequest(**payload)))  # type: ignore[return-value]
+        if path == "/investigate-path":
+            return _serialize_local_response(api_investigate_path_local(InvestigationPathRequest(**payload)))  # type: ignore[return-value]
+        if path == "/root-cause":
+            return _serialize_local_response(api_root_cause_local(RootCauseRequest(**payload)))  # type: ignore[return-value]
+        if path == "/enrichment-suggestions":
+            return _serialize_local_response(api_enrichment_local(EnrichmentRequest(**payload)))  # type: ignore[return-value]
+        if path == "/merge-preview":
+            return _serialize_local_response(api_merge_preview_local(MergePreviewRequest(**payload)))  # type: ignore[return-value]
+        if path == "/train":
+            return _serialize_local_response(api_train_local(TrainRequest(**payload)))  # type: ignore[return-value]
+        if path == "/simulate":
+            return _serialize_local_response(api_simulate_local(SimulationRequest(**payload)))  # type: ignore[return-value]
+        if path == "/decision-engine":
+            return _serialize_local_response(api_decision_engine_local(DecisionEngineRequest(**payload)))  # type: ignore[return-value]
+        if path == "/actions":
+            return _serialize_local_response(api_actions_local(ActionRequest(**payload)))  # type: ignore[return-value]
+        if path == "/summary":
+            return _serialize_local_response(api_summary_local(SummaryRequest(**payload)))  # type: ignore[return-value]
+        if path == "/copilot/ask":
+            return _serialize_local_response(api_copilot_ask_local(CopilotAskRequest(**payload)))  # type: ignore[return-value]
+        if path == "/report/export":
+            return _serialize_local_response(api_report_export_local(ReportExportRequest(**payload)))  # type: ignore[return-value]
+        if path.endswith("/reset") and path.startswith("/copilot/session/"):
+            session_id = path.split("/")[-2]
+            return _serialize_local_response(api_reset_copilot_session_local(session_id))  # type: ignore[return-value]
+    except HTTPException as exc:
+        raise RuntimeError(exc.detail) from exc
+    raise ValueError(f"Unsupported local POST path: {path}")
 
 
 @st.cache_resource(show_spinner=False)
@@ -257,12 +382,16 @@ def ensure_local_api_server(api_base_url: str, auto_start: bool) -> subprocess.P
 
 
 def api_get(path: str) -> list | dict:
+    if BACKEND_MODE == "direct":
+        return _local_api_get(path)
     response = requests.get(f"{API_BASE_URL}{path}", timeout=90)
     response.raise_for_status()
     return response.json()
 
 
 def api_post(path: str, json: dict | None = None, files: dict | None = None) -> dict:
+    if BACKEND_MODE == "direct":
+        return _local_api_post(path, json=json, files=files)
     response = requests.post(f"{API_BASE_URL}{path}", json=json, files=files, timeout=90)
     response.raise_for_status()
     return response.json()
@@ -661,7 +790,19 @@ def run_guided_demo(dataset_id: str) -> None:
 ensure_session()
 ensure_local_api_server(API_BASE_URL, getattr(SETTINGS, "auto_start_local_api", True))
 api_health = _api_healthcheck(API_BASE_URL)
-if not api_health:
+if api_health:
+    BACKEND_MODE = "http"
+elif _is_local_api_url(API_BASE_URL):
+    BACKEND_MODE = "direct"
+    local_llm = llm_status()
+    api_health = {
+        "status": "ok",
+        "app_name": SETTINGS.app_name,
+        "llm_enabled": "true" if local_llm["enabled"] else "false",
+        "llm_provider": local_llm["provider"],
+        "llm_model": local_llm["model"] or "fallback",
+    }
+else:
     st.error(
         "The local API backend is unavailable. Start the API or keep AUTO_START_LOCAL_API=true."
         if st.session_state.lang == "en"
