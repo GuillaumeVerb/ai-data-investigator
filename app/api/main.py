@@ -10,6 +10,8 @@ from app.core.config import get_settings
 from app.core.schemas import (
     ActionRequest,
     ActionResponse,
+    AbTestPlannerRequest,
+    AbTestPlannerResponse,
     ConstraintSolveRequest,
     ConstraintSolveResponse,
     CopilotAskRequest,
@@ -31,8 +33,12 @@ from app.core.schemas import (
     JoinAssistantResponse,
     MergePreviewRequest,
     MergePreviewResponse,
+    OrchestrationViewRequest,
+    OrchestrationViewResponse,
     PreparationAgentRequest,
     PreparationAgentResponse,
+    PolicyEngineRequest,
+    PolicyEngineResponse,
     ProfileRequest,
     ProfileResponse,
     ObservabilityResponse,
@@ -46,6 +52,8 @@ from app.core.schemas import (
     RootCauseResponse,
     SemanticLayerRequest,
     SemanticLayerResponse,
+    SemanticKpiRegistryRequest,
+    SemanticKpiRegistryResponse,
     ReportExportRequest,
     ReportExportResponse,
     SimulationRequest,
@@ -58,6 +66,7 @@ from app.core.schemas import (
     WorkflowBuilderRequest,
     WorkflowBuilderResponse,
 )
+from app.services.ab_test_planner import build_ab_test_plan
 from app.services.constraint_solver import solve_with_constraints
 from app.services.copilot_agent import answer_business_question
 from app.services.decision_engine import run_decision_engine
@@ -73,13 +82,16 @@ from app.services.insights import investigate_dataset
 from app.services.llm_engine import explain_sql_query, generate_summary, llm_status
 from app.services.ml_engine import train_model
 from app.services.observability import get_observability_snapshot
+from app.services.orchestration_view import build_orchestration_view
 from app.services.preparation_agent import build_preparation_plan
 from app.services.profiling import build_profile
+from app.services.policy_engine import evaluate_policy
 from app.services.quant_optimizer import optimize_decision_levers
 from app.services.report_export import export_html_report
 from app.services.root_cause import explain_root_cause
 from app.services.scenario_engine import simulate_scenario
 from app.services.semantic_layer import build_semantic_layer
+from app.services.semantic_registry import build_kpi_registry
 from app.services.sql_agent import answer_with_sql
 from app.services.workflow_builder import build_workflow
 from app.core.state import store
@@ -361,6 +373,59 @@ def experiment_designer(request: ExperimentDesignerRequest) -> ExperimentDesigne
 @app.get("/evaluation-console", response_model=EvaluationConsoleResponse)
 def evaluation_console() -> EvaluationConsoleResponse:
     return build_evaluation_console()
+
+
+@app.post("/policy-engine", response_model=PolicyEngineResponse)
+def policy_engine(request: PolicyEngineRequest) -> PolicyEngineResponse:
+    try:
+        result = evaluate_policy(request.dataset_id, request.model_id, request.language)
+        store.log_operation(
+            tool_name="policy_engine",
+            status="completed",
+            route="policy",
+            dataset_id=request.dataset_id,
+            detail=result.recommended_action,
+        )
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
+
+
+@app.post("/ab-test-planner", response_model=AbTestPlannerResponse)
+def ab_test_planner(request: AbTestPlannerRequest) -> AbTestPlannerResponse:
+    try:
+        result = build_ab_test_plan(request.dataset_id, request.model_id, request.language)
+        store.log_operation(
+            tool_name="ab_test_planner",
+            status="completed",
+            route="experiment_plan",
+            dataset_id=request.dataset_id,
+            detail=result.test_plans[0].title if result.test_plans else "no plan",
+        )
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset or model not found.") from exc
+
+
+@app.post("/semantic-kpi-registry", response_model=SemanticKpiRegistryResponse)
+def semantic_kpi_registry(request: SemanticKpiRegistryRequest) -> SemanticKpiRegistryResponse:
+    try:
+        result = build_kpi_registry(request.dataset_id, request.language)
+        store.log_operation(
+            tool_name="semantic_kpi_registry",
+            status="completed",
+            route="semantic_registry",
+            dataset_id=request.dataset_id,
+            detail=result.recommended_default_kpi,
+        )
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+
+
+@app.post("/orchestration-view", response_model=OrchestrationViewResponse)
+def orchestration_view(request: OrchestrationViewRequest) -> OrchestrationViewResponse:
+    return build_orchestration_view(request.dataset_id, request.language)
 
 
 @app.post("/train", response_model=TrainResponse)

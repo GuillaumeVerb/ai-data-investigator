@@ -28,6 +28,9 @@ const state = {
   constraintSolver: null,
   experimentDesigner: null,
   evaluationConsole: null,
+  policyEngine: null,
+  semanticKpiRegistry: null,
+  orchestrationView: null,
 };
 
 const copy = {
@@ -188,6 +191,9 @@ const copy = {
     constraintSolverTitle: "Constraint solver",
     experimentDesignerTitle: "Experiment designer",
     evaluationConsoleTitle: "Evaluation console",
+    policyEngineTitle: "Policy engine",
+    semanticKpiRegistryTitle: "Semantic KPI registry",
+    orchestrationViewTitle: "Agent orchestration view",
     builderEmpty: "Charge un dataset pour activer ce module.",
     workflowGoalPricing: "Decision pricing",
     workflowGoalDiagnosis: "Diagnostic",
@@ -201,6 +207,9 @@ const copy = {
     runConstraintSolver: "Lancer le constraint solver",
     runExperimentDesigner: "Construire les experiments",
     runEvaluationConsole: "Rafraichir l evaluation",
+    runPolicyEngine: "Lancer le policy engine",
+    runSemanticKpiRegistry: "Construire le registre KPI",
+    runOrchestrationView: "Voir l orchestration",
     optimizerPrediction: "Maximiser la prediction",
     optimizerEfficiency: "Maximiser l efficience",
   },
@@ -361,6 +370,9 @@ const copy = {
     constraintSolverTitle: "Constraint solver",
     experimentDesignerTitle: "Experiment designer",
     evaluationConsoleTitle: "Evaluation console",
+    policyEngineTitle: "Policy engine",
+    semanticKpiRegistryTitle: "Semantic KPI registry",
+    orchestrationViewTitle: "Agent orchestration view",
     builderEmpty: "Load a dataset to unlock this module.",
     workflowGoalPricing: "Pricing decision",
     workflowGoalDiagnosis: "Diagnosis",
@@ -374,6 +386,9 @@ const copy = {
     runConstraintSolver: "Run constraint solver",
     runExperimentDesigner: "Build experiments",
     runEvaluationConsole: "Refresh evaluation",
+    runPolicyEngine: "Run policy engine",
+    runSemanticKpiRegistry: "Build KPI registry",
+    runOrchestrationView: "View orchestration",
     optimizerPrediction: "Maximize prediction",
     optimizerEfficiency: "Maximize efficiency",
   },
@@ -436,6 +451,9 @@ async function hydrateDataset(dataset) {
   state.constraintSolver = null;
   state.experimentDesigner = null;
   state.evaluationConsole = null;
+  state.policyEngine = null;
+  state.semanticKpiRegistry = null;
+  state.orchestrationView = null;
   setStatus(`${currentCopy().uploadDone} ${dataset.filename}`);
   render();
 }
@@ -574,6 +592,9 @@ function renderStaticCopy() {
   $("run-constraint-solver").textContent = c.runConstraintSolver;
   $("run-experiment-designer").textContent = c.runExperimentDesigner;
   $("run-evaluation-console").textContent = c.runEvaluationConsole;
+  $("run-policy-engine").textContent = c.runPolicyEngine;
+  $("run-semantic-kpi-registry").textContent = c.runSemanticKpiRegistry;
+  $("run-orchestration-view").textContent = c.runOrchestrationView;
   $("export-title").textContent = c.exportTitle;
   $("export-copy").textContent = c.exportCopy;
   $("export-report").textContent = c.exportReport;
@@ -1386,6 +1407,54 @@ function renderEvaluationConsole() {
   `;
 }
 
+function renderPolicyEngine() {
+  const c = currentCopy();
+  if (!state.policyEngine) {
+    $("policy-engine-result").innerHTML = `<div class="answer-card"><strong>${c.policyEngineTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("policy-engine-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.policyEngineTitle}</strong>
+      <p>${state.policyEngine.recommended_action}</p>
+      <p><strong>Guardrails:</strong><br />${(state.policyEngine.guardrails || []).join("<br />") || "-"}</p>
+      <p><strong>Allowed:</strong><br />${(state.policyEngine.allowed_moves || []).join("<br />") || "-"}</p>
+      <p><strong>Blocked:</strong><br />${(state.policyEngine.blocked_moves || []).join("<br />") || "-"}</p>
+    </article>
+  `;
+}
+
+function renderSemanticKpiRegistry() {
+  const c = currentCopy();
+  if (!state.semanticKpiRegistry) {
+    $("semantic-kpi-registry-result").innerHTML = `<div class="answer-card"><strong>${c.semanticKpiRegistryTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("semantic-kpi-registry-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.semanticKpiRegistryTitle}</strong>
+      <p><strong>Default KPI:</strong> ${state.semanticKpiRegistry.recommended_default_kpi}</p>
+      <p>${(state.semanticKpiRegistry.kpis || []).map((item) => `<strong>${item.name}</strong><br />${item.formula}<br />${item.business_use}`).join("<br /><br />")}</p>
+    </article>
+  `;
+}
+
+function renderOrchestrationView() {
+  const c = currentCopy();
+  if (!state.orchestrationView) {
+    $("orchestration-view-result").innerHTML = `<div class="answer-card"><strong>${c.orchestrationViewTitle}</strong><p>${c.builderEmpty}</p></div>`;
+    return;
+  }
+  $("orchestration-view-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.orchestrationViewTitle}</strong>
+      <p>${state.orchestrationView.summary}</p>
+      <p>${(state.orchestrationView.stages || []).map((item) => `${item.status.toUpperCase()} - ${item.stage} (${item.owner})`).join("<br />")}</p>
+      <p><strong>Agents:</strong> ${(state.orchestrationView.active_agents || []).join(", ") || "-"}</p>
+    </article>
+  `;
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
@@ -1422,6 +1491,9 @@ function render() {
   renderConstraintSolver();
   renderExperimentDesigner();
   renderEvaluationConsole();
+  renderPolicyEngine();
+  renderSemanticKpiRegistry();
+  renderOrchestrationView();
   bindDynamicEvents();
 }
 
@@ -1921,6 +1993,71 @@ async function runEvaluationConsole() {
   renderEvaluationConsole();
 }
 
+async function runPolicyEngine() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.policyEngine = await api("/policy-engine", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        model_id: state.training?.model_id || null,
+        language: state.lang,
+      }),
+    });
+    await refreshObservability();
+    await refreshEvaluationConsole();
+    setStatus(c.policyEngineTitle);
+    renderPolicyEngine();
+    renderObservability();
+    renderEvaluationConsole();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runSemanticKpiRegistry() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.semanticKpiRegistry = await api("/semantic-kpi-registry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        language: state.lang,
+      }),
+    });
+    await refreshObservability();
+    await refreshEvaluationConsole();
+    setStatus(c.semanticKpiRegistryTitle);
+    renderSemanticKpiRegistry();
+    renderObservability();
+    renderEvaluationConsole();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function runOrchestrationView() {
+  const c = currentCopy();
+  try {
+    state.orchestrationView = await api("/orchestration-view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset?.dataset_id || null,
+        language: state.lang,
+      }),
+    });
+    setStatus(c.orchestrationViewTitle);
+    renderOrchestrationView();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
 function bindEvents() {
   $("load-sales").addEventListener("click", () => loadSample("sales"));
   $("load-marketing").addEventListener("click", () => loadSample("marketing"));
@@ -1943,6 +2080,9 @@ function bindEvents() {
   $("run-constraint-solver").addEventListener("click", runConstraintSolver);
   $("run-experiment-designer").addEventListener("click", runExperimentDesigner);
   $("run-evaluation-console").addEventListener("click", runEvaluationConsole);
+  $("run-policy-engine").addEventListener("click", runPolicyEngine);
+  $("run-semantic-kpi-registry").addEventListener("click", runSemanticKpiRegistry);
+  $("run-orchestration-view").addEventListener("click", runOrchestrationView);
   $("explain-sql").addEventListener("click", explainCurrentSql);
   $("export-query-csv").addEventListener("click", exportCurrentQueryCsv);
   $("export-report").addEventListener("click", exportReport);

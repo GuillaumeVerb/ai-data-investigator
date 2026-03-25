@@ -188,6 +188,61 @@ def test_constraint_solver_experiment_designer_and_evaluation_console() -> None:
     assert evaluation_body["top_tools"]
 
 
+def test_policy_engine_ab_test_planner_registry_and_orchestration() -> None:
+    dataset = client.post("/upload/sample").json()
+    training = client.post("/train", json={"dataset_id": dataset["dataset_id"], "target": "revenue"}).json()
+
+    policy_response = client.post(
+        "/policy-engine",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "model_id": training["model_id"],
+            "language": "en",
+        },
+    )
+    assert policy_response.status_code == 200
+    policy_body = policy_response.json()
+    assert policy_body["guardrails"]
+    assert policy_body["rule_results"]
+
+    ab_response = client.post(
+        "/ab-test-planner",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "model_id": training["model_id"],
+            "language": "en",
+        },
+    )
+    assert ab_response.status_code == 200
+    ab_body = ab_response.json()
+    assert ab_body["test_plans"]
+    assert ab_body["rollout_advice"]
+
+    registry_response = client.post(
+        "/semantic-kpi-registry",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "language": "en",
+        },
+    )
+    assert registry_response.status_code == 200
+    registry_body = registry_response.json()
+    assert registry_body["kpis"]
+    assert registry_body["recommended_default_kpi"]
+
+    orchestration_response = client.post(
+        "/orchestration-view",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "language": "en",
+        },
+    )
+    assert orchestration_response.status_code == 200
+    orchestration_body = orchestration_response.json()
+    assert orchestration_body["stages"]
+    assert orchestration_body["active_agents"]
+
+
 def test_profile_investigation_and_enrichment_flow() -> None:
     dataset = client.post("/upload/sample").json()
 

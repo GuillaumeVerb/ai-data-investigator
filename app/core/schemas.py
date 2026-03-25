@@ -497,6 +497,85 @@ class EvaluationConsoleResponse(AppBaseModel):
     readiness_label: str
 
 
+class PolicyEngineRequest(AppBaseModel):
+    dataset_id: str
+    model_id: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
+
+
+class PolicyRuleResult(AppBaseModel):
+    rule_name: str
+    status: Literal["pass", "warning", "block"]
+    implication: str
+
+
+class PolicyEngineResponse(AppBaseModel):
+    dataset_id: str
+    recommended_action: str
+    guardrails: List[str]
+    rule_results: List[PolicyRuleResult]
+    allowed_moves: List[str]
+    blocked_moves: List[str]
+
+
+class AbTestPlannerRequest(AppBaseModel):
+    dataset_id: str
+    model_id: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
+
+
+class AbTestPlan(AppBaseModel):
+    title: str
+    primary_metric: str
+    variants: List[str]
+    sample_guidance: str
+    duration_guidance: str
+    guardrail_metrics: List[str]
+
+
+class AbTestPlannerResponse(AppBaseModel):
+    dataset_id: str
+    test_plans: List[AbTestPlan]
+    rollout_advice: str
+
+
+class SemanticKpiRegistryRequest(AppBaseModel):
+    dataset_id: str
+    language: Literal["en", "fr"] = "en"
+
+
+class SemanticKpiDefinition(AppBaseModel):
+    name: str
+    formula: str
+    business_use: str
+    grain: str
+
+
+class SemanticKpiRegistryResponse(AppBaseModel):
+    dataset_id: str
+    kpis: List[SemanticKpiDefinition]
+    recommended_default_kpi: str
+
+
+class OrchestrationViewRequest(AppBaseModel):
+    dataset_id: Optional[str] = None
+    language: Literal["en", "fr"] = "en"
+
+
+class OrchestrationStage(AppBaseModel):
+    stage: str
+    status: Literal["ready", "active", "completed", "blocked"]
+    owner: str
+    detail: str
+
+
+class OrchestrationViewResponse(AppBaseModel):
+    dataset_id: Optional[str] = None
+    stages: List[OrchestrationStage]
+    active_agents: List[str]
+    summary: str
+
+
 class CopilotAskRequest(AppBaseModel):
     dataset_id: str
     question: str
