@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Data Investigator</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-top">
+          <div>
+            <p class="eyebrow">AI Decision Copilot</p>
+            <h1 id="hero-title">AI Data Investigator</h1>
+          </div>
+          <div class="lang-switch">
+            <button id="lang-fr" class="ghost-btn active" type="button">FR</button>
+            <button id="lang-en" class="ghost-btn" type="button">EN</button>
+          </div>
+        </div>
+        <p id="hero-copy" class="hero-copy">
+          Un copilote d'analyse et de decision qui transforme un CSV en diagnostic, recommandations et actions.
+        </p>
+      </header>
+
+      <div class="layout">
+        <aside class="control-panel">
+          <div class="panel-card">
+            <p class="panel-title" id="controls-title">Demarrer</p>
+            <p class="panel-copy" id="controls-copy">Charge une demo ou importe un CSV pour lancer l'investigation.</p>
+            <div class="button-stack">
+              <button id="load-sales" class="primary-btn" type="button">Charger la demo ventes</button>
+              <button id="load-marketing" class="secondary-btn" type="button">Charger la demo marketing</button>
+            </div>
+            <label class="upload-label" id="upload-label" for="file-input">Importer un CSV</label>
+            <input id="file-input" type="file" accept=".csv" />
+            <p id="status" class="status-line">Aucune donnee chargee.</p>
+          </div>
+
+          <div class="panel-card">
+            <p class="panel-title" id="copilot-title">Copilote</p>
+            <textarea id="question-input" rows="5" placeholder="Faut-il augmenter le prix ? Quel segment prioriser ?"></textarea>
+            <button id="ask-copilot" class="primary-btn" type="button">Interroger le copilote</button>
+          </div>
+        </aside>
+
+        <main class="content">
+          <section id="empty-state" class="panel-card empty-state">
+            <p class="eyebrow" id="empty-eyebrow">Ready for demo</p>
+            <h2 id="empty-title">Charge un dataset pour afficher la synthese decisionnelle.</h2>
+            <p id="empty-copy">
+              L'interface affichera ensuite les insights, le signal principal, un chart cle et le copilote.
+            </p>
+          </section>
+
+          <section id="dashboard" class="dashboard" hidden>
+            <section class="decision-shell">
+              <div class="section-head">
+                <p class="eyebrow" id="decision-kicker">Decision Summary</p>
+                <h2 id="decision-title">Synthese decisionnelle</h2>
+                <p id="decision-subtitle" class="section-copy">
+                  Les 5 messages a retenir pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.
+                </p>
+              </div>
+              <div id="decision-cards" class="decision-grid"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="snapshot-kicker">Business Snapshot</p>
+                <h2 id="snapshot-title">Vue d'ensemble</h2>
+              </div>
+              <div id="dataset-metrics" class="metric-grid"></div>
+              <details class="details-block">
+                <summary id="preview-summary">Apercu des donnees</summary>
+                <div class="table-wrap">
+                  <table id="preview-table"></table>
+                </div>
+              </details>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="insights-kicker">What matters now</p>
+                <h2 id="insights-title">Top insights</h2>
+              </div>
+              <div id="insights-grid" class="insight-grid"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="chart-kicker">Key chart</p>
+                <h2 id="chart-title">Signal principal</h2>
+              </div>
+              <div id="chart-story" class="story-box"></div>
+              <div id="chart-host" class="chart-host"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="prediction-kicker">Prediction</p>
+                <h2 id="prediction-title">Prediction engine</h2>
+              </div>
+              <div class="prediction-row">
+                <select id="target-select"></select>
+                <button id="train-model" class="secondary-btn" type="button">Entrainer le modele</button>
+              </div>
+              <div id="training-summary" class="stack"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="copilot-result-kicker">Copilot answer</p>
+                <h2 id="copilot-result-title">Reponse du copilote</h2>
+              </div>
+              <div id="copilot-answer" class="stack"></div>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -8,6 +8,13 @@ from app.api.main import app
 client = TestClient(app)
 
 
+def test_frontend_entrypoint_serves_html() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "AI Data Investigator" in response.text
+
+
 def test_health_endpoint_exposes_llm_status() -> None:
     response = client.get("/health")
     assert response.status_code == 200
