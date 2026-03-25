@@ -408,6 +408,8 @@ def ensure_session() -> str:
         st.session_state.copilot_session_id = str(uuid4())
     if "lang" not in st.session_state:
         st.session_state.lang = "fr"
+    if "lang_selector" not in st.session_state:
+        st.session_state.lang_selector = st.session_state.lang
     return st.session_state.copilot_session_id
 
 
@@ -802,6 +804,27 @@ def run_guided_demo(dataset_id: str) -> None:
     st.session_state.actions = None
 
 
+def sync_language_selection() -> None:
+    new_lang = st.session_state.get("lang_selector", "fr")
+    previous_lang = st.session_state.get("lang", "fr")
+    if new_lang == previous_lang:
+        return
+    st.session_state.lang = new_lang
+    for key in [
+        "profile",
+        "investigation",
+        "focused_analysis",
+        "root_cause",
+        "enrichment",
+        "summary",
+        "decision_engine",
+        "decision_engine_meta",
+        "decision_engine_meta_signature",
+        "copilot_answer",
+    ]:
+        st.session_state.pop(key, None)
+
+
 ensure_session()
 ensure_local_api_server(API_BASE_URL, getattr(SETTINGS, "auto_start_local_api", True))
 api_health = _api_healthcheck(API_BASE_URL)
@@ -836,17 +859,15 @@ with st.sidebar:
         else "LLM: fallback mode"
     )
     st.caption(llm_label)
-    previous_lang = st.session_state.lang
-    st.session_state.lang = st.selectbox(
+    st.session_state.lang_selector = st.session_state.get("lang", "fr")
+    st.selectbox(
         t("decision_engine.language", st.session_state.lang),
         options=["fr", "en"],
-        index=0 if st.session_state.lang == "fr" else 1,
+        index=0 if st.session_state.get("lang", "fr") == "fr" else 1,
         format_func=lambda value: value.upper(),
+        key="lang_selector",
+        on_change=sync_language_selection,
     )
-    if st.session_state.lang != previous_lang:
-        for key in ["profile", "investigation", "focused_analysis", "root_cause", "enrichment", "summary", "decision_engine", "decision_engine_meta", "decision_engine_meta_signature", "copilot_answer"]:
-            st.session_state.pop(key, None)
-        st.rerun()
     uploaded_file = st.file_uploader(t("app.upload_csv", st.session_state.lang), type=["csv"])
     st.caption(t("app.sample_hint", st.session_state.lang))
     if st.button(t("app.load_sales_demo", st.session_state.lang), use_container_width=True):
