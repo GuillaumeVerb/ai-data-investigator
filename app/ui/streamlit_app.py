@@ -750,7 +750,7 @@ with global_question_cols[1]:
     global_target = st.selectbox(
         t("app.target_override", lang),
         target_options,
-        index=target_options.index(default_global_target),
+        index=target_options.index(st.session_state.global_target_override),
         key="global_target_override",
     )
 with global_question_cols[2]:
@@ -1532,7 +1532,7 @@ with tabs[5]:
     copilot_target = st.selectbox(
         t("app.target_override", st.session_state.lang),
         target_options,
-        index=target_options.index(default_copilot_target),
+        index=target_options.index(st.session_state.copilot_target_override),
         key="copilot_target_override",
     )
     if st.button(t("copilot.ask_button", st.session_state.lang), type="primary") and question.strip():
