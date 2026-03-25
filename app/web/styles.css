@@ -8,6 +8,7 @@
   --accent-strong: #214c34;
   --warning: #b6534b;
   --shadow: 0 20px 48px rgba(23, 28, 24, 0.08);
+  --shadow-strong: 0 28px 80px rgba(23, 28, 24, 0.12);
   --border: rgba(23, 52, 40, 0.12);
 }
 
@@ -17,18 +18,45 @@
 
 body {
   margin: 0;
-  font-family: "Inter", "Segoe UI", sans-serif;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
   color: var(--text);
   background:
     radial-gradient(circle at top left, rgba(211, 131, 54, 0.16), transparent 24%),
     radial-gradient(circle at top right, rgba(47, 109, 73, 0.18), transparent 28%),
     linear-gradient(180deg, #fbf7f0 0%, #efe4d1 100%);
+  overflow-x: hidden;
 }
 
 .app-shell {
   max-width: 1440px;
   margin: 0 auto;
   padding: 32px 24px 64px;
+  position: relative;
+  z-index: 2;
+}
+
+.ambient {
+  position: fixed;
+  inset: auto;
+  width: 36rem;
+  height: 36rem;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-a {
+  top: -12rem;
+  left: -10rem;
+  background: rgba(211, 131, 54, 0.18);
+}
+
+.ambient-b {
+  top: 8rem;
+  right: -12rem;
+  background: rgba(47, 109, 73, 0.16);
 }
 
 .hero,
@@ -38,11 +66,24 @@ body {
   border: 1px solid var(--border);
   border-radius: 28px;
   box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
 }
 
 .hero {
-  padding: 28px 30px;
+  padding: 32px 34px;
   margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(47, 109, 73, 0.06), transparent 36%),
+    radial-gradient(circle at 85% 20%, rgba(211, 131, 54, 0.12), transparent 28%);
+  pointer-events: none;
 }
 
 .hero-top,
@@ -59,6 +100,7 @@ body {
 .eyebrow {
   margin: 0 0 10px;
   font-size: 12px;
+  font-family: "IBM Plex Mono", monospace;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--accent);
@@ -104,6 +146,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
 }
 
 .content {
@@ -114,6 +159,14 @@ body {
 .panel-card {
   padding: 22px;
   margin-bottom: 20px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.panel-card:hover,
+.decision-shell:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-strong);
+  border-color: rgba(47, 109, 73, 0.18);
 }
 
 .panel-title,
@@ -143,12 +196,14 @@ input[type="file"] {
   border: 1px solid var(--border);
   padding: 12px 14px;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  font-weight: 600;
 }
 
 .primary-btn {
   background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
   color: #fffdf8;
+  border-color: rgba(33, 76, 52, 0.5);
 }
 
 .secondary-btn,
@@ -165,6 +220,7 @@ input[type="file"] {
 button:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(23, 28, 24, 0.08);
+  border-color: rgba(47, 109, 73, 0.22);
 }
 
 .upload-label {
@@ -182,6 +238,7 @@ select {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 12px 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 textarea {
@@ -250,6 +307,11 @@ textarea {
   padding: 18px;
 }
 
+.decision-card:first-child {
+  background: linear-gradient(180deg, rgba(241, 248, 243, 0.96), rgba(232, 242, 235, 0.88));
+  border-color: rgba(47, 109, 73, 0.22);
+}
+
 .decision-card strong,
 .metric-card strong,
 .insight-card strong,
@@ -262,10 +324,16 @@ textarea {
 .tag,
 .small-meta {
   font-size: 12px;
+  font-family: "IBM Plex Mono", monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
+}
+
+.decision-icon {
+  font-size: 1.2rem;
+  margin-bottom: 8px;
 }
 
 .decision-value {
@@ -304,6 +372,7 @@ textarea {
   padding: 16px;
   margin-bottom: 14px;
   line-height: 1.6;
+  position: relative;
 }
 
 .chart-host {
@@ -451,6 +520,30 @@ td {
   color: var(--warning);
 }
 
+#dashboard > section,
+.control-panel > .panel-card {
+  animation: fadeUp 0.42s ease both;
+}
+
+#dashboard > section:nth-child(2) { animation-delay: 0.03s; }
+#dashboard > section:nth-child(3) { animation-delay: 0.06s; }
+#dashboard > section:nth-child(4) { animation-delay: 0.09s; }
+#dashboard > section:nth-child(5) { animation-delay: 0.12s; }
+#dashboard > section:nth-child(6) { animation-delay: 0.15s; }
+#dashboard > section:nth-child(7) { animation-delay: 0.18s; }
+#dashboard > section:nth-child(8) { animation-delay: 0.21s; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1100px) {
   .layout,
   .hero-top,
@@ -461,6 +554,7 @@ td {
 
   .control-panel {
     width: 100%;
+    position: static;
   }
 
   .decision-grid,
