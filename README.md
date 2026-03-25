@@ -170,6 +170,54 @@ Recommended architecture:
 
 This is the fastest path to a more reliable online demo without rewriting the frontend.
 
+## Railway Deployment For The API
+
+If you want a simpler backend deployment than Render, Railway is a good fit for this project.
+
+This repo now includes:
+
+- [railway.json](/Users/guillaumeverbiguie/Desktop/AI%20Data%20Investigator/railway.json)
+- [.python-version](/Users/guillaumeverbiguie/Desktop/AI%20Data%20Investigator/.python-version)
+
+Recommended Railway setup:
+
+1. Create a new project from the GitHub repo.
+2. Let Railway detect the repo with Nixpacks.
+3. The backend start command is already defined as:
+
+```bash
+uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
+```
+
+4. Add these environment variables:
+
+```bash
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+APP_NAME=AI Data Investigator
+ANOMALY_CONTAMINATION=0.08
+MAX_PREVIEW_ROWS=10
+```
+
+5. Once deployed, test:
+
+```text
+https://your-railway-service.up.railway.app/health
+```
+
+Then point the frontend to the public API:
+
+```bash
+API_BASE_URL=https://your-railway-service.up.railway.app
+AUTO_START_LOCAL_API=false
+```
+
+Recommended flow:
+
+1. Deploy the FastAPI backend on Railway.
+2. Verify `/health` returns `status: ok`.
+3. Update the Streamlit frontend secrets with the Railway URL.
+
 ## Key API Endpoints
 
 - `POST /upload`
