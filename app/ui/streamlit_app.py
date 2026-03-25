@@ -824,7 +824,8 @@ else:
         else "Le backend API local est indisponible. Lancez l API ou laissez AUTO_START_LOCAL_API=true."
     )
     st.stop()
-bootstrap_sample()
+if _is_local_api_url(API_BASE_URL) or BACKEND_MODE == "direct":
+    bootstrap_sample()
 dataset = st.session_state.get("dataset")
 
 with st.sidebar:
@@ -880,6 +881,11 @@ if not dataset:
         "Connect the copilot to a dataset to start the investigation workflow."
         if st.session_state.lang == "en"
         else "Connectez le copilote a un jeu de donnees pour lancer le workflow d investigation."
+    )
+    st.info(
+        "Load a demo dataset from the sidebar or upload your own CSV to start."
+        if st.session_state.lang == "en"
+        else "Chargez un jeu de donnees de demo depuis la barre laterale ou importez votre propre CSV pour commencer."
     )
     if startup_error:
         st.error(
