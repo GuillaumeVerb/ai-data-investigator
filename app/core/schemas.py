@@ -435,3 +435,20 @@ class SummaryResponse(AppBaseModel):
     main_drivers: List[str]
     risks: List[str]
     opportunities: List[str]
+
+
+class QueryRequest(AppBaseModel):
+    dataset_id: str
+    question: str
+    language: Literal["en", "fr"] = "en"
+
+
+class QueryResponse(AppBaseModel):
+    dataset_id: str
+    question: str
+    sql: str
+    explanation: str
+    result_preview: List[Dict[str, Any]]
+    columns: List[str]
+    row_count: int
+    warnings: List[str] = []

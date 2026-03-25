@@ -25,6 +25,24 @@ def test_health_endpoint_exposes_llm_status() -> None:
     assert body["llm_model"]
 
 
+def test_natural_language_query_endpoint_returns_sql_and_rows() -> None:
+    dataset = client.post("/upload/sample").json()
+    response = client.post(
+        "/query",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "question": "Show average revenue by region",
+            "language": "en",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sql"].lower().startswith("select")
+    assert body["row_count"] >= 1
+    assert body["columns"]
+    assert isinstance(body["result_preview"], list)
+
+
 def test_profile_investigation_and_enrichment_flow() -> None:
     dataset = client.post("/upload/sample").json()
 

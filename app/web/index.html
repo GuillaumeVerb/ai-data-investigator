@@ -69,6 +69,12 @@
           </div>
 
           <div class="panel-card">
+            <p class="panel-title" id="query-title">Ask the data</p>
+            <textarea id="sql-question-input" rows="4" placeholder="Quel est le revenu moyen par region ?"></textarea>
+            <button id="run-sql-query" class="secondary-btn" type="button">Generer le SQL</button>
+          </div>
+
+          <div class="panel-card">
             <p class="panel-title" id="export-title">Rapport executif</p>
             <p class="panel-copy" id="export-copy">Exporte une synthese HTML a partager en revue client ou management.</p>
             <button id="export-report" class="secondary-btn" type="button">Exporter le rapport</button>
@@ -212,6 +218,14 @@
                 <h2 id="copilot-result-title">Reponse du copilote</h2>
               </div>
               <div id="copilot-answer" class="stack"></div>
+            </section>
+
+            <section class="panel-card">
+              <div class="section-head">
+                <p class="eyebrow" id="query-kicker">AI Builder</p>
+                <h2 id="query-result-title">Natural language to SQL</h2>
+              </div>
+              <div id="query-result" class="stack"></div>
             </section>
 
             <section class="panel-card">

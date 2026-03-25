@@ -280,3 +280,44 @@ def narrate_copilot_answer(payload: Dict[str, Any]) -> Dict[str, Any]:
         )[:3],
         "missing_useful_data": response.get("missing_useful_data", fallback["missing_useful_data"])[:4],
     }
+
+
+def generate_sql_query(payload: Dict[str, Any]) -> Dict[str, Any]:
+    language = payload.get("language", "en")
+    response = _safe_completion(
+        (
+            "You are an analytics engineer generating SQL for a single SQLite table called dataset. "
+            "Return JSON with sql and explanation. "
+            "Rules: SELECT only, one statement only, use exact column names from the schema, "
+            "never invent columns, and keep queries concise. "
+            f"Write explanation in {language}."
+        ),
+        payload,
+    )
+    if not response:
+        return {"sql": "", "explanation": ""}
+    return {
+        "sql": str(response.get("sql", "")).strip(),
+        "explanation": response.get("explanation", ""),
+    }
+
+
+def summarize_query_result(payload: Dict[str, Any]) -> Dict[str, str]:
+    language = payload.get("language", "en")
+    fallback = {
+        "explanation": (
+            f"The query returned {payload.get('row_count', 0)} rows across {len(payload.get('columns', []))} columns."
+            if language == "en"
+            else f"La requete a retourne {payload.get('row_count', 0)} lignes sur {len(payload.get('columns', []))} colonnes."
+        )
+    }
+    response = _safe_completion(
+        (
+            "You summarize SQL query results for business users. "
+            "Return JSON with explanation only. Keep it short, precise, and business-oriented."
+        ),
+        payload,
+    )
+    if not response:
+        return fallback
+    return {"explanation": response.get("explanation", fallback["explanation"])}

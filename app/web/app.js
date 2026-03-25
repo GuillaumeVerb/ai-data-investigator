@@ -8,6 +8,7 @@ const state = {
   decisionMeta: null,
   decisionResult: null,
   copilot: null,
+  sqlQuery: null,
   focusedAnalysis: null,
   health: null,
 };
@@ -123,6 +124,15 @@ const copy = {
     exportCopy: "Exporte une synthese HTML a partager en revue client ou management.",
     exportReport: "Exporter le rapport",
     exportReady: "Rapport exporte",
+    queryTitle: "Interroger les donnees",
+    queryPlaceholder: "Quel est le revenu moyen par region ?",
+    queryRun: "Generer le SQL",
+    queryKicker: "AI Builder",
+    queryResultTitle: "Natural language to SQL",
+    queryEmpty: "Pose une question sur les donnees pour afficher le SQL genere, le resultat et l'explication.",
+    querySql: "SQL genere",
+    queryRows: "Lignes retournees",
+    queryWarning: "Avertissements",
   },
   en: {
     heroCopy: "An AI decision copilot that turns a CSV into diagnosis, recommendations, and next actions.",
@@ -234,6 +244,15 @@ const copy = {
     exportCopy: "Export an HTML summary you can share in a client or management review.",
     exportReport: "Export report",
     exportReady: "Report exported",
+    queryTitle: "Ask the data",
+    queryPlaceholder: "What is the average revenue by region?",
+    queryRun: "Generate SQL",
+    queryKicker: "AI Builder",
+    queryResultTitle: "Natural language to SQL",
+    queryEmpty: "Ask a question about the data to display the generated SQL, the result, and the explanation.",
+    querySql: "Generated SQL",
+    queryRows: "Returned rows",
+    queryWarning: "Warnings",
   },
 };
 
@@ -355,6 +374,9 @@ function renderStaticCopy() {
   $("hero-copy").textContent = c.heroCopy;
   $("controls-title").textContent = c.controlsTitle;
   $("controls-copy").textContent = c.controlsCopy;
+  $("query-title").textContent = c.queryTitle;
+  $("sql-question-input").placeholder = c.queryPlaceholder;
+  $("run-sql-query").textContent = c.queryRun;
   $("export-title").textContent = c.exportTitle;
   $("export-copy").textContent = c.exportCopy;
   $("export-report").textContent = c.exportReport;
@@ -393,6 +415,8 @@ function renderStaticCopy() {
   $("ask-copilot").textContent = c.copilotAsk;
   $("copilot-result-kicker").textContent = c.copilotResultKicker;
   $("copilot-result-title").textContent = c.copilotResultTitle;
+  $("query-kicker").textContent = c.queryKicker;
+  $("query-result-title").textContent = c.queryResultTitle;
   $("suggestions-kicker").textContent = c.suggestionsKicker;
   $("suggestions-title").textContent = c.suggestionsTitle;
   $("actions-kicker").textContent = c.actionsKicker;
@@ -908,6 +932,41 @@ function renderCopilot() {
   `;
 }
 
+function renderSqlQuery() {
+  const c = currentCopy();
+  if (!state.sqlQuery) {
+    $("query-result").innerHTML = `<div class="answer-card">${c.queryEmpty}</div>`;
+    return;
+  }
+  const rows = state.sqlQuery.result_preview || [];
+  let tableHtml = "";
+  if (rows.length) {
+    const columns = state.sqlQuery.columns || Object.keys(rows[0]);
+    const head = `<tr>${columns.map((col) => `<th>${col}</th>`).join("")}</tr>`;
+    const body = rows
+      .slice(0, 12)
+      .map((row) => `<tr>${columns.map((col) => `<td>${row[col] ?? ""}</td>`).join("")}</tr>`)
+      .join("");
+    tableHtml = `<div class="table-wrap"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  }
+  const warnings = (state.sqlQuery.warnings || []).length
+    ? `<article class="answer-card"><strong>${c.queryWarning}</strong><p>${state.sqlQuery.warnings.join("<br />")}</p></article>`
+    : "";
+  $("query-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.querySql}</strong>
+      <pre class="sql-block">${state.sqlQuery.sql}</pre>
+    </article>
+    <article class="answer-card">
+      <strong>${c.queryRows}</strong>
+      <p>${state.sqlQuery.row_count}</p>
+      <p>${state.sqlQuery.explanation}</p>
+    </article>
+    ${warnings}
+    ${tableHtml}
+  `;
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
@@ -932,6 +991,7 @@ function render() {
   renderFocusedAnalysis();
   renderEvidencePack();
   renderCopilot();
+  renderSqlQuery();
   bindDynamicEvents();
 }
 
@@ -1117,6 +1177,28 @@ async function exportReport() {
   }
 }
 
+async function runSqlQuery() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  const question = $("sql-question-input").value.trim();
+  if (!question) return;
+  try {
+    state.sqlQuery = await api("/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        question,
+        language: state.lang,
+      }),
+    });
+    setStatus(c.queryResultTitle);
+    renderSqlQuery();
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
 function bindEvents() {
   $("load-sales").addEventListener("click", () => loadSample("sales"));
   $("load-marketing").addEventListener("click", () => loadSample("marketing"));
@@ -1129,6 +1211,7 @@ function bindEvents() {
   $("prepare-decision-engine").addEventListener("click", prepareDecisionEngine);
   $("run-decision-engine").addEventListener("click", runDecisionEngine);
   $("ask-copilot").addEventListener("click", askCopilot);
+  $("run-sql-query").addEventListener("click", runSqlQuery);
   $("export-report").addEventListener("click", exportReport);
   $("lang-fr").addEventListener("click", () => {
     state.lang = "fr";

@@ -26,6 +26,8 @@ from app.core.schemas import (
     MergePreviewResponse,
     ProfileRequest,
     ProfileResponse,
+    QueryRequest,
+    QueryResponse,
     RootCauseRequest,
     RootCauseResponse,
     ReportExportRequest,
@@ -52,6 +54,7 @@ from app.services.profiling import build_profile
 from app.services.report_export import export_html_report
 from app.services.root_cause import explain_root_cause
 from app.services.scenario_engine import simulate_scenario
+from app.services.sql_agent import answer_with_sql
 from app.core.state import store
 
 
@@ -149,6 +152,16 @@ def investigate_single_path(request: InvestigationPathRequest) -> InvestigationP
 def root_cause(request: RootCauseRequest) -> RootCauseResponse:
     try:
         return explain_root_cause(request.dataset_id, request.metric, request.focus, request.model_id, request.language)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/query", response_model=QueryResponse)
+def query_dataset(request: QueryRequest) -> QueryResponse:
+    try:
+        return answer_with_sql(request.dataset_id, request.question, request.language)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
     except ValueError as exc:
