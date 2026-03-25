@@ -408,8 +408,6 @@ def ensure_session() -> str:
         st.session_state.copilot_session_id = str(uuid4())
     if "lang" not in st.session_state:
         st.session_state.lang = "fr"
-    if "lang_selector" not in st.session_state:
-        st.session_state.lang_selector = st.session_state.lang
     return st.session_state.copilot_session_id
 
 
@@ -804,8 +802,7 @@ def run_guided_demo(dataset_id: str) -> None:
     st.session_state.actions = None
 
 
-def sync_language_selection() -> None:
-    new_lang = st.session_state.get("lang_selector", "fr")
+def apply_language_change(new_lang: str) -> None:
     previous_lang = st.session_state.get("lang", "fr")
     if new_lang == previous_lang:
         return
@@ -859,15 +856,14 @@ with st.sidebar:
         else "LLM: fallback mode"
     )
     st.caption(llm_label)
-    st.session_state.lang_selector = st.session_state.get("lang", "fr")
-    st.selectbox(
-        t("decision_engine.language", st.session_state.lang),
-        options=["fr", "en"],
-        index=0 if st.session_state.get("lang", "fr") == "fr" else 1,
-        format_func=lambda value: value.upper(),
-        key="lang_selector",
-        on_change=sync_language_selection,
-    )
+    st.caption(t("decision_engine.language", st.session_state.lang))
+    lang_cols = st.columns(2)
+    if lang_cols[0].button("FR", use_container_width=True, type="primary" if st.session_state.lang == "fr" else "secondary"):
+        apply_language_change("fr")
+        st.rerun()
+    if lang_cols[1].button("EN", use_container_width=True, type="primary" if st.session_state.lang == "en" else "secondary"):
+        apply_language_change("en")
+        st.rerun()
     uploaded_file = st.file_uploader(t("app.upload_csv", st.session_state.lang), type=["csv"])
     st.caption(t("app.sample_hint", st.session_state.lang))
     if st.button(t("app.load_sales_demo", st.session_state.lang), use_container_width=True):
