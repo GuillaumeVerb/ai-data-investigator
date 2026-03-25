@@ -284,12 +284,14 @@ def narrate_copilot_answer(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def generate_sql_query(payload: Dict[str, Any]) -> Dict[str, Any]:
     language = payload.get("language", "en")
+    allowed_tables = payload.get("allowed_tables", ["dataset"])
     response = _safe_completion(
         (
-            "You are an analytics engineer generating SQL for a single SQLite table called dataset. "
+            "You are an analytics engineer generating SQLite SQL for business users. "
             "Return JSON with sql and explanation. "
+            f"Allowed tables: {', '.join(allowed_tables)}. "
             "Rules: SELECT only, one statement only, use exact column names from the schema, "
-            "never invent columns, and keep queries concise. "
+            "never invent columns, keep queries concise, and join tables only on keys that exist in both schemas. "
             f"Write explanation in {language}."
         ),
         payload,

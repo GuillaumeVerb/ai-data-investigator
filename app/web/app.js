@@ -12,6 +12,13 @@ const state = {
   sqlHistory: [],
   focusedAnalysis: null,
   health: null,
+  datasets: [],
+  builderOps: {
+    lastRoute: null,
+    lastLatencyMs: null,
+    queryCount: 0,
+    usedTables: [],
+  },
 };
 
 const copy = {
@@ -148,6 +155,13 @@ const copy = {
     routePredictionDone: "Question routee vers prediction.",
     routeSimulationDone: "Question routee vers simulation.",
     routeCopilotDone: "Question routee vers copilote.",
+    builderOpsKicker: "Builder ops",
+    builderOpsTitle: "Pilotage AI Builder",
+    builderRoute: "Dernier routage",
+    builderLatency: "Latence",
+    builderTables: "Tables utilisees",
+    builderQueries: "Requetes",
+    builderRouteEmpty: "Aucune action routee pour le moment.",
   },
   en: {
     heroCopy: "An AI decision copilot that turns a CSV into diagnosis, recommendations, and next actions.",
@@ -282,6 +296,13 @@ const copy = {
     routePredictionDone: "Question routed to prediction.",
     routeSimulationDone: "Question routed to simulation.",
     routeCopilotDone: "Question routed to copilot.",
+    builderOpsKicker: "Builder ops",
+    builderOpsTitle: "AI Builder control panel",
+    builderRoute: "Last route",
+    builderLatency: "Latency",
+    builderTables: "Used tables",
+    builderQueries: "Queries",
+    builderRouteEmpty: "No routed action yet.",
   },
 };
 
@@ -309,6 +330,7 @@ async function api(path, options = {}) {
 async function hydrateDataset(dataset) {
   state.dataset = dataset;
   setStatus(currentCopy().loadingProfile);
+  await refreshDatasets();
   const [profile, investigation] = await Promise.all([
     api("/profile", {
       method: "POST",
@@ -331,6 +353,7 @@ async function hydrateDataset(dataset) {
   state.sqlQuery = null;
   state.sqlHistory = [];
   state.focusedAnalysis = null;
+  state.builderOps.usedTables = [];
   setStatus(`${currentCopy().uploadDone} ${dataset.filename}`);
   render();
 }
@@ -340,6 +363,14 @@ async function refreshHealth() {
     state.health = await api("/health");
   } catch (_error) {
     state.health = null;
+  }
+}
+
+async function refreshDatasets() {
+  try {
+    state.datasets = await api("/datasets");
+  } catch (_error) {
+    state.datasets = state.dataset ? [state.dataset] : [];
   }
 }
 
@@ -493,6 +524,8 @@ function renderStaticCopy() {
   $("export-query-csv").textContent = c.queryExport;
   $("query-history-kicker").textContent = c.queryHistoryKicker;
   $("query-history-title").textContent = c.queryHistoryTitle;
+  $("builder-ops-kicker").textContent = c.builderOpsKicker;
+  $("builder-ops-title").textContent = c.builderOpsTitle;
   $("suggestions-kicker").textContent = c.suggestionsKicker;
   $("suggestions-title").textContent = c.suggestionsTitle;
   $("actions-kicker").textContent = c.actionsKicker;
@@ -1066,6 +1099,31 @@ function renderSqlHistory() {
     .join("");
 }
 
+function renderBuilderOps() {
+  const c = currentCopy();
+  const route = state.builderOps.lastRoute || c.builderRouteEmpty;
+  const latency = state.builderOps.lastLatencyMs ? `${state.builderOps.lastLatencyMs} ms` : "-";
+  const tables = state.builderOps.usedTables.length ? state.builderOps.usedTables.join(", ") : "-";
+  $("builder-ops").innerHTML = `
+    <article class="metric-card">
+      <div class="small-meta">${c.builderRoute}</div>
+      <div class="metric-value builder-metric">${route}</div>
+    </article>
+    <article class="metric-card">
+      <div class="small-meta">${c.builderLatency}</div>
+      <div class="metric-value builder-metric">${latency}</div>
+    </article>
+    <article class="metric-card">
+      <div class="small-meta">${c.builderTables}</div>
+      <div class="builder-copy">${tables}</div>
+    </article>
+    <article class="metric-card">
+      <div class="small-meta">${c.builderQueries}</div>
+      <div class="metric-value builder-metric">${state.builderOps.queryCount}</div>
+    </article>
+  `;
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
@@ -1092,6 +1150,7 @@ function render() {
   renderCopilot();
   renderSqlQuery();
   renderSqlHistory();
+  renderBuilderOps();
   bindDynamicEvents();
 }
 
@@ -1119,6 +1178,7 @@ async function uploadFile(file) {
 async function trainModel() {
   if (!state.dataset) return;
   try {
+    const startedAt = performance.now();
     const target = $("target-select").value;
     const training = await api("/train", {
       method: "POST",
@@ -1129,6 +1189,8 @@ async function trainModel() {
     state.simulation = null;
     state.decisionMeta = null;
     state.decisionResult = null;
+    state.builderOps.lastRoute = "prediction";
+    state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().trainingDone);
     await prepareDecisionEngine();
     render();
@@ -1140,6 +1202,7 @@ async function trainModel() {
 async function runGuidedSimulation() {
   if (!state.dataset || !state.training) return;
   try {
+    const startedAt = performance.now();
     const changes = getGuidedSimulationChanges(state.training.reference_row);
     state.simulation = await api("/simulate", {
       method: "POST",
@@ -1150,6 +1213,8 @@ async function runGuidedSimulation() {
         changes,
       }),
     });
+    state.builderOps.lastRoute = "simulation";
+    state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().simulationReady);
     renderSimulation();
   } catch (error) {
@@ -1235,6 +1300,7 @@ async function askCopilot(questionOverride = null) {
   const question = (questionOverride || $("question-input").value).trim();
   if (!question) return;
   try {
+    const startedAt = performance.now();
     $("question-input").value = question;
     const payload = {
       dataset_id: state.dataset.dataset_id,
@@ -1247,6 +1313,8 @@ async function askCopilot(questionOverride = null) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    state.builderOps.lastRoute = "copilot";
+    state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().askDone);
     render();
   } catch (error) {
@@ -1284,7 +1352,11 @@ async function runSqlQuery(questionOverride = null) {
   const question = (questionOverride || $("sql-question-input").value).trim();
   if (!question) return;
   try {
+    const startedAt = performance.now();
     $("sql-question-input").value = question;
+    const additionalDatasetIds = (state.datasets || [])
+      .map((dataset) => dataset.dataset_id)
+      .filter((datasetId) => datasetId !== state.dataset.dataset_id);
     state.sqlQuery = await api("/query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1292,8 +1364,13 @@ async function runSqlQuery(questionOverride = null) {
         dataset_id: state.dataset.dataset_id,
         question,
         language: state.lang,
+        additional_dataset_ids: additionalDatasetIds,
       }),
     });
+    state.builderOps.lastRoute = "sql";
+    state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
+    state.builderOps.queryCount += 1;
+    state.builderOps.usedTables = state.sqlQuery.used_tables || [];
     upsertSqlHistory({
       question,
       sql: state.sqlQuery.sql,
@@ -1301,6 +1378,7 @@ async function runSqlQuery(questionOverride = null) {
       row_count: state.sqlQuery.row_count,
       result_preview: state.sqlQuery.result_preview,
       explanation: state.sqlQuery.explanation,
+      used_tables: state.sqlQuery.used_tables || [],
       warnings: state.sqlQuery.warnings || [],
     });
     setStatus(c.queryResultTitle);
@@ -1315,6 +1393,7 @@ async function explainCurrentSql() {
   const c = currentCopy();
   if (!state.sqlQuery) return;
   try {
+    const startedAt = performance.now();
     const result = await api("/query/explain", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1333,9 +1412,12 @@ async function explainCurrentSql() {
         ? { ...item, explanation: result.explanation }
         : item,
     );
+    state.builderOps.lastRoute = "sql-explain";
+    state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(c.queryExplainDone);
     renderSqlQuery();
     renderSqlHistory();
+    renderBuilderOps();
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1353,7 +1435,9 @@ function replaySqlHistory(index) {
   if (!entry) return;
   $("sql-question-input").value = entry.question;
   state.sqlQuery = { ...entry };
+  state.builderOps.usedTables = entry.used_tables || [];
   renderSqlQuery();
+  renderBuilderOps();
 }
 
 async function routeQuestion() {
@@ -1444,6 +1528,7 @@ function bindDynamicEvents() {
 
 async function init() {
   await refreshHealth();
+  await refreshDatasets();
   bindEvents();
   render();
 }

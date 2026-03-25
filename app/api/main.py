@@ -163,7 +163,12 @@ def root_cause(request: RootCauseRequest) -> RootCauseResponse:
 @app.post("/query", response_model=QueryResponse)
 def query_dataset(request: QueryRequest) -> QueryResponse:
     try:
-        return answer_with_sql(request.dataset_id, request.question, request.language)
+        return answer_with_sql(
+            request.dataset_id,
+            request.question,
+            request.language,
+            request.additional_dataset_ids,
+        )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Dataset not found.") from exc
     except ValueError as exc:

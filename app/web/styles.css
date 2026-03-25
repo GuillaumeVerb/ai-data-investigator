@@ -410,6 +410,16 @@ textarea {
   font-weight: 700;
 }
 
+.builder-metric {
+  font-size: 1.05rem;
+}
+
+.builder-copy {
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 .tag {
   display: inline-block;
   padding: 6px 10px;

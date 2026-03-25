@@ -441,6 +441,7 @@ class QueryRequest(AppBaseModel):
     dataset_id: str
     question: str
     language: Literal["en", "fr"] = "en"
+    additional_dataset_ids: List[str] = []
 
 
 class QueryResponse(AppBaseModel):
@@ -451,6 +452,7 @@ class QueryResponse(AppBaseModel):
     result_preview: List[Dict[str, Any]]
     columns: List[str]
     row_count: int
+    used_tables: List[str] = []
     warnings: List[str] = []
 
 

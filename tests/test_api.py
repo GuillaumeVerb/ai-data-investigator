@@ -40,6 +40,7 @@ def test_natural_language_query_endpoint_returns_sql_and_rows() -> None:
     assert body["sql"].lower().startswith("select")
     assert body["row_count"] >= 1
     assert body["columns"]
+    assert body["used_tables"]
     assert isinstance(body["result_preview"], list)
 
 
@@ -58,6 +59,25 @@ def test_query_explanation_endpoint_returns_explanation() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["explanation"]
+
+
+def test_multi_dataset_query_can_use_joined_context() -> None:
+    sales = client.post("/upload/sample").json()
+    marketing = client.post("/upload/sample/marketing").json()
+    response = client.post(
+        "/query",
+        json={
+            "dataset_id": sales["dataset_id"],
+            "question": "Compare revenue and qualified pipeline by region using marketing context",
+            "language": "en",
+            "additional_dataset_ids": [marketing["dataset_id"]],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "join" in body["sql"].lower()
+    assert len(body["used_tables"]) >= 2
+    assert body["row_count"] >= 1
 
 
 def test_profile_investigation_and_enrichment_flow() -> None:
