@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     anomaly_contamination: float = 0.08
     max_preview_rows: int = 10
     api_base_url: str = "http://127.0.0.1:8000"
+    runtime_state_path: str = "/tmp/ai_data_investigator_runtime_state.json"
 
     model_config = SettingsConfigDict(
         env_file=".env",

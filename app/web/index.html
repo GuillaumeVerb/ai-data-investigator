@@ -17,7 +17,7 @@
       <header class="hero">
         <div class="hero-top">
           <div>
-            <p class="eyebrow">AI Decision Copilot</p>
+            <p class="eyebrow" id="hero-eyebrow">Copilote de decision IA</p>
             <h1 id="hero-title">AI Data Investigator</h1>
           </div>
           <div class="lang-switch">
@@ -28,6 +28,12 @@
         <p id="hero-copy" class="hero-copy">
           Un copilote d'analyse et de decision qui transforme un CSV en diagnostic, recommandations et actions.
         </p>
+        <div class="pill-row hero-pill-row">
+          <span id="hero-usecase-1" class="pill">Pricing</span>
+          <span id="hero-usecase-2" class="pill">Revenue investigation</span>
+          <span id="hero-usecase-3" class="pill">Growth optimization</span>
+          <span id="hero-usecase-4" class="pill">AI Builder workflows</span>
+        </div>
         <div id="hero-band" class="hero-band">
           <div class="hero-chip">
             <span class="small-meta" id="band-status-label">System</span>
@@ -42,6 +48,29 @@
             <strong id="band-mode-value">Decision-first workflow</strong>
           </div>
         </div>
+        <div class="positioning-grid">
+          <article class="positioning-card">
+            <p class="small-meta" id="positioning-audience-kicker">Pour qui</p>
+            <strong id="positioning-audience-title">Revenue, pricing, growth et consultants IA</strong>
+            <p id="positioning-audience-copy" class="panel-copy">
+              Pour les equipes qui doivent transformer des exports metier en recommandations claires et defendables.
+            </p>
+          </article>
+          <article class="positioning-card">
+            <p class="small-meta" id="positioning-value-kicker">Ce que ca fait</p>
+            <strong id="positioning-value-title">Investigue, simule et decide avec preuves</strong>
+            <p id="positioning-value-copy" class="panel-copy">
+              Le produit combine diagnostic, SQL, simulation, guardrails et evidence pack dans un meme workflow.
+            </p>
+          </article>
+          <article class="positioning-card">
+            <p class="small-meta" id="positioning-mode-kicker">Deux modes</p>
+            <strong id="positioning-mode-title">Decision Copilot + AI Builder Studio</strong>
+            <p id="positioning-mode-copy" class="panel-copy">
+              Une couche simple pour decider, une couche avancee pour builder, gouverner et exporter des copilotes.
+            </p>
+          </article>
+        </div>
       </header>
 
       <section class="workflow-strip">
@@ -50,6 +79,34 @@
 
       <div class="layout">
         <aside class="control-panel">
+          <div class="panel-card">
+            <p class="panel-title" id="persona-title">Parcours produit</p>
+            <p class="panel-copy" id="persona-copy">Choisis le profil acheteur et la couche produit a mettre en avant pendant la demo.</p>
+            <div class="button-stack">
+              <div class="mode-chip-row">
+                <button id="persona-revenue" class="ghost-btn active" type="button">Revenue / Pricing</button>
+                <button id="persona-builder" class="ghost-btn" type="button">AI Builder</button>
+                <button id="persona-analytics" class="ghost-btn" type="button">Equipe data</button>
+              </div>
+              <div class="mode-chip-row">
+                <button id="surface-decision" class="ghost-btn active" type="button">Decision Copilot</button>
+                <button id="surface-builder" class="ghost-btn" type="button">AI Builder Studio</button>
+                <button id="surface-governance" class="ghost-btn" type="button">Gouvernance</button>
+              </div>
+            </div>
+            <div id="persona-brief" class="answer-card"></div>
+          </div>
+
+          <div class="panel-card">
+            <p class="panel-title" id="playbook-title">Playbooks demo</p>
+            <p class="panel-copy" id="playbook-copy">Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.</p>
+            <div class="button-stack">
+              <button id="playbook-pricing" class="secondary-btn" type="button">Decision pricing</button>
+              <button id="playbook-growth" class="ghost-btn" type="button">Optimisation growth</button>
+              <button id="playbook-exec" class="ghost-btn" type="button">Revue executive</button>
+            </div>
+          </div>
+
           <div class="panel-card">
             <p class="panel-title" id="controls-title">Demarrer</p>
             <p class="panel-copy" id="controls-copy">Charge une demo ou importe un CSV pour lancer l'investigation.</p>
@@ -107,6 +164,28 @@
           </div>
 
           <div class="panel-card">
+            <p class="panel-title" id="platform-title">Platform & Governance</p>
+            <p class="panel-copy" id="platform-copy">Cree un workspace, connecte une source, exporte les artefacts et demande une validation humaine.</p>
+            <input id="workspace-owner-input" type="text" placeholder="Nom du builder" />
+            <button id="create-user" class="ghost-btn" type="button">Creer l utilisateur</button>
+            <input id="project-name-input" type="text" placeholder="Nom du projet" />
+            <button id="create-project" class="ghost-btn" type="button">Creer le projet</button>
+            <input id="connector-name-input" type="text" placeholder="Nom du connecteur" />
+            <input id="connector-url-input" type="text" placeholder="URL CSV publique ou chemin sqlite" />
+            <button id="connect-import-csv" class="secondary-btn" type="button">Connecter et importer</button>
+            <div class="button-stack">
+              <button id="export-workflow-artifact" class="ghost-btn" type="button">Exporter le workflow</button>
+              <button id="export-policy-artifact" class="ghost-btn" type="button">Exporter la policy</button>
+            </div>
+            <input id="approval-title-input" type="text" placeholder="Nom de la validation" />
+            <div class="button-stack">
+              <button id="request-approval" class="ghost-btn" type="button">Demander une validation</button>
+              <button id="approve-latest" class="ghost-btn" type="button">Approuver la derniere</button>
+            </div>
+            <button id="refresh-platform" class="ghost-btn" type="button">Rafraichir la gouvernance</button>
+          </div>
+
+          <div class="panel-card">
             <p class="panel-title" id="export-title">Rapport executif</p>
             <p class="panel-copy" id="export-copy">Exporte une synthese HTML a partager en revue client ou management.</p>
             <button id="export-report" class="secondary-btn" type="button">Exporter le rapport</button>
@@ -129,8 +208,14 @@
             </p>
           </section>
 
+          <section id="dashboard-tabs" class="dashboard-tabs" hidden>
+            <button id="dashboard-tab-decision" class="ghost-btn active" type="button">Copilote de decision</button>
+            <button id="dashboard-tab-builder" class="ghost-btn" type="button">Studio Builder IA</button>
+            <button id="dashboard-tab-governance" class="ghost-btn" type="button">Gouvernance</button>
+          </section>
+
           <section id="dashboard" class="dashboard" hidden>
-            <section class="decision-shell">
+            <section id="section-decision-summary" class="decision-shell surface-decision">
               <div class="section-head">
                 <p class="eyebrow" id="decision-kicker">Decision Summary</p>
                 <h2 id="decision-title">Synthese decisionnelle</h2>
@@ -141,7 +226,7 @@
               <div id="decision-cards" class="decision-grid"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-confidence" class="panel-card surface-decision">
               <div class="section-head">
                 <p class="eyebrow" id="confidence-kicker">Confidence</p>
                 <h2 id="confidence-title">Confiance et limites</h2>
@@ -149,7 +234,7 @@
               <div id="confidence-grid" class="confidence-grid"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-snapshot" class="panel-card surface-decision surface-builder surface-governance">
               <div class="section-head">
                 <p class="eyebrow" id="snapshot-kicker">Business Snapshot</p>
                 <h2 id="snapshot-title">Vue d'ensemble</h2>
@@ -163,7 +248,7 @@
               </details>
             </section>
 
-            <section class="panel-card">
+            <section id="section-insights" class="panel-card surface-decision">
               <div class="section-head">
                 <p class="eyebrow" id="insights-kicker">What matters now</p>
                 <h2 id="insights-title">Top insights</h2>
@@ -171,7 +256,7 @@
               <div id="insights-grid" class="insight-grid"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-suggestions" class="panel-card surface-decision">
               <div class="section-head">
                 <p class="eyebrow" id="suggestions-kicker">Investigation suggestions</p>
                 <h2 id="suggestions-title">Where to investigate next</h2>
@@ -179,7 +264,7 @@
               <div id="suggestions-grid" class="suggestion-grid"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-charts" class="panel-card surface-decision">
               <div class="section-head">
                 <p class="eyebrow" id="chart-kicker">Key charts</p>
                 <h2 id="chart-title">Signal principal</h2>
@@ -196,7 +281,7 @@
               </div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-prediction" class="panel-card surface-decision surface-builder">
               <div class="section-head">
                 <p class="eyebrow" id="prediction-kicker">Prediction</p>
                 <h2 id="prediction-title">Prediction engine</h2>
@@ -208,7 +293,7 @@
               <div id="training-summary" class="stack"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-simulation" class="panel-card surface-decision surface-builder">
               <div class="section-head">
                 <p class="eyebrow" id="simulation-kicker">Scenario simulation</p>
                 <h2 id="simulation-title">Simulation guidee</h2>
@@ -220,7 +305,7 @@
               <div id="simulation-summary" class="stack"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-engine" class="panel-card surface-decision surface-builder">
               <div class="section-head">
                 <p class="eyebrow" id="engine-kicker">Decision engine</p>
                 <h2 id="engine-title">Moteur de decision</h2>
@@ -236,7 +321,7 @@
               <div id="decision-result" class="stack"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-actions" class="panel-card surface-decision">
               <div class="section-head">
                 <p class="eyebrow" id="actions-kicker">Recommended actions</p>
                 <h2 id="actions-title">Actions recommandees</h2>
@@ -244,7 +329,7 @@
               <div id="actions-grid" class="insight-grid"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-copilot" class="panel-card surface-decision">
               <div class="section-head">
                 <p class="eyebrow" id="copilot-result-kicker">Copilot answer</p>
                 <h2 id="copilot-result-title">Reponse du copilote</h2>
@@ -252,7 +337,7 @@
               <div id="copilot-answer" class="stack"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-query" class="panel-card surface-builder">
               <div class="section-head">
                 <p class="eyebrow" id="query-kicker">AI Builder</p>
                 <h2 id="query-result-title">Natural language to SQL</h2>
@@ -274,7 +359,7 @@
               <div id="builder-ops" class="metric-grid"></div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-builder-studio" class="panel-card surface-builder">
               <div class="section-head">
                 <p class="eyebrow" id="builder-studio-kicker">AI Builder Studio</p>
                 <h2 id="builder-studio-result-title">Builder copilots</h2>
@@ -295,7 +380,20 @@
               </div>
             </section>
 
-            <section class="panel-card">
+            <section id="section-platform" class="panel-card surface-builder surface-governance">
+              <div class="section-head">
+                <p class="eyebrow" id="platform-kicker">Platform</p>
+                <h2 id="platform-result-title">Workspace and governance</h2>
+              </div>
+              <div id="platform-overview-grid" class="suggestion-grid builder-grid">
+                <div id="workspace-result" class="stack"></div>
+                <div id="connector-platform-result" class="stack"></div>
+                <div id="artifact-export-result" class="stack"></div>
+                <div id="approval-result" class="stack"></div>
+              </div>
+            </section>
+
+            <section id="section-evidence" class="panel-card surface-decision surface-builder surface-governance">
               <div class="section-head">
                 <p class="eyebrow" id="evidence-kicker">Evidence pack</p>
                 <h2 id="evidence-title">Pack de preuves</h2>

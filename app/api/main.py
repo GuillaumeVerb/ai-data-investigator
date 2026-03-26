@@ -12,8 +12,17 @@ from app.core.schemas import (
     ActionResponse,
     AbTestPlannerRequest,
     AbTestPlannerResponse,
+    ApprovalCreateRequest,
+    ApprovalDecisionRequest,
+    ApprovalItem,
+    ArtifactExportResponse,
     ConstraintSolveRequest,
     ConstraintSolveResponse,
+    ConnectorCreateRequest,
+    ConnectorImportRequest,
+    ConnectorItem,
+    ConnectorTestRequest,
+    ConnectorTestResponse,
     CopilotAskRequest,
     CopilotAskResponse,
     CopilotSessionState,
@@ -42,6 +51,10 @@ from app.core.schemas import (
     ProfileRequest,
     ProfileResponse,
     ObservabilityResponse,
+    PlatformOverviewResponse,
+    PolicyExportRequest,
+    ProjectCreateRequest,
+    ProjectItem,
     QuantOptimizeRequest,
     QuantOptimizeResponse,
     QueryExplainRequest,
@@ -63,6 +76,9 @@ from app.core.schemas import (
     TrainRequest,
     TrainResponse,
     UploadResponse,
+    UserCreateRequest,
+    UserItem,
+    WorkflowExportRequest,
     WorkflowBuilderRequest,
     WorkflowBuilderResponse,
 )
@@ -83,6 +99,13 @@ from app.services.llm_engine import explain_sql_query, generate_summary, llm_sta
 from app.services.ml_engine import train_model
 from app.services.observability import get_observability_snapshot
 from app.services.orchestration_view import build_orchestration_view
+from app.services.platform_ops import (
+    build_platform_overview,
+    export_policy_artifact,
+    export_workflow_artifact,
+    import_from_connector,
+    test_connector,
+)
 from app.services.preparation_agent import build_preparation_plan
 from app.services.profiling import build_profile
 from app.services.policy_engine import evaluate_policy
@@ -128,6 +151,150 @@ def healthcheck() -> dict[str, str]:
 @app.get("/datasets", response_model=list[DatasetListItem])
 def list_datasets() -> list[DatasetListItem]:
     return store.list_datasets()
+
+
+@app.get("/platform/overview", response_model=PlatformOverviewResponse)
+def platform_overview() -> PlatformOverviewResponse:
+    return build_platform_overview()
+
+
+@app.get("/platform/users", response_model=list[UserItem])
+def list_users() -> list[UserItem]:
+    return store.list_users()
+
+
+@app.post("/platform/users", response_model=UserItem)
+def create_user(request: UserCreateRequest) -> UserItem:
+    return store.create_user(request.name, request.email, request.role)
+
+
+@app.get("/platform/projects", response_model=list[ProjectItem])
+def list_projects() -> list[ProjectItem]:
+    return store.list_projects()
+
+
+@app.post("/platform/projects", response_model=ProjectItem)
+def create_project(request: ProjectCreateRequest) -> ProjectItem:
+    return store.create_project(request.name, request.description, request.owner_user_id)
+
+
+@app.get("/platform/connectors", response_model=list[ConnectorItem])
+def list_connectors() -> list[ConnectorItem]:
+    return store.list_connectors()
+
+
+@app.post("/platform/connectors", response_model=ConnectorItem)
+def create_connector(request: ConnectorCreateRequest) -> ConnectorItem:
+    connector = store.create_connector(
+        name=request.name,
+        connector_type=request.connector_type,
+        config=request.config,
+        project_id=request.project_id,
+        created_by=request.created_by,
+    )
+    store.log_operation(
+        tool_name="connector_registry",
+        status="completed",
+        route="connector",
+        detail=f"{request.connector_type}: {request.name}",
+    )
+    return connector
+
+
+@app.post("/platform/connectors/test", response_model=ConnectorTestResponse)
+def platform_connector_test(request: ConnectorTestRequest) -> ConnectorTestResponse:
+    result = test_connector(request.connector_id)
+    store.log_operation(
+        tool_name="connector_test",
+        status="completed" if result.status == "ok" else "failed",
+        route="connector",
+        detail=result.detail,
+    )
+    return result
+
+
+@app.post("/platform/connectors/import", response_model=UploadResponse)
+def platform_connector_import(request: ConnectorImportRequest) -> UploadResponse:
+    try:
+        result = import_from_connector(request.connector_id)
+        store.log_operation(
+            tool_name="connector_import",
+            status="completed",
+            route="connector",
+            dataset_id=result.dataset_id,
+            detail=result.filename,
+        )
+        return result
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Connector not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/platform/exports/workflow", response_model=ArtifactExportResponse)
+def platform_export_workflow(request: WorkflowExportRequest) -> ArtifactExportResponse:
+    result = export_workflow_artifact(request)
+    store.log_operation(
+        tool_name="workflow_export",
+        status="completed",
+        route="export",
+        dataset_id=request.dataset_id,
+        detail=result.artifact.name,
+    )
+    return result
+
+
+@app.post("/platform/exports/policy", response_model=ArtifactExportResponse)
+def platform_export_policy(request: PolicyExportRequest) -> ArtifactExportResponse:
+    result = export_policy_artifact(request)
+    store.log_operation(
+        tool_name="policy_export",
+        status="completed",
+        route="export",
+        dataset_id=request.dataset_id,
+        detail=result.artifact.name,
+    )
+    return result
+
+
+@app.get("/platform/approvals", response_model=list[ApprovalItem])
+def list_approvals() -> list[ApprovalItem]:
+    return store.list_approvals()
+
+
+@app.post("/platform/approvals", response_model=ApprovalItem)
+def create_approval(request: ApprovalCreateRequest) -> ApprovalItem:
+    approval = store.create_approval(
+        title=request.title,
+        object_type=request.object_type,
+        object_id=request.object_id,
+        summary=request.summary,
+        project_id=request.project_id,
+        requested_by=request.requested_by,
+        payload=request.payload,
+    )
+    store.log_operation(
+        tool_name="approval_request",
+        status="completed",
+        route="approval",
+        detail=request.title,
+    )
+    return approval
+
+
+@app.post("/platform/approvals/{approval_id}/decision", response_model=ApprovalItem)
+def decide_approval(approval_id: str, request: ApprovalDecisionRequest) -> ApprovalItem:
+    try:
+        approval = store.decide_approval(approval_id, request.decision, request.reviewer, request.comment)
+        store.log_operation(
+            tool_name="approval_decision",
+            status="completed",
+            route="approval",
+            detail=f"{approval.title}: {request.decision}",
+        )
+        return approval
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Approval not found.") from exc
 
 
 @app.get("/copilot/session/{session_id}", response_model=CopilotSessionState)

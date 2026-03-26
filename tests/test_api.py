@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from app.api.main import app
@@ -241,6 +243,106 @@ def test_policy_engine_ab_test_planner_registry_and_orchestration() -> None:
     orchestration_body = orchestration_response.json()
     assert orchestration_body["stages"]
     assert orchestration_body["active_agents"]
+
+
+def test_platform_connectors_exports_and_approvals() -> None:
+    user_response = client.post("/platform/users", json={"name": "Demo Builder", "role": "builder"})
+    assert user_response.status_code == 200
+    user = user_response.json()
+
+    project_response = client.post(
+        "/platform/projects",
+        json={"name": "Revenue Workspace", "owner_user_id": user["user_id"]},
+    )
+    assert project_response.status_code == 200
+    project = project_response.json()
+
+    sample_path = str((Path(__file__).resolve().parents[1] / "data" / "sample_sales.csv").resolve())
+    connector_response = client.post(
+        "/platform/connectors",
+        json={
+            "name": "Sales CSV",
+            "connector_type": "csv_url",
+            "config": {"url": sample_path},
+            "project_id": project["project_id"],
+            "created_by": user["user_id"],
+        },
+    )
+    assert connector_response.status_code == 200
+    connector = connector_response.json()
+
+    connector_test = client.post("/platform/connectors/test", json={"connector_id": connector["connector_id"]})
+    assert connector_test.status_code == 200
+    connector_test_body = connector_test.json()
+    assert connector_test_body["status"] == "ok"
+    assert connector_test_body["row_count"] >= 1
+
+    imported_dataset = client.post("/platform/connectors/import", json={"connector_id": connector["connector_id"]})
+    assert imported_dataset.status_code == 200
+    dataset = imported_dataset.json()
+
+    train = client.post("/train", json={"dataset_id": dataset["dataset_id"], "target": "revenue"}).json()
+
+    workflow_export = client.post(
+        "/platform/exports/workflow",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "goal": "pricing_decision",
+            "language": "en",
+            "model_id": train["model_id"],
+            "project_id": project["project_id"],
+            "created_by": user["user_id"],
+        },
+    )
+    assert workflow_export.status_code == 200
+    workflow_body = workflow_export.json()
+    assert workflow_body["artifact"]["artifact_type"] == "workflow"
+
+    policy_export = client.post(
+        "/platform/exports/policy",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "language": "en",
+            "model_id": train["model_id"],
+            "project_id": project["project_id"],
+            "created_by": user["user_id"],
+        },
+    )
+    assert policy_export.status_code == 200
+    policy_body = policy_export.json()
+    assert policy_body["artifact"]["artifact_type"] == "policy"
+
+    approval_response = client.post(
+        "/platform/approvals",
+        json={
+            "title": "Approve pricing workflow",
+            "object_type": "workflow",
+            "object_id": workflow_body["artifact"]["artifact_id"],
+            "summary": "Ready for human review",
+            "project_id": project["project_id"],
+            "requested_by": user["user_id"],
+        },
+    )
+    assert approval_response.status_code == 200
+    approval = approval_response.json()
+    assert approval["status"] == "pending"
+
+    approval_decision = client.post(
+        f"/platform/approvals/{approval['approval_id']}/decision",
+        json={"decision": "approved", "reviewer": user["user_id"]},
+    )
+    assert approval_decision.status_code == 200
+    approval_decision_body = approval_decision.json()
+    assert approval_decision_body["status"] == "approved"
+
+    overview_response = client.get("/platform/overview")
+    assert overview_response.status_code == 200
+    overview = overview_response.json()
+    assert overview["users"]
+    assert overview["projects"]
+    assert overview["connectors"]
+    assert overview["exports"]
+    assert overview["approvals"]
 
 
 def test_profile_investigation_and_enrichment_flow() -> None:

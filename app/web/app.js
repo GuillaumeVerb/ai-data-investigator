@@ -31,13 +31,34 @@ const state = {
   policyEngine: null,
   semanticKpiRegistry: null,
   orchestrationView: null,
+  platformOverview: null,
+  latestConnectorTest: null,
+  latestWorkflowExport: null,
+  latestPolicyExport: null,
+  latestApproval: null,
+  marketProfile: "revenue",
+  surfaceMode: "decision",
 };
 
 const copy = {
   fr: {
-    heroCopy: "Un copilote d'analyse et de decision qui transforme un CSV en diagnostic, recommandations et actions.",
-    controlsTitle: "Demarrer",
-    controlsCopy: "Charge une demo ou importe un CSV pour lancer l'investigation.",
+    heroEyebrow: "Copilote de decision IA",
+    heroCopy: "Un accelerateur de copilotes de decision pour transformer des donnees metier en diagnostics, simulations et recommandations defendables.",
+    heroAudienceKicker: "Pour qui",
+    heroAudienceTitle: "Revenue, pricing, growth et consultants IA",
+    heroAudienceCopy: "Pour les equipes qui doivent expliquer vite ce qui change, tester des scenarios et recommander une action claire.",
+    heroValueKicker: "Ce que ca fait",
+    heroValueTitle: "Investigue, simule et decide avec preuves",
+    heroValueCopy: "Le produit combine analyse, SQL, scenarios, guardrails, evidence pack et exports dans un meme workflow.",
+    heroModeKicker: "Deux modes",
+    heroModeTitle: "Decision Copilot + AI Builder Studio",
+    heroModeCopy: "Une couche simple pour decider, une couche avancee pour builder, gouverner et exporter des copilotes.",
+    heroUsecase1: "Decision tarifaire",
+    heroUsecase2: "Investigation revenue",
+    heroUsecase3: "Optimisation growth",
+    heroUsecase4: "Workflows AI Builder",
+    controlsTitle: "Lancer une analyse",
+    controlsCopy: "Charge une demo revenue ou importe un CSV pour activer un copilote de decision complet.",
     workflowLoad: "Charger les donnees",
     workflowInsights: "Lire les insights",
     workflowTrain: "Entrainer le modele",
@@ -47,23 +68,23 @@ const copy = {
     marketingDemo: "Charger la demo marketing",
     upload: "Importer un CSV",
     noData: "Aucune donnee chargee.",
-    ready: "Pret pour la demo",
-    emptyTitle: "Charge un dataset pour afficher la synthese decisionnelle.",
-    emptyCopy: "L'interface affichera ensuite les insights, le signal principal, un chart cle et le copilote.",
-    decisionKicker: "Decision Summary",
+    ready: "Pret pour une demo client",
+    emptyTitle: "Charge un dataset pour activer le copilote de decision.",
+    emptyCopy: "Tu verras ensuite les insights prioritaires, les scenarios, les recommandations et le studio AI Builder.",
+    decisionKicker: "Synthese de decision",
     decisionTitle: "Synthese decisionnelle",
     decisionSubtitle: "Les 5 messages a retenir pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.",
-    snapshotKicker: "Business Snapshot",
+    snapshotKicker: "Vue business",
     snapshotTitle: "Vue d'ensemble",
     previewSummary: "Apercu des donnees",
-    insightsKicker: "What matters now",
-    insightsTitle: "Top insights",
-    chartKicker: "Key chart",
+    insightsKicker: "Ce qui compte maintenant",
+    insightsTitle: "Insights prioritaires",
+    chartKicker: "Graphiques cles",
     chartTitle: "Signal principal",
     predictionKicker: "Prediction",
-    predictionTitle: "Prediction engine",
+    predictionTitle: "Moteur predictif",
     trainModel: "Entrainer le modele",
-    simulationKicker: "Scenario simulation",
+    simulationKicker: "Simulation de scenario",
     simulationTitle: "Simulation guidee",
     runGuidedSimulation: "Lancer le scenario guide",
     simulationReady: "Simulation disponible",
@@ -71,7 +92,7 @@ const copy = {
     simulationAfter: "Apres",
     simulationDelta: "Delta",
     simulationDeltaPct: "Delta %",
-    engineKicker: "Decision engine",
+    engineKicker: "Moteur de decision",
     engineTitle: "Moteur de decision",
     engineCopy: "Compare deux scenarios, visualise le risque et fais remonter la meilleure action.",
     baselineModeReference: "Ligne de reference",
@@ -90,7 +111,7 @@ const copy = {
     copilotAsk: "Interroger le copilote",
     analysisTitle: "Signal du moment",
     focusedAnalysisEmpty: "Choisis une piste d'investigation pour afficher l'analyse detaillee.",
-    copilotResultKicker: "Copilot answer",
+    copilotResultKicker: "Reponse du copilote",
     copilotResultTitle: "Reponse du copilote",
     questionPlaceholder: "Faut-il augmenter le prix ? Quel segment prioriser ?",
     connectError: "Impossible de joindre l'API.",
@@ -117,16 +138,16 @@ const copy = {
     investigate: "Investiguer",
     suggestionsKicker: "Investigation suggestions",
     suggestionsTitle: "Ou investiguer ensuite",
-    actionsKicker: "Recommended actions",
+    actionsKicker: "Actions recommandees",
     actionsTitle: "Actions recommandees",
-    evidenceKicker: "Evidence pack",
+    evidenceKicker: "Pack de preuves",
     evidenceTitle: "Pack de preuves",
     evidenceSummary: "Afficher les signaux utilises",
     evidenceMetrics: "Metriques cles",
     evidenceTargets: "Cibles detectees",
     evidenceDerived: "Signaux crees",
     evidenceQuality: "Qualite et couverture",
-    confidenceKicker: "Confidence",
+    confidenceKicker: "Confiance",
     confidenceTitle: "Confiance et limites",
     confidenceScore: "Score de confiance",
     confidenceWhy: "Pourquoi on y croit",
@@ -136,8 +157,8 @@ const copy = {
     systemReady: "API operationnelle",
     llmLabel: "LLM",
     llmReady: "OpenAI connecte",
-    modeLabel: "Mode",
-    modeValue: "Decision-first workflow",
+    modeLabel: "Positionnement",
+    modeValue: "Accelerateur de copilotes de decision",
     noAnswer: "Pose une question pour voir la reponse du copilote.",
     noTraining: "Entraine un modele pour afficher les signaux predictifs.",
     exportTitle: "Rapport executif",
@@ -150,7 +171,7 @@ const copy = {
     queryRoute: "Router la question",
     queryRouterCopy: "Choisit automatiquement entre SQL, prediction, simulation ou copilote.",
     queryKicker: "AI Builder",
-    queryResultTitle: "Natural language to SQL",
+    queryResultTitle: "Question metier vers SQL",
     queryEmpty: "Pose une question sur les donnees pour afficher le SQL genere, le resultat et l'explication.",
     querySql: "SQL genere",
     queryRows: "Lignes retournees",
@@ -159,7 +180,7 @@ const copy = {
     queryExplainDone: "Explication SQL mise a jour.",
     queryExport: "Exporter CSV",
     queryExportDone: "Resultat SQL exporte en CSV.",
-    queryHistoryKicker: "History",
+    queryHistoryKicker: "Historique",
     queryHistoryTitle: "Historique des requetes",
     queryHistoryEmpty: "Les requetes SQL executees apparaitront ici.",
     queryHistoryReplay: "Relancer",
@@ -167,7 +188,7 @@ const copy = {
     routePredictionDone: "Question routee vers prediction.",
     routeSimulationDone: "Question routee vers simulation.",
     routeCopilotDone: "Question routee vers copilote.",
-    builderOpsKicker: "Builder ops",
+    builderOpsKicker: "Operations builder",
     builderOpsTitle: "Pilotage AI Builder",
     builderRoute: "Dernier routage",
     builderLatency: "Latence",
@@ -175,27 +196,27 @@ const copy = {
     builderQueries: "Requetes",
     builderRouteEmpty: "Aucune action routee pour le moment.",
     builderStudioTitle: "AI Builder Studio",
-    builderStudioCopy: "Explore les jointures, la couche semantique, le plan de preparation et l orchestration du workflow.",
+    builderStudioCopy: "Construis les briques avancees: SQL, jointures, semantic layer, workflow, policies, observability et gouvernance.",
     builderStudioKicker: "AI Builder Studio",
-    builderStudioResultTitle: "Builder copilots",
+    builderStudioResultTitle: "Briques du builder",
     runJoinAssistant: "Analyser les jointures",
     runSemanticLayer: "Construire la couche semantique",
     runPrepAgent: "Lancer le prep agent",
     runWorkflowBuilder: "Construire le workflow",
-    joinAssistantTitle: "Join assistant",
-    semanticLayerTitle: "Semantic layer",
-    prepAgentTitle: "Prep agent",
-    workflowBuilderTitle: "Decision workflow builder",
-    quantOptimizerTitle: "Quant optimizer",
-    observabilityTitle: "Observability console",
-    constraintSolverTitle: "Constraint solver",
-    experimentDesignerTitle: "Experiment designer",
-    evaluationConsoleTitle: "Evaluation console",
-    policyEngineTitle: "Policy engine",
-    semanticKpiRegistryTitle: "Semantic KPI registry",
-    orchestrationViewTitle: "Agent orchestration view",
+    joinAssistantTitle: "Assistant de jointure",
+    semanticLayerTitle: "Couche semantique",
+    prepAgentTitle: "Agent de preparation",
+    workflowBuilderTitle: "Builder de workflow decisionnel",
+    quantOptimizerTitle: "Optimiseur quantitatif",
+    observabilityTitle: "Console d observabilite",
+    constraintSolverTitle: "Solveur de contraintes",
+    experimentDesignerTitle: "Designer d experimentations",
+    evaluationConsoleTitle: "Console d evaluation",
+    policyEngineTitle: "Moteur de policies",
+    semanticKpiRegistryTitle: "Registre semantique KPI",
+    orchestrationViewTitle: "Vue d orchestration des agents",
     builderEmpty: "Charge un dataset pour activer ce module.",
-    workflowGoalPricing: "Decision pricing",
+    workflowGoalPricing: "Decision tarifaire",
     workflowGoalDiagnosis: "Diagnostic",
     workflowGoalMarketing: "Optimisation marketing",
     workflowGoalSegment: "Priorisation segment",
@@ -212,11 +233,73 @@ const copy = {
     runOrchestrationView: "Voir l orchestration",
     optimizerPrediction: "Maximiser la prediction",
     optimizerEfficiency: "Maximiser l efficience",
+    platformTitle: "Plateforme et gouvernance",
+    platformCopy: "Cree un workspace, connecte des sources, exporte des artefacts et ajoute une validation humaine.",
+    platformKicker: "Plateforme",
+    platformResultTitle: "Espace de travail et gouvernance",
+    createUser: "Creer l utilisateur",
+    createProject: "Creer le projet",
+    connectImportCsv: "Connecter et importer",
+    exportWorkflowArtifact: "Exporter le workflow",
+    exportPolicyArtifact: "Exporter la policy",
+    requestApproval: "Demander une validation",
+    approveLatest: "Approuver la derniere",
+    refreshPlatform: "Rafraichir la gouvernance",
+    workspaceOwnerPlaceholder: "Nom du builder",
+    projectNamePlaceholder: "Nom du projet",
+    connectorNamePlaceholder: "Nom du connecteur",
+    connectorUrlPlaceholder: "URL CSV publique ou chemin sqlite",
+    approvalTitlePlaceholder: "Nom de la validation",
+    platformWorkspaceTitle: "Espace de travail",
+    platformConnectorTitle: "Connecteurs",
+    platformExportTitle: "Artefacts exportes",
+    platformApprovalTitle: "Validations humaines",
+    platformEmpty: "Aucun element plateforme pour le moment.",
+    userCreated: "Utilisateur cree.",
+    projectCreated: "Projet cree.",
+    connectorImported: "Connecteur teste et dataset importe.",
+    workflowExported: "Workflow exporte.",
+    policyExported: "Policy exportee.",
+    approvalRequested: "Validation demandee.",
+    approvalApproved: "Validation approuvee.",
+    personaTitle: "Parcours produit",
+    personaCopy: "Choisis le profil acheteur et la couche produit a mettre en avant pendant la demo.",
+    personaRevenue: "Revenue / Pricing",
+    personaBuilder: "Builder IA",
+    personaAnalytics: "Equipe data",
+    surfaceDecision: "Copilote de decision",
+    surfaceBuilder: "Studio Builder IA",
+    surfaceGovernance: "Gouvernance",
+    playbookTitle: "Playbooks demo",
+    playbookCopy: "Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.",
+    playbookPricing: "Decision tarifaire",
+    playbookGrowth: "Optimisation growth",
+    playbookExec: "Revue executive",
+    personaRevenueBrief: "Ideal pour un lead revenue, pricing ou growth qui veut comprendre quoi faire ensuite et pourquoi.",
+    personaBuilderBrief: "Ideal pour un consultant ou AI builder qui veut montrer les briques SQL, workflow, policy et gouvernance.",
+    personaAnalyticsBrief: "Ideal pour une equipe data qui veut voir la couche gouvernance, les artefacts et la reutilisation du systeme.",
+    playbookPricingStatus: "Playbook pricing charge.",
+    playbookGrowthStatus: "Playbook growth charge.",
+    playbookExecStatus: "Playbook executive charge.",
   },
   en: {
-    heroCopy: "An AI decision copilot that turns a CSV into diagnosis, recommendations, and next actions.",
+    heroEyebrow: "AI decision copilot",
+    heroCopy: "An accelerator for AI decision copilots that turns business data into diagnosis, simulations, and defensible recommendations.",
+    heroAudienceKicker: "Who it is for",
+    heroAudienceTitle: "Revenue, pricing, growth, and AI consultants",
+    heroAudienceCopy: "Built for teams that need to explain what changed, test scenarios, and recommend a clear next move.",
+    heroValueKicker: "What it does",
+    heroValueTitle: "Investigate, simulate, and decide with evidence",
+    heroValueCopy: "The product combines analytics, SQL, scenarios, guardrails, evidence packs, and exports in one workflow.",
+    heroModeKicker: "Two modes",
+    heroModeTitle: "Decision Copilot + AI Builder Studio",
+    heroModeCopy: "A simple layer for decision-making, and an advanced layer for building, governing, and exporting copilots.",
+    heroUsecase1: "Pricing decision",
+    heroUsecase2: "Revenue investigation",
+    heroUsecase3: "Growth optimization",
+    heroUsecase4: "AI Builder workflows",
     controlsTitle: "Get started",
-    controlsCopy: "Load a demo or upload a CSV to launch the investigation.",
+    controlsCopy: "Load a revenue demo or upload a CSV to activate a full decision copilot workflow.",
     workflowLoad: "Load data",
     workflowInsights: "Review insights",
     workflowTrain: "Train model",
@@ -226,9 +309,9 @@ const copy = {
     marketingDemo: "Load marketing demo",
     upload: "Upload a CSV",
     noData: "No dataset loaded yet.",
-    ready: "Ready for demo",
-    emptyTitle: "Load a dataset to unlock the decision summary.",
-    emptyCopy: "The interface will then show the main insights, a key chart, prediction signals, and the copilot.",
+    ready: "Ready for a client demo",
+    emptyTitle: "Load a dataset to activate the decision copilot.",
+    emptyCopy: "You will then see prioritized insights, scenarios, recommendations, and the AI Builder studio.",
     decisionKicker: "Decision Summary",
     decisionTitle: "Decision summary",
     decisionSubtitle: "The 5 messages that explain what to do, why it matters, and how confident the system is.",
@@ -315,8 +398,8 @@ const copy = {
     systemReady: "API ready",
     llmLabel: "LLM",
     llmReady: "OpenAI connected",
-    modeLabel: "Mode",
-    modeValue: "Decision-first workflow",
+    modeLabel: "Positioning",
+    modeValue: "Decision copilot accelerator",
     noAnswer: "Ask a question to display the copilot answer.",
     noTraining: "Train a model to display predictive signals.",
     exportTitle: "Executive report",
@@ -354,9 +437,9 @@ const copy = {
     builderQueries: "Queries",
     builderRouteEmpty: "No routed action yet.",
     builderStudioTitle: "AI Builder Studio",
-    builderStudioCopy: "Explore joins, semantic layer, preparation planning, and workflow orchestration.",
+    builderStudioCopy: "Build advanced layers: SQL, joins, semantic models, workflows, policies, observability, and governance.",
     builderStudioKicker: "AI Builder Studio",
-    builderStudioResultTitle: "Builder copilots",
+    builderStudioResultTitle: "Builder modules",
     runJoinAssistant: "Analyze joins",
     runSemanticLayer: "Build semantic layer",
     runPrepAgent: "Run prep agent",
@@ -391,6 +474,54 @@ const copy = {
     runOrchestrationView: "View orchestration",
     optimizerPrediction: "Maximize prediction",
     optimizerEfficiency: "Maximize efficiency",
+    platformTitle: "Platform & Governance",
+    platformCopy: "Create a workspace, connect a source, export artifacts, and request human approval.",
+    platformKicker: "Platform",
+    platformResultTitle: "Workspace and governance",
+    createUser: "Create user",
+    createProject: "Create project",
+    connectImportCsv: "Connect and import",
+    exportWorkflowArtifact: "Export workflow",
+    exportPolicyArtifact: "Export policy",
+    requestApproval: "Request approval",
+    approveLatest: "Approve latest",
+    refreshPlatform: "Refresh governance",
+    workspaceOwnerPlaceholder: "Builder name",
+    projectNamePlaceholder: "Project name",
+    connectorNamePlaceholder: "Connector name",
+    connectorUrlPlaceholder: "Public CSV URL or sqlite path",
+    approvalTitlePlaceholder: "Approval title",
+    platformWorkspaceTitle: "Workspace",
+    platformConnectorTitle: "Connectors",
+    platformExportTitle: "Exported artifacts",
+    platformApprovalTitle: "Human approvals",
+    platformEmpty: "No platform items yet.",
+    userCreated: "User created.",
+    projectCreated: "Project created.",
+    connectorImported: "Connector tested and dataset imported.",
+    workflowExported: "Workflow exported.",
+    policyExported: "Policy exported.",
+    approvalRequested: "Approval requested.",
+    approvalApproved: "Approval approved.",
+    personaTitle: "Product path",
+    personaCopy: "Choose the buyer profile and the product layer to highlight during the demo.",
+    personaRevenue: "Revenue / Pricing",
+    personaBuilder: "AI Builder",
+    personaAnalytics: "Analytics team",
+    surfaceDecision: "Decision Copilot",
+    surfaceBuilder: "AI Builder Studio",
+    surfaceGovernance: "Governance",
+    playbookTitle: "Demo playbooks",
+    playbookCopy: "Apply a concrete demo angle to guide the story and prefill the right actions.",
+    playbookPricing: "Pricing decision",
+    playbookGrowth: "Growth optimization",
+    playbookExec: "Executive review",
+    personaRevenueBrief: "Best for revenue, pricing, and growth leads who need a clear next action with evidence.",
+    personaBuilderBrief: "Best for consultants and AI builders who want to demo SQL, workflows, policies, and governance.",
+    personaAnalyticsBrief: "Best for analytics teams that care about governance, exported artifacts, and reusable decision workflows.",
+    playbookPricingStatus: "Pricing playbook loaded.",
+    playbookGrowthStatus: "Growth playbook loaded.",
+    playbookExecStatus: "Executive playbook loaded.",
   },
 };
 
@@ -574,7 +705,37 @@ function renderStaticCopy() {
   const workflowGoal = $("workflow-goal-select")?.value || "pricing_decision";
   const optimizerGoal = $("optimizer-objective-select")?.value || "maximize_prediction";
   document.documentElement.lang = state.lang;
+  $("hero-eyebrow").textContent = c.heroEyebrow;
   $("hero-copy").textContent = c.heroCopy;
+  $("positioning-audience-kicker").textContent = c.heroAudienceKicker;
+  $("positioning-audience-title").textContent = c.heroAudienceTitle;
+  $("positioning-audience-copy").textContent = c.heroAudienceCopy;
+  $("positioning-value-kicker").textContent = c.heroValueKicker;
+  $("positioning-value-title").textContent = c.heroValueTitle;
+  $("positioning-value-copy").textContent = c.heroValueCopy;
+  $("positioning-mode-kicker").textContent = c.heroModeKicker;
+  $("positioning-mode-title").textContent = c.heroModeTitle;
+  $("positioning-mode-copy").textContent = c.heroModeCopy;
+  $("hero-usecase-1").textContent = c.heroUsecase1;
+  $("hero-usecase-2").textContent = c.heroUsecase2;
+  $("hero-usecase-3").textContent = c.heroUsecase3;
+  $("hero-usecase-4").textContent = c.heroUsecase4;
+  $("persona-title").textContent = c.personaTitle;
+  $("persona-copy").textContent = c.personaCopy;
+  $("persona-revenue").textContent = c.personaRevenue;
+  $("persona-builder").textContent = c.personaBuilder;
+  $("persona-analytics").textContent = c.personaAnalytics;
+  $("surface-decision").textContent = c.surfaceDecision;
+  $("surface-builder").textContent = c.surfaceBuilder;
+  $("surface-governance").textContent = c.surfaceGovernance;
+  $("dashboard-tab-decision").textContent = c.surfaceDecision;
+  $("dashboard-tab-builder").textContent = c.surfaceBuilder;
+  $("dashboard-tab-governance").textContent = c.surfaceGovernance;
+  $("playbook-title").textContent = c.playbookTitle;
+  $("playbook-copy").textContent = c.playbookCopy;
+  $("playbook-pricing").textContent = c.playbookPricing;
+  $("playbook-growth").textContent = c.playbookGrowth;
+  $("playbook-exec").textContent = c.playbookExec;
   $("controls-title").textContent = c.controlsTitle;
   $("controls-copy").textContent = c.controlsCopy;
   $("query-title").textContent = c.queryTitle;
@@ -595,6 +756,21 @@ function renderStaticCopy() {
   $("run-policy-engine").textContent = c.runPolicyEngine;
   $("run-semantic-kpi-registry").textContent = c.runSemanticKpiRegistry;
   $("run-orchestration-view").textContent = c.runOrchestrationView;
+  $("platform-title").textContent = c.platformTitle;
+  $("platform-copy").textContent = c.platformCopy;
+  $("create-user").textContent = c.createUser;
+  $("create-project").textContent = c.createProject;
+  $("connect-import-csv").textContent = c.connectImportCsv;
+  $("export-workflow-artifact").textContent = c.exportWorkflowArtifact;
+  $("export-policy-artifact").textContent = c.exportPolicyArtifact;
+  $("request-approval").textContent = c.requestApproval;
+  $("approve-latest").textContent = c.approveLatest;
+  $("refresh-platform").textContent = c.refreshPlatform;
+  $("workspace-owner-input").placeholder = c.workspaceOwnerPlaceholder;
+  $("project-name-input").placeholder = c.projectNamePlaceholder;
+  $("connector-name-input").placeholder = c.connectorNamePlaceholder;
+  $("connector-url-input").placeholder = c.connectorUrlPlaceholder;
+  $("approval-title-input").placeholder = c.approvalTitlePlaceholder;
   $("export-title").textContent = c.exportTitle;
   $("export-copy").textContent = c.exportCopy;
   $("export-report").textContent = c.exportReport;
@@ -643,6 +819,8 @@ function renderStaticCopy() {
   $("builder-ops-title").textContent = c.builderOpsTitle;
   $("builder-studio-kicker").textContent = c.builderStudioKicker;
   $("builder-studio-result-title").textContent = c.builderStudioResultTitle;
+  $("platform-kicker").textContent = c.platformKicker;
+  $("platform-result-title").textContent = c.platformResultTitle;
   $("suggestions-kicker").textContent = c.suggestionsKicker;
   $("suggestions-title").textContent = c.suggestionsTitle;
   $("actions-kicker").textContent = c.actionsKicker;
@@ -663,7 +841,7 @@ function renderStaticCopy() {
   $("band-llm-label").textContent = c.llmLabel;
   $("band-llm-value").textContent = state.health?.llm_enabled === "true" ? `${state.health.llm_provider} (${state.health.llm_model})` : "fallback";
   $("band-mode-label").textContent = c.modeLabel;
-  $("band-mode-value").textContent = c.modeValue;
+  $("band-mode-value").textContent = `${c.modeValue} · ${state.surfaceMode === "decision" ? c.surfaceDecision : state.surfaceMode === "builder" ? c.surfaceBuilder : c.surfaceGovernance}`;
   $("lang-fr").classList.toggle("active", state.lang === "fr");
   $("lang-en").classList.toggle("active", state.lang === "en");
   $("workflow-goal-select").innerHTML = `
@@ -702,6 +880,54 @@ function renderWorkflow() {
       `,
     )
     .join("");
+}
+
+function renderPersonaBrief() {
+  const c = currentCopy();
+  const briefMap = {
+    revenue: c.personaRevenueBrief,
+    builder: c.personaBuilderBrief,
+    analytics: c.personaAnalyticsBrief,
+  };
+  $("persona-brief").innerHTML = `<strong>${state.surfaceMode === "decision" ? c.surfaceDecision : state.surfaceMode === "builder" ? c.surfaceBuilder : c.surfaceGovernance}</strong><p>${briefMap[state.marketProfile] || c.personaRevenueBrief}</p>`;
+  $("persona-revenue").classList.toggle("active", state.marketProfile === "revenue");
+  $("persona-builder").classList.toggle("active", state.marketProfile === "builder");
+  $("persona-analytics").classList.toggle("active", state.marketProfile === "analytics");
+  $("surface-decision").classList.toggle("active", state.surfaceMode === "decision");
+  $("surface-builder").classList.toggle("active", state.surfaceMode === "builder");
+  $("surface-governance").classList.toggle("active", state.surfaceMode === "governance");
+  $("dashboard-tab-decision").classList.toggle("active", state.surfaceMode === "decision");
+  $("dashboard-tab-builder").classList.toggle("active", state.surfaceMode === "builder");
+  $("dashboard-tab-governance").classList.toggle("active", state.surfaceMode === "governance");
+}
+
+function applySurfaceMode() {
+  document.querySelectorAll("#dashboard > section").forEach((section) => {
+    if (!section.id) return;
+    const allowed =
+      state.surfaceMode === "decision"
+        ? section.classList.contains("surface-decision")
+        : state.surfaceMode === "builder"
+          ? section.classList.contains("surface-builder")
+          : section.classList.contains("surface-governance");
+    section.hidden = !allowed;
+  });
+}
+
+function focusSection(sectionId = null) {
+  if (!sectionId) {
+    $("dashboard-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  const node = $(sectionId);
+  if (!node || node.hidden) return;
+  node.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function switchSurface(mode, sectionId = null) {
+  state.surfaceMode = mode;
+  render();
+  window.setTimeout(() => focusSection(sectionId), 80);
 }
 
 function renderDecisionCards() {
@@ -1455,11 +1681,67 @@ function renderOrchestrationView() {
   `;
 }
 
+function renderPlatformOverview() {
+  const c = currentCopy();
+  const overview = state.platformOverview;
+  if (!overview) {
+    const empty = `<div class="answer-card"><strong>${c.platformTitle}</strong><p>${c.platformEmpty}</p></div>`;
+    $("workspace-result").innerHTML = empty;
+    $("connector-platform-result").innerHTML = empty;
+    $("artifact-export-result").innerHTML = empty;
+    $("approval-result").innerHTML = empty;
+    return;
+  }
+
+  const users = overview.users || [];
+  const projects = overview.projects || [];
+  const connectors = overview.connectors || [];
+  const approvals = overview.approvals || [];
+  const exportsList = overview.exports || [];
+
+  $("workspace-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.platformWorkspaceTitle}</strong>
+      <p><strong>Users:</strong> ${users.length}</p>
+      <p><strong>Projects:</strong> ${projects.length}</p>
+      <p>${users.slice(0, 3).map((item) => `${item.name} (${item.role})`).join("<br />") || "-"}</p>
+      <p>${projects.slice(0, 3).map((item) => `${item.name}`).join("<br />") || "-"}</p>
+    </article>
+  `;
+
+  $("connector-platform-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.platformConnectorTitle}</strong>
+      <p><strong>Count:</strong> ${connectors.length}</p>
+      <p>${connectors.slice(0, 3).map((item) => `${item.name}<br />${item.config_summary}`).join("<br /><br />") || "-"}</p>
+      ${state.latestConnectorTest ? `<p><strong>Last test:</strong> ${state.latestConnectorTest.status} - ${state.latestConnectorTest.detail}</p>` : ""}
+    </article>
+  `;
+
+  $("artifact-export-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.platformExportTitle}</strong>
+      <p><strong>Count:</strong> ${exportsList.length}</p>
+      <p>${exportsList.slice(0, 4).map((item) => `${item.artifact_type}: ${item.name}<br />${item.summary}`).join("<br /><br />") || "-"}</p>
+    </article>
+  `;
+
+  $("approval-result").innerHTML = `
+    <article class="answer-card">
+      <strong>${c.platformApprovalTitle}</strong>
+      <p><strong>Count:</strong> ${approvals.length}</p>
+      <p>${approvals.slice(0, 4).map((item) => `${item.status.toUpperCase()} - ${item.title}<br />${item.summary}`).join("<br /><br />") || "-"}</p>
+    </article>
+  `;
+}
+
 function render() {
   renderStaticCopy();
   renderWorkflow();
+  renderPersonaBrief();
   const hasData = Boolean(state.dataset && state.profile && state.investigation);
   $("empty-state").hidden = hasData;
+  $("dashboard-tabs").hidden = !hasData;
   $("dashboard").hidden = !hasData;
   if (!hasData) {
     return;
@@ -1494,6 +1776,8 @@ function render() {
   renderPolicyEngine();
   renderSemanticKpiRegistry();
   renderOrchestrationView();
+  renderPlatformOverview();
+  applySurfaceMode();
   bindDynamicEvents();
 }
 
@@ -1536,7 +1820,7 @@ async function trainModel() {
     state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().trainingDone);
     await prepareDecisionEngine();
-    render();
+    switchSurface("decision", "section-prediction");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -1560,6 +1844,7 @@ async function runGuidedSimulation() {
     state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().simulationReady);
     renderSimulation();
+    switchSurface("decision", "section-simulation");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -1585,6 +1870,7 @@ async function prepareDecisionEngine() {
     setStatus(currentCopy().decisionReady);
     renderDecisionBuilder();
     renderDecisionResult();
+    switchSurface("decision", "section-engine");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -1611,6 +1897,7 @@ async function runDecisionEngine() {
     });
     setStatus(currentCopy().decisionReady);
     renderDecisionResult();
+    switchSurface("decision", "section-engine");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -1660,6 +1947,7 @@ async function askCopilot(questionOverride = null) {
     state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().askDone);
     render();
+    switchSurface("decision", "section-copilot");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -1684,6 +1972,7 @@ async function exportReport() {
     });
     downloadHtml(`${report.title || "ai-data-investigator-report"}.html`, report.html_content);
     setStatus(c.exportReady);
+    switchSurface("decision", "section-evidence");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1729,6 +2018,7 @@ async function runSqlQuery(questionOverride = null) {
     renderSqlQuery();
     renderSqlHistory();
     renderObservability();
+    switchSurface("builder", "section-query");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1763,6 +2053,7 @@ async function explainCurrentSql() {
     renderSqlQuery();
     renderSqlHistory();
     renderBuilderOps();
+    switchSurface("builder", "section-query");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1783,6 +2074,7 @@ function replaySqlHistory(index) {
   state.builderOps.usedTables = entry.used_tables || [];
   renderSqlQuery();
   renderBuilderOps();
+  switchSurface("builder", "section-query");
 }
 
 async function routeQuestion() {
@@ -1834,6 +2126,7 @@ async function runJoinAssistant() {
     await refreshObservability();
     renderJoinAssistant();
     renderObservability();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1852,6 +2145,7 @@ async function runSemanticLayer() {
     await refreshObservability();
     renderSemanticLayer();
     renderObservability();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1870,6 +2164,7 @@ async function runPrepAgent() {
     await refreshObservability();
     renderPrepAgent();
     renderObservability();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1893,6 +2188,7 @@ async function runWorkflowBuilder() {
     await refreshObservability();
     renderWorkflowBuilder();
     renderObservability();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1916,6 +2212,7 @@ async function runQuantOptimizer() {
     await refreshObservability();
     renderQuantOptimizer();
     renderObservability();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1934,6 +2231,194 @@ async function refreshEvaluationConsole() {
     state.evaluationConsole = await api("/evaluation-console");
   } catch (_error) {
     state.evaluationConsole = null;
+  }
+}
+
+async function refreshPlatformOverview() {
+  try {
+    state.platformOverview = await api("/platform/overview");
+  } catch (_error) {
+    state.platformOverview = null;
+  }
+}
+
+async function createWorkspaceUser() {
+  const c = currentCopy();
+  const name = $("workspace-owner-input").value.trim() || (state.lang === "fr" ? "Builder demo" : "Demo builder");
+  try {
+    const user = await api("/platform/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, role: "builder" }),
+    });
+    $("workspace-owner-input").value = user.name;
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+    setStatus(c.userCreated);
+    switchSurface("governance", "section-platform");
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function createWorkspaceProject() {
+  const c = currentCopy();
+  const name = $("project-name-input").value.trim() || (state.lang === "fr" ? "Projet demo" : "Demo project");
+  const ownerId = state.platformOverview?.users?.[0]?.user_id || null;
+  try {
+    const project = await api("/platform/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, owner_user_id: ownerId }),
+    });
+    $("project-name-input").value = project.name;
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+    setStatus(c.projectCreated);
+    switchSurface("governance", "section-platform");
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function connectAndImportCsv() {
+  const c = currentCopy();
+  const url = $("connector-url-input").value.trim();
+  if (!url) return;
+  const name = $("connector-name-input").value.trim() || "CSV source";
+  const projectId = state.platformOverview?.projects?.[0]?.project_id || null;
+  const createdBy = state.platformOverview?.users?.[0]?.user_id || null;
+  try {
+    const connector = await api("/platform/connectors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        connector_type: "csv_url",
+        config: { url },
+        project_id: projectId,
+        created_by: createdBy,
+      }),
+    });
+    state.latestConnectorTest = await api("/platform/connectors/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ connector_id: connector.connector_id }),
+    });
+    const dataset = await api("/platform/connectors/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ connector_id: connector.connector_id }),
+    });
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+    await hydrateDataset(dataset);
+    setStatus(c.connectorImported);
+    switchSurface("governance", "section-platform");
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function exportWorkflowArtifact() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.latestWorkflowExport = await api("/platform/exports/workflow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        language: state.lang,
+        goal: $("workflow-goal-select").value,
+        model_id: state.training?.model_id || null,
+        project_id: state.platformOverview?.projects?.[0]?.project_id || null,
+        created_by: state.platformOverview?.users?.[0]?.user_id || null,
+      }),
+    });
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+    setStatus(c.workflowExported);
+    switchSurface("governance", "section-platform");
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function exportPolicyArtifact() {
+  const c = currentCopy();
+  if (!state.dataset) return;
+  try {
+    state.latestPolicyExport = await api("/platform/exports/policy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataset_id: state.dataset.dataset_id,
+        language: state.lang,
+        model_id: state.training?.model_id || null,
+        project_id: state.platformOverview?.projects?.[0]?.project_id || null,
+        created_by: state.platformOverview?.users?.[0]?.user_id || null,
+      }),
+    });
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+    setStatus(c.policyExported);
+    switchSurface("governance", "section-platform");
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function requestHumanApproval() {
+  const c = currentCopy();
+  const latestArtifact = state.latestPolicyExport?.artifact || state.latestWorkflowExport?.artifact || state.platformOverview?.exports?.[0];
+  const title = $("approval-title-input").value.trim() || (latestArtifact ? `Approve ${latestArtifact.name}` : "Approve builder change");
+  const objectType = latestArtifact?.artifact_type || "decision";
+  const objectId = latestArtifact?.artifact_id || null;
+  const summary = latestArtifact?.summary || (state.lang === "fr" ? "Validation requise avant execution." : "Approval required before execution.");
+  try {
+    state.latestApproval = await api("/platform/approvals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        object_type: objectType,
+        object_id: objectId,
+        summary,
+        project_id: state.platformOverview?.projects?.[0]?.project_id || null,
+        requested_by: state.platformOverview?.users?.[0]?.user_id || null,
+        payload: latestArtifact ? { artifact_id: latestArtifact.artifact_id } : {},
+      }),
+    });
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+    setStatus(c.approvalRequested);
+    switchSurface("governance", "section-platform");
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
+  }
+}
+
+async function approveLatestRequest() {
+  const c = currentCopy();
+  const latestApproval = state.platformOverview?.approvals?.find((item) => item.status === "pending");
+  if (!latestApproval) return;
+  try {
+    state.latestApproval = await api(`/platform/approvals/${latestApproval.approval_id}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decision: "approved",
+        reviewer: state.platformOverview?.users?.[0]?.user_id || null,
+        comment: state.lang === "fr" ? "Approuve depuis le studio." : "Approved from the studio.",
+      }),
+    });
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+    setStatus(c.approvalApproved);
+    switchSurface("governance", "section-platform");
+  } catch (error) {
+    setStatus(`${c.connectError} ${error.message}`, true);
   }
 }
 
@@ -1957,6 +2442,7 @@ async function runConstraintSolver() {
     renderConstraintSolver();
     renderObservability();
     renderEvaluationConsole();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1981,6 +2467,7 @@ async function runExperimentDesigner() {
     renderExperimentDesigner();
     renderObservability();
     renderEvaluationConsole();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -1991,6 +2478,7 @@ async function runEvaluationConsole() {
   await refreshEvaluationConsole();
   setStatus(c.evaluationConsoleTitle);
   renderEvaluationConsole();
+  switchSurface("builder", "section-builder-studio");
 }
 
 async function runPolicyEngine() {
@@ -2012,6 +2500,7 @@ async function runPolicyEngine() {
     renderPolicyEngine();
     renderObservability();
     renderEvaluationConsole();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2035,6 +2524,7 @@ async function runSemanticKpiRegistry() {
     renderSemanticKpiRegistry();
     renderObservability();
     renderEvaluationConsole();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2053,12 +2543,65 @@ async function runOrchestrationView() {
     });
     setStatus(c.orchestrationViewTitle);
     renderOrchestrationView();
+    switchSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
 }
 
+function selectMarketProfile(profile) {
+  state.marketProfile = profile;
+  if (profile === "revenue" && state.surfaceMode === "governance") {
+    state.surfaceMode = "decision";
+  }
+  render();
+}
+
+function selectSurfaceMode(mode) {
+  switchSurface(mode);
+}
+
+async function applyPlaybook(playbook) {
+  const c = currentCopy();
+  if (playbook === "pricing") {
+    state.marketProfile = "revenue";
+    $("workflow-goal-select").value = "pricing_decision";
+    $("question-input").value = state.lang === "fr"
+      ? "Faut-il augmenter le prix sur les segments premium ?"
+      : "Should we increase price on premium segments?";
+    setStatus(c.playbookPricingStatus);
+    switchSurface("decision", "section-decision-summary");
+  } else if (playbook === "growth") {
+    state.marketProfile = "revenue";
+    $("workflow-goal-select").value = "marketing_optimization";
+    $("sql-question-input").value = state.lang === "fr"
+      ? "Compare le revenu et le pipeline qualifie par region"
+      : "Compare revenue and qualified pipeline by region";
+    setStatus(c.playbookGrowthStatus);
+    switchSurface("builder", "section-query");
+  } else {
+    state.marketProfile = "analytics";
+    $("approval-title-input").value = state.lang === "fr"
+      ? "Validation du workflow executive"
+      : "Executive workflow approval";
+    setStatus(c.playbookExecStatus);
+    switchSurface("governance", "section-platform");
+  }
+}
+
 function bindEvents() {
+  $("persona-revenue").addEventListener("click", () => selectMarketProfile("revenue"));
+  $("persona-builder").addEventListener("click", () => selectMarketProfile("builder"));
+  $("persona-analytics").addEventListener("click", () => selectMarketProfile("analytics"));
+  $("surface-decision").addEventListener("click", () => selectSurfaceMode("decision"));
+  $("surface-builder").addEventListener("click", () => selectSurfaceMode("builder"));
+  $("surface-governance").addEventListener("click", () => selectSurfaceMode("governance"));
+  $("dashboard-tab-decision").addEventListener("click", () => selectSurfaceMode("decision"));
+  $("dashboard-tab-builder").addEventListener("click", () => selectSurfaceMode("builder"));
+  $("dashboard-tab-governance").addEventListener("click", () => selectSurfaceMode("governance"));
+  $("playbook-pricing").addEventListener("click", () => applyPlaybook("pricing"));
+  $("playbook-growth").addEventListener("click", () => applyPlaybook("growth"));
+  $("playbook-exec").addEventListener("click", () => applyPlaybook("exec"));
   $("load-sales").addEventListener("click", () => loadSample("sales"));
   $("load-marketing").addEventListener("click", () => loadSample("marketing"));
   $("file-input").addEventListener("change", (event) => {
@@ -2083,6 +2626,17 @@ function bindEvents() {
   $("run-policy-engine").addEventListener("click", runPolicyEngine);
   $("run-semantic-kpi-registry").addEventListener("click", runSemanticKpiRegistry);
   $("run-orchestration-view").addEventListener("click", runOrchestrationView);
+  $("create-user").addEventListener("click", createWorkspaceUser);
+  $("create-project").addEventListener("click", createWorkspaceProject);
+  $("connect-import-csv").addEventListener("click", connectAndImportCsv);
+  $("export-workflow-artifact").addEventListener("click", exportWorkflowArtifact);
+  $("export-policy-artifact").addEventListener("click", exportPolicyArtifact);
+  $("request-approval").addEventListener("click", requestHumanApproval);
+  $("approve-latest").addEventListener("click", approveLatestRequest);
+  $("refresh-platform").addEventListener("click", async () => {
+    await refreshPlatformOverview();
+    renderPlatformOverview();
+  });
   $("explain-sql").addEventListener("click", explainCurrentSql);
   $("export-query-csv").addEventListener("click", exportCurrentQueryCsv);
   $("export-report").addEventListener("click", exportReport);
@@ -2124,6 +2678,7 @@ async function init() {
   await refreshDatasets();
   await refreshObservability();
   await refreshEvaluationConsole();
+  await refreshPlatformOverview();
   bindEvents();
   render();
 }

@@ -576,6 +576,139 @@ class OrchestrationViewResponse(AppBaseModel):
     summary: str
 
 
+class UserCreateRequest(AppBaseModel):
+    name: str
+    email: Optional[str] = None
+    role: str = "builder"
+
+
+class UserItem(AppBaseModel):
+    user_id: str
+    name: str
+    email: Optional[str] = None
+    role: str
+    created_at: str
+
+
+class ProjectCreateRequest(AppBaseModel):
+    name: str
+    description: Optional[str] = None
+    owner_user_id: Optional[str] = None
+
+
+class ProjectItem(AppBaseModel):
+    project_id: str
+    name: str
+    description: Optional[str] = None
+    owner_user_id: Optional[str] = None
+    created_at: str
+
+
+class ConnectorCreateRequest(AppBaseModel):
+    name: str
+    connector_type: Literal["csv_url", "sqlite"]
+    config: Dict[str, Any]
+    project_id: Optional[str] = None
+    created_by: Optional[str] = None
+
+
+class ConnectorItem(AppBaseModel):
+    connector_id: str
+    name: str
+    connector_type: Literal["csv_url", "sqlite"]
+    project_id: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: str
+    config_summary: str
+
+
+class ConnectorTestRequest(AppBaseModel):
+    connector_id: str
+
+
+class ConnectorTestResponse(AppBaseModel):
+    connector_id: str
+    status: Literal["ok", "error"]
+    detail: str
+    row_count: int = 0
+    columns: List[str] = []
+    preview: List[Dict[str, Any]] = []
+
+
+class ConnectorImportRequest(AppBaseModel):
+    connector_id: str
+
+
+class ExportArtifactBaseRequest(AppBaseModel):
+    dataset_id: str
+    language: Literal["en", "fr"] = "en"
+    project_id: Optional[str] = None
+    created_by: Optional[str] = None
+
+
+class WorkflowExportRequest(ExportArtifactBaseRequest):
+    goal: str = "pricing_decision"
+    model_id: Optional[str] = None
+
+
+class PolicyExportRequest(ExportArtifactBaseRequest):
+    model_id: Optional[str] = None
+
+
+class ExportArtifactItem(AppBaseModel):
+    artifact_id: str
+    artifact_type: Literal["workflow", "policy"]
+    name: str
+    created_at: str
+    project_id: Optional[str] = None
+    created_by: Optional[str] = None
+    summary: str
+
+
+class ArtifactExportResponse(AppBaseModel):
+    artifact: ExportArtifactItem
+    content: Dict[str, Any]
+
+
+class ApprovalCreateRequest(AppBaseModel):
+    title: str
+    object_type: Literal["workflow", "policy", "connector", "decision"]
+    object_id: Optional[str] = None
+    summary: str
+    project_id: Optional[str] = None
+    requested_by: Optional[str] = None
+    payload: Dict[str, Any] = {}
+
+
+class ApprovalItem(AppBaseModel):
+    approval_id: str
+    title: str
+    object_type: Literal["workflow", "policy", "connector", "decision"]
+    object_id: Optional[str] = None
+    summary: str
+    status: Literal["pending", "approved", "rejected"]
+    project_id: Optional[str] = None
+    requested_by: Optional[str] = None
+    reviewer: Optional[str] = None
+    comment: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+
+class ApprovalDecisionRequest(AppBaseModel):
+    decision: Literal["approved", "rejected"]
+    reviewer: Optional[str] = None
+    comment: Optional[str] = None
+
+
+class PlatformOverviewResponse(AppBaseModel):
+    users: List[UserItem]
+    projects: List[ProjectItem]
+    connectors: List[ConnectorItem]
+    approvals: List[ApprovalItem]
+    exports: List[ExportArtifactItem]
+
+
 class CopilotAskRequest(AppBaseModel):
     dataset_id: str
     question: str
