@@ -170,7 +170,7 @@ const copy = {
     queryRun: "Generer le SQL",
     queryRoute: "Router la question",
     queryRouterCopy: "Choisit automatiquement entre SQL, prediction, simulation ou copilote.",
-    queryKicker: "AI Builder",
+    queryKicker: "Builder IA",
     queryResultTitle: "Question metier vers SQL",
     queryEmpty: "Pose une question sur les donnees pour afficher le SQL genere, le resultat et l'explication.",
     querySql: "SQL genere",
@@ -197,7 +197,7 @@ const copy = {
     builderRouteEmpty: "Aucune action routee pour le moment.",
     builderStudioTitle: "AI Builder Studio",
     builderStudioCopy: "Construis les briques avancees: SQL, jointures, semantic layer, workflow, policies, observability et gouvernance.",
-    builderStudioKicker: "AI Builder Studio",
+    builderStudioKicker: "Studio Builder IA",
     builderStudioResultTitle: "Briques du builder",
     runJoinAssistant: "Analyser les jointures",
     runSemanticLayer: "Construire la couche semantique",
@@ -273,7 +273,7 @@ const copy = {
     playbookTitle: "Playbooks demo",
     playbookCopy: "Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.",
     playbookPricing: "Decision tarifaire",
-    playbookGrowth: "Optimisation growth",
+    playbookGrowth: "Optimisation croissance",
     playbookExec: "Revue executive",
     personaRevenueBrief: "Ideal pour un lead revenue, pricing ou growth qui veut comprendre quoi faire ensuite et pourquoi.",
     personaBuilderBrief: "Ideal pour un consultant ou AI builder qui veut montrer les briques SQL, workflow, policy et gouvernance.",
@@ -281,6 +281,13 @@ const copy = {
     playbookPricingStatus: "Playbook pricing charge.",
     playbookGrowthStatus: "Playbook growth charge.",
     playbookExecStatus: "Playbook executive charge.",
+    modeSummaryLabel: "Vue active",
+    modeSummaryDecisionTitle: "Copilote de decision",
+    modeSummaryDecisionCopy: "Lecture executive pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.",
+    modeSummaryBuilderTitle: "Studio Builder IA",
+    modeSummaryBuilderCopy: "Vue outillage pour montrer SQL, workflows, experimentation, observabilite et orchestration.",
+    modeSummaryGovernanceTitle: "Gouvernance",
+    modeSummaryGovernanceCopy: "Vue plateforme pour montrer projets, connecteurs, exports, validations humaines et traçabilite.",
   },
   en: {
     heroEyebrow: "AI decision copilot",
@@ -522,6 +529,13 @@ const copy = {
     playbookPricingStatus: "Pricing playbook loaded.",
     playbookGrowthStatus: "Growth playbook loaded.",
     playbookExecStatus: "Executive playbook loaded.",
+    modeSummaryLabel: "Active view",
+    modeSummaryDecisionTitle: "Decision Copilot",
+    modeSummaryDecisionCopy: "Executive reading layer to understand what to do, why it matters, and how confident the system is.",
+    modeSummaryBuilderTitle: "AI Builder Studio",
+    modeSummaryBuilderCopy: "Builder layer to demo SQL, workflows, experimentation, observability, and orchestration.",
+    modeSummaryGovernanceTitle: "Governance",
+    modeSummaryGovernanceCopy: "Platform layer to demo projects, connectors, exports, approvals, and traceability.",
   },
 };
 
@@ -899,6 +913,28 @@ function renderPersonaBrief() {
   $("dashboard-tab-decision").classList.toggle("active", state.surfaceMode === "decision");
   $("dashboard-tab-builder").classList.toggle("active", state.surfaceMode === "builder");
   $("dashboard-tab-governance").classList.toggle("active", state.surfaceMode === "governance");
+}
+
+function renderModeSummary() {
+  const c = currentCopy();
+  const mapping = {
+    decision: {
+      title: c.modeSummaryDecisionTitle,
+      copy: c.modeSummaryDecisionCopy,
+    },
+    builder: {
+      title: c.modeSummaryBuilderTitle,
+      copy: c.modeSummaryBuilderCopy,
+    },
+    governance: {
+      title: c.modeSummaryGovernanceTitle,
+      copy: c.modeSummaryGovernanceCopy,
+    },
+  };
+  const current = mapping[state.surfaceMode] || mapping.decision;
+  $("dashboard-mode-label").textContent = c.modeSummaryLabel;
+  $("dashboard-mode-title").textContent = current.title;
+  $("dashboard-mode-copy").textContent = current.copy;
 }
 
 function applySurfaceMode() {
@@ -1739,6 +1775,7 @@ function render() {
   renderStaticCopy();
   renderWorkflow();
   renderPersonaBrief();
+  renderModeSummary();
   const hasData = Boolean(state.dataset && state.profile && state.investigation);
   $("empty-state").hidden = hasData;
   $("dashboard-tabs").hidden = !hasData;
@@ -1920,6 +1957,7 @@ async function investigateSuggestion(suggestionId) {
     });
     renderFocusedAnalysis();
     setStatus(suggestion.title);
+    focusSection("section-suggestions");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }

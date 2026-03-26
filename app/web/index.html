@@ -37,15 +37,15 @@
         <div id="hero-band" class="hero-band">
           <div class="hero-chip">
             <span class="small-meta" id="band-status-label">System</span>
-            <strong id="band-status-value">API ready</strong>
+            <strong id="band-status-value">API operationnelle</strong>
           </div>
           <div class="hero-chip">
             <span class="small-meta" id="band-llm-label">LLM</span>
-            <strong id="band-llm-value">OpenAI connected</strong>
+            <strong id="band-llm-value">OpenAI connecte</strong>
           </div>
           <div class="hero-chip">
-            <span class="small-meta" id="band-mode-label">Mode</span>
-            <strong id="band-mode-value">Decision-first workflow</strong>
+            <span class="small-meta" id="band-mode-label">Positionnement</span>
+            <strong id="band-mode-value">Accelerateur de copilotes de decision</strong>
           </div>
         </div>
         <div class="positioning-grid">
@@ -85,12 +85,12 @@
             <div class="button-stack">
               <div class="mode-chip-row">
                 <button id="persona-revenue" class="ghost-btn active" type="button">Revenue / Pricing</button>
-                <button id="persona-builder" class="ghost-btn" type="button">AI Builder</button>
+              <button id="persona-builder" class="ghost-btn" type="button">Builder IA</button>
                 <button id="persona-analytics" class="ghost-btn" type="button">Equipe data</button>
               </div>
               <div class="mode-chip-row">
-                <button id="surface-decision" class="ghost-btn active" type="button">Decision Copilot</button>
-                <button id="surface-builder" class="ghost-btn" type="button">AI Builder Studio</button>
+                <button id="surface-decision" class="ghost-btn active" type="button">Copilote de decision</button>
+                <button id="surface-builder" class="ghost-btn" type="button">Studio Builder IA</button>
                 <button id="surface-governance" class="ghost-btn" type="button">Gouvernance</button>
               </div>
             </div>
@@ -101,8 +101,8 @@
             <p class="panel-title" id="playbook-title">Playbooks demo</p>
             <p class="panel-copy" id="playbook-copy">Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.</p>
             <div class="button-stack">
-              <button id="playbook-pricing" class="secondary-btn" type="button">Decision pricing</button>
-              <button id="playbook-growth" class="ghost-btn" type="button">Optimisation growth</button>
+              <button id="playbook-pricing" class="secondary-btn" type="button">Decision tarifaire</button>
+              <button id="playbook-growth" class="ghost-btn" type="button">Optimisation croissance</button>
               <button id="playbook-exec" class="ghost-btn" type="button">Revue executive</button>
             </div>
           </div>
@@ -126,7 +126,7 @@
           </div>
 
           <div class="panel-card">
-            <p class="panel-title" id="query-title">Ask the data</p>
+            <p class="panel-title" id="query-title">Interroger les donnees</p>
             <textarea id="sql-question-input" rows="4" placeholder="Quel est le revenu moyen par region ?"></textarea>
             <div class="button-stack">
               <button id="run-sql-query" class="secondary-btn" type="button">Generer le SQL</button>
@@ -136,16 +136,16 @@
           </div>
 
           <div class="panel-card">
-            <p class="panel-title" id="builder-studio-title">AI Builder Studio</p>
-            <p class="panel-copy" id="builder-studio-copy">Explore joins, semantic layer, preparation plan, and workflow orchestration.</p>
+            <p class="panel-title" id="builder-studio-title">Studio Builder IA</p>
+            <p class="panel-copy" id="builder-studio-copy">Construis les briques avancees: SQL, jointures, semantic layer, workflow, policies, observability et gouvernance.</p>
             <div class="button-stack">
               <button id="run-join-assistant" class="secondary-btn" type="button">Analyser les jointures</button>
               <button id="run-semantic-layer" class="ghost-btn" type="button">Construire la couche semantique</button>
               <button id="run-prep-agent" class="ghost-btn" type="button">Lancer le prep agent</button>
             </div>
             <select id="optimizer-objective-select">
-              <option value="maximize_prediction">Maximize prediction</option>
-              <option value="maximize_efficiency">Maximize efficiency</option>
+              <option value="maximize_prediction">Maximiser la prediction</option>
+              <option value="maximize_efficiency">Maximiser l efficience</option>
             </select>
             <button id="run-quant-optimizer" class="secondary-btn" type="button">Lancer l optimizer</button>
             <button id="run-constraint-solver" class="ghost-btn" type="button">Lancer le constraint solver</button>
@@ -154,7 +154,7 @@
             <button id="run-semantic-kpi-registry" class="ghost-btn" type="button">Construire le registre KPI</button>
             <button id="run-orchestration-view" class="ghost-btn" type="button">Voir l orchestration</button>
             <select id="workflow-goal-select">
-              <option value="pricing_decision">Pricing decision</option>
+              <option value="pricing_decision">Decision tarifaire</option>
               <option value="diagnosis">Diagnosis</option>
               <option value="marketing_optimization">Marketing optimization</option>
               <option value="segment_prioritization">Segment prioritization</option>
@@ -164,8 +164,8 @@
           </div>
 
           <div class="panel-card">
-            <p class="panel-title" id="platform-title">Platform & Governance</p>
-            <p class="panel-copy" id="platform-copy">Cree un workspace, connecte une source, exporte les artefacts et demande une validation humaine.</p>
+            <p class="panel-title" id="platform-title">Plateforme et gouvernance</p>
+            <p class="panel-copy" id="platform-copy">Cree un workspace, connecte des sources, exporte des artefacts et ajoute une validation humaine.</p>
             <input id="workspace-owner-input" type="text" placeholder="Nom du builder" />
             <button id="create-user" class="ghost-btn" type="button">Creer l utilisateur</button>
             <input id="project-name-input" type="text" placeholder="Nom du projet" />
@@ -209,15 +209,22 @@
           </section>
 
           <section id="dashboard-tabs" class="dashboard-tabs" hidden>
-            <button id="dashboard-tab-decision" class="ghost-btn active" type="button">Copilote de decision</button>
-            <button id="dashboard-tab-builder" class="ghost-btn" type="button">Studio Builder IA</button>
-            <button id="dashboard-tab-governance" class="ghost-btn" type="button">Gouvernance</button>
+            <div class="dashboard-tab-group">
+              <button id="dashboard-tab-decision" class="ghost-btn active" type="button">Copilote de decision</button>
+              <button id="dashboard-tab-builder" class="ghost-btn" type="button">Studio Builder IA</button>
+              <button id="dashboard-tab-governance" class="ghost-btn" type="button">Gouvernance</button>
+            </div>
+            <div id="dashboard-mode-summary" class="dashboard-mode-summary">
+              <span class="small-meta" id="dashboard-mode-label">Vue active</span>
+              <strong id="dashboard-mode-title">Copilote de decision</strong>
+              <p id="dashboard-mode-copy" class="panel-copy">Lecture executive pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.</p>
+            </div>
           </section>
 
           <section id="dashboard" class="dashboard" hidden>
             <section id="section-decision-summary" class="decision-shell surface-decision">
               <div class="section-head">
-                <p class="eyebrow" id="decision-kicker">Decision Summary</p>
+                <p class="eyebrow" id="decision-kicker">Synthese de decision</p>
                 <h2 id="decision-title">Synthese decisionnelle</h2>
                 <p id="decision-subtitle" class="section-copy">
                   Les 5 messages a retenir pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.
@@ -236,7 +243,7 @@
 
             <section id="section-snapshot" class="panel-card surface-decision surface-builder surface-governance">
               <div class="section-head">
-                <p class="eyebrow" id="snapshot-kicker">Business Snapshot</p>
+                <p class="eyebrow" id="snapshot-kicker">Vue business</p>
                 <h2 id="snapshot-title">Vue d'ensemble</h2>
               </div>
               <div id="dataset-metrics" class="metric-grid"></div>
@@ -250,8 +257,8 @@
 
             <section id="section-insights" class="panel-card surface-decision">
               <div class="section-head">
-                <p class="eyebrow" id="insights-kicker">What matters now</p>
-                <h2 id="insights-title">Top insights</h2>
+                <p class="eyebrow" id="insights-kicker">Ce qui compte maintenant</p>
+                <h2 id="insights-title">Insights prioritaires</h2>
               </div>
               <div id="insights-grid" class="insight-grid"></div>
             </section>
@@ -266,7 +273,7 @@
 
             <section id="section-charts" class="panel-card surface-decision">
               <div class="section-head">
-                <p class="eyebrow" id="chart-kicker">Key charts</p>
+                <p class="eyebrow" id="chart-kicker">Graphiques cles</p>
                 <h2 id="chart-title">Signal principal</h2>
               </div>
               <div class="chart-grid">
@@ -284,7 +291,7 @@
             <section id="section-prediction" class="panel-card surface-decision surface-builder">
               <div class="section-head">
                 <p class="eyebrow" id="prediction-kicker">Prediction</p>
-                <h2 id="prediction-title">Prediction engine</h2>
+                <h2 id="prediction-title">Moteur predictif</h2>
               </div>
               <div class="prediction-row">
                 <select id="target-select"></select>
@@ -295,7 +302,7 @@
 
             <section id="section-simulation" class="panel-card surface-decision surface-builder">
               <div class="section-head">
-                <p class="eyebrow" id="simulation-kicker">Scenario simulation</p>
+                <p class="eyebrow" id="simulation-kicker">Simulation de scenario</p>
                 <h2 id="simulation-title">Simulation guidee</h2>
               </div>
               <div class="prediction-row">
@@ -307,7 +314,7 @@
 
             <section id="section-engine" class="panel-card surface-decision surface-builder">
               <div class="section-head">
-                <p class="eyebrow" id="engine-kicker">Decision engine</p>
+                <p class="eyebrow" id="engine-kicker">Moteur de decision</p>
                 <h2 id="engine-title">Moteur de decision</h2>
                 <p id="engine-copy" class="section-copy">Compare deux scenarios, visualise le risque et fais remonter la meilleure action.</p>
               </div>
@@ -323,7 +330,7 @@
 
             <section id="section-actions" class="panel-card surface-decision">
               <div class="section-head">
-                <p class="eyebrow" id="actions-kicker">Recommended actions</p>
+                <p class="eyebrow" id="actions-kicker">Actions recommandees</p>
                 <h2 id="actions-title">Actions recommandees</h2>
               </div>
               <div id="actions-grid" class="insight-grid"></div>
@@ -331,7 +338,7 @@
 
             <section id="section-copilot" class="panel-card surface-decision">
               <div class="section-head">
-                <p class="eyebrow" id="copilot-result-kicker">Copilot answer</p>
+                <p class="eyebrow" id="copilot-result-kicker">Reponse du copilote</p>
                 <h2 id="copilot-result-title">Reponse du copilote</h2>
               </div>
               <div id="copilot-answer" class="stack"></div>
@@ -340,7 +347,7 @@
             <section id="section-query" class="panel-card surface-builder">
               <div class="section-head">
                 <p class="eyebrow" id="query-kicker">AI Builder</p>
-                <h2 id="query-result-title">Natural language to SQL</h2>
+                <h2 id="query-result-title">Question metier vers SQL</h2>
               </div>
               <div class="result-toolbar">
                 <button id="explain-sql" class="ghost-btn" type="button">Expliquer ce SQL</button>
@@ -348,12 +355,12 @@
               </div>
               <div id="query-result" class="stack"></div>
               <div class="section-head history-head">
-                <p class="eyebrow" id="query-history-kicker">History</p>
+                <p class="eyebrow" id="query-history-kicker">Historique</p>
                 <h3 id="query-history-title">Historique des requetes</h3>
               </div>
               <div id="query-history" class="history-list"></div>
               <div class="section-head history-head">
-                <p class="eyebrow" id="builder-ops-kicker">Builder ops</p>
+                <p class="eyebrow" id="builder-ops-kicker">Operations builder</p>
                 <h3 id="builder-ops-title">Pilotage AI Builder</h3>
               </div>
               <div id="builder-ops" class="metric-grid"></div>
@@ -361,8 +368,8 @@
 
             <section id="section-builder-studio" class="panel-card surface-builder">
               <div class="section-head">
-                <p class="eyebrow" id="builder-studio-kicker">AI Builder Studio</p>
-                <h2 id="builder-studio-result-title">Builder copilots</h2>
+                <p class="eyebrow" id="builder-studio-kicker">Studio Builder IA</p>
+                <h2 id="builder-studio-result-title">Briques du builder</h2>
               </div>
               <div id="builder-studio-grid" class="suggestion-grid builder-grid">
                 <div id="join-assistant-result" class="stack"></div>
@@ -382,8 +389,8 @@
 
             <section id="section-platform" class="panel-card surface-builder surface-governance">
               <div class="section-head">
-                <p class="eyebrow" id="platform-kicker">Platform</p>
-                <h2 id="platform-result-title">Workspace and governance</h2>
+                <p class="eyebrow" id="platform-kicker">Plateforme</p>
+                <h2 id="platform-result-title">Espace de travail et gouvernance</h2>
               </div>
               <div id="platform-overview-grid" class="suggestion-grid builder-grid">
                 <div id="workspace-result" class="stack"></div>
@@ -395,7 +402,7 @@
 
             <section id="section-evidence" class="panel-card surface-decision surface-builder surface-governance">
               <div class="section-head">
-                <p class="eyebrow" id="evidence-kicker">Evidence pack</p>
+                <p class="eyebrow" id="evidence-kicker">Pack de preuves</p>
                 <h2 id="evidence-title">Pack de preuves</h2>
               </div>
               <details class="details-block">
