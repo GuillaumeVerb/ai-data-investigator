@@ -209,6 +209,8 @@ const copy = {
     routePredictionDone: "Question routee vers prediction.",
     routeSimulationDone: "Question routee vers simulation.",
     routeCopilotDone: "Question routee vers copilote.",
+    queryLoading: "Generation du SQL...",
+    copilotLoading: "Interrogation du copilote...",
     builderOpsKicker: "Operations du builder",
     builderOpsTitle: "Pilotage AI Builder",
     builderRoute: "Dernier routage",
@@ -467,6 +469,8 @@ const copy = {
     routePredictionDone: "Question routed to prediction.",
     routeSimulationDone: "Question routed to simulation.",
     routeCopilotDone: "Question routed to copilot.",
+    queryLoading: "Generating SQL...",
+    copilotLoading: "Querying the copilot...",
     builderOpsKicker: "Builder ops",
     builderOpsTitle: "AI Builder control panel",
     builderRoute: "Last route",
@@ -710,13 +714,30 @@ function syncRouteSurface() {
     state.marketProfile = ROUTE_DEFAULT_PROFILES[locked] || state.marketProfile;
     state.routePresetApplied = true;
   }
+}
+
+function currentSurfacePrimarySection(mode = state.surfaceMode) {
+  const configs = currentSurfaceTabConfig()[mode] || [];
+  const activeTab = state.surfaceSubtabs[mode];
+  return configs.find((tab) => tab.key === activeTab)?.sections?.[0] || null;
+}
+
+function applyHashToSurfaceState() {
   const hashSection = window.location.hash.replace("#", "");
-  if (!hashSection) return;
-  const configs = currentSurfaceTabConfig()[locked] || [];
+  if (!hashSection) return null;
+  const mode = routeLockedSurface() || state.surfaceMode;
+  const configs = currentSurfaceTabConfig()[mode] || [];
   const matching = configs.find((tab) => tab.sections.includes(hashSection));
   if (matching) {
-    state.surfaceSubtabs[locked] = matching.key;
+    state.surfaceSubtabs[mode] = matching.key;
   }
+  return hashSection;
+}
+
+function updateSurfaceHash(sectionId = null) {
+  const targetSection = sectionId || currentSurfacePrimarySection(state.surfaceMode);
+  const nextUrl = targetSection ? `${window.location.pathname}#${targetSection}` : window.location.pathname;
+  window.history.replaceState(null, "", nextUrl);
 }
 
 function renderPageNav() {
@@ -1218,8 +1239,10 @@ function switchSurface(mode, sectionId = null) {
       state.surfaceSubtabs[mode] = matching.key;
     }
   }
+  const targetSection = sectionId || currentSurfacePrimarySection(mode);
+  updateSurfaceHash(targetSection);
   render();
-  window.setTimeout(() => focusSection(sectionId), 80);
+  window.setTimeout(() => focusSection(targetSection), 80);
 }
 
 function goToSurface(mode, sectionId = null) {
@@ -1232,9 +1255,8 @@ function goToSurface(mode, sectionId = null) {
 }
 
 function focusCurrentSubtab() {
-  const configs = currentSurfaceTabConfig()[state.surfaceMode] || [];
-  const activeTab = state.surfaceSubtabs[state.surfaceMode];
-  const firstSection = configs.find((tab) => tab.key === activeTab)?.sections?.[0];
+  const firstSection = currentSurfacePrimarySection(state.surfaceMode);
+  updateSurfaceHash(firstSection);
   focusSection(firstSection || null);
 }
 
@@ -2259,12 +2281,29 @@ async function investigateSuggestion(suggestionId) {
 }
 
 async function askCopilot(questionOverride = null) {
-  if (!state.dataset) return;
+  const c = currentCopy();
+  if (!state.dataset) {
+    setStatus(c.noData, true);
+    if ($("copilot-answer-inline")) {
+      $("copilot-answer-inline").innerHTML = `<div class="answer-card">${c.noData}</div>`;
+    }
+    if ($("copilot-answer")) {
+      $("copilot-answer").innerHTML = `<div class="answer-card">${c.noData}</div>`;
+    }
+    return;
+  }
   const question = (questionOverride || $("question-input").value).trim();
   if (!question) return;
   try {
     const startedAt = performance.now();
     $("question-input").value = question;
+    setStatus(c.copilotLoading);
+    if ($("copilot-answer-inline")) {
+      $("copilot-answer-inline").innerHTML = `<div class="answer-card">${c.copilotLoading}</div>`;
+    }
+    if ($("copilot-answer")) {
+      $("copilot-answer").innerHTML = `<div class="answer-card">${c.copilotLoading}</div>`;
+    }
     const payload = {
       dataset_id: state.dataset.dataset_id,
       question,
@@ -2278,11 +2317,11 @@ async function askCopilot(questionOverride = null) {
     });
     state.builderOps.lastRoute = "copilot";
     state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
-    setStatus(currentCopy().askDone);
+    setStatus(c.askDone);
     render();
     goToSurface("decision", "section-copilot");
   } catch (error) {
-    setStatus(`${currentCopy().connectError} ${error.message}`, true);
+    setStatus(`${c.connectError} ${error.message}`, true);
   }
 }
 
@@ -2313,12 +2352,28 @@ async function exportReport() {
 
 async function runSqlQuery(questionOverride = null) {
   const c = currentCopy();
-  if (!state.dataset) return;
+  if (!state.dataset) {
+    setStatus(c.noData, true);
+    if ($("query-result-inline")) {
+      $("query-result-inline").innerHTML = `<div class="answer-card">${c.noData}</div>`;
+    }
+    if ($("query-result")) {
+      $("query-result").innerHTML = `<div class="answer-card">${c.noData}</div>`;
+    }
+    return;
+  }
   const question = (questionOverride || $("sql-question-input").value).trim();
   if (!question) return;
   try {
     const startedAt = performance.now();
     $("sql-question-input").value = question;
+    setStatus(c.queryLoading);
+    if ($("query-result-inline")) {
+      $("query-result-inline").innerHTML = `<div class="answer-card">${c.queryLoading}</div>`;
+    }
+    if ($("query-result")) {
+      $("query-result").innerHTML = `<div class="answer-card">${c.queryLoading}</div>`;
+    }
     const additionalDatasetIds = (state.datasets || [])
       .map((dataset) => dataset.dataset_id)
       .filter((datasetId) => datasetId !== state.dataset.dataset_id);
@@ -2412,7 +2467,10 @@ function replaySqlHistory(index) {
 
 async function routeQuestion() {
   const c = currentCopy();
-  if (!state.dataset) return;
+  if (!state.dataset) {
+    setStatus(c.noData, true);
+    return;
+  }
   const question = $("sql-question-input").value.trim();
   if (!question) return;
   const route = classifyQuestion(question);
@@ -3026,6 +3084,14 @@ async function init() {
   await refreshEvaluationConsole();
   await refreshPlatformOverview();
   bindEvents();
+  applyHashToSurfaceState();
+  window.addEventListener("hashchange", () => {
+    const target = applyHashToSurfaceState();
+    render();
+    if (target) {
+      window.setTimeout(() => focusSection(target), 80);
+    }
+  });
   render();
   focusInitialRouteTarget();
 }
