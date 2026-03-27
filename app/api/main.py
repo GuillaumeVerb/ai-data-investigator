@@ -132,7 +132,13 @@ if WEB_DIR.exists():
 
 
 def frontend_file(filename: str) -> FileResponse:
-    return FileResponse(WEB_DIR / filename)
+    return FileResponse(
+        WEB_DIR / filename,
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
 
 
 @app.get("/", include_in_schema=False)
