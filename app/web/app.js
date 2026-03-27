@@ -209,6 +209,7 @@ const copy = {
     routePredictionDone: "Question routee vers prediction.",
     routeSimulationDone: "Question routee vers simulation.",
     routeCopilotDone: "Question routee vers copilote.",
+    builderRouteSqlPinned: "Sur la page Builder, la question reste routee vers SQL pour eviter une bascule hors de la page.",
     queryLoading: "Generation du SQL...",
     copilotLoading: "Interrogation du copilote...",
     builderOpsKicker: "Operations du builder",
@@ -469,6 +470,7 @@ const copy = {
     routePredictionDone: "Question routed to prediction.",
     routeSimulationDone: "Question routed to simulation.",
     routeCopilotDone: "Question routed to copilot.",
+    builderRouteSqlPinned: "On the Builder page, the question stays routed to SQL to avoid leaving the page.",
     queryLoading: "Generating SQL...",
     copilotLoading: "Querying the copilot...",
     builderOpsKicker: "Builder ops",
@@ -2556,7 +2558,13 @@ async function routeQuestion() {
   const question = $("sql-question-input").value.trim();
   if (!question) return;
   const route = classifyQuestion(question);
+  const locked = routeLockedSurface();
   try {
+    if (locked === "builder" && route !== "sql") {
+      await runSqlQuery(question);
+      setStatus(c.builderRouteSqlPinned);
+      return;
+    }
     if (route === "sql") {
       await runSqlQuery(question);
       setStatus(c.routeSqlDone);
