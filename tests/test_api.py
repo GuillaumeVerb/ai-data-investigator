@@ -15,6 +15,21 @@ def test_frontend_entrypoint_serves_html() -> None:
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "AI Data Investigator" in response.text
+    assert 'data-page="decision"' in response.text
+
+
+def test_frontend_routes_expose_distinct_product_pages() -> None:
+    decision = client.get("/decision")
+    builder = client.get("/builder")
+    governance = client.get("/gouvernance")
+
+    assert decision.status_code == 200
+    assert builder.status_code == 200
+    assert governance.status_code == 200
+
+    assert 'data-page="decision"' in decision.text
+    assert 'data-page="builder"' in builder.text
+    assert 'data-page="governance"' in governance.text
 
 
 def test_health_endpoint_exposes_llm_status() -> None:

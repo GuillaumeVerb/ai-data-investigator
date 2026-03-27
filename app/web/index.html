@@ -20,9 +20,16 @@
             <p class="eyebrow" id="hero-eyebrow">Copilote de decision IA</p>
             <h1 id="hero-title">AI Data Investigator</h1>
           </div>
-          <div class="lang-switch">
-            <button id="lang-fr" class="ghost-btn active" type="button">FR</button>
-            <button id="lang-en" class="ghost-btn" type="button">EN</button>
+          <div class="hero-top-actions">
+            <nav class="page-nav" aria-label="Navigation produit">
+              <a id="nav-decision" class="page-nav-link" href="/decision">Copilote</a>
+              <a id="nav-builder" class="page-nav-link" href="/builder">Builder</a>
+              <a id="nav-governance" class="page-nav-link" href="/gouvernance">Gouvernance</a>
+            </nav>
+            <div class="lang-switch">
+              <button id="lang-fr" class="ghost-btn active" type="button">FR</button>
+              <button id="lang-en" class="ghost-btn" type="button">EN</button>
+            </div>
           </div>
         </div>
         <p id="hero-copy" class="hero-copy">
@@ -79,16 +86,16 @@
 
       <div class="layout">
         <aside class="control-panel">
-          <div class="panel-card">
+          <div id="persona-panel" class="panel-card">
             <p class="panel-title" id="persona-title">Parcours produit</p>
             <p class="panel-copy" id="persona-copy">Choisis le profil acheteur et la couche produit a mettre en avant pendant la demo.</p>
             <div class="button-stack">
               <div class="mode-chip-row">
                 <button id="persona-revenue" class="ghost-btn active" type="button">Revenue / Pricing</button>
-              <button id="persona-builder" class="ghost-btn" type="button">Builder IA</button>
+                <button id="persona-builder" class="ghost-btn" type="button">Builder IA</button>
                 <button id="persona-analytics" class="ghost-btn" type="button">Equipe data</button>
               </div>
-              <div class="mode-chip-row">
+              <div id="surface-mode-row" class="mode-chip-row">
                 <button id="surface-decision" class="ghost-btn active" type="button">Copilote de decision</button>
                 <button id="surface-builder" class="ghost-btn" type="button">Studio Builder IA</button>
                 <button id="surface-governance" class="ghost-btn" type="button">Gouvernance</button>
@@ -97,7 +104,7 @@
             <div id="persona-brief" class="answer-card"></div>
           </div>
 
-          <div class="panel-card">
+          <div id="playbook-panel" class="panel-card">
             <p class="panel-title" id="playbook-title">Playbooks demo</p>
             <p class="panel-copy" id="playbook-copy">Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.</p>
             <div class="button-stack">
@@ -107,7 +114,7 @@
             </div>
           </div>
 
-          <div class="panel-card">
+          <div id="controls-panel" class="panel-card">
             <p class="panel-title" id="controls-title">Demarrer</p>
             <p class="panel-copy" id="controls-copy">Charge une demo ou importe un CSV pour lancer l'investigation.</p>
             <div class="button-stack">
@@ -119,13 +126,13 @@
             <p id="status" class="status-line">Aucune donnee chargee.</p>
           </div>
 
-          <div class="panel-card">
+          <div id="copilot-panel" class="panel-card">
             <p class="panel-title" id="copilot-title">Copilote</p>
             <textarea id="question-input" rows="5" placeholder="Faut-il augmenter le prix ? Quel segment prioriser ?"></textarea>
             <button id="ask-copilot" class="primary-btn" type="button">Interroger le copilote</button>
           </div>
 
-          <div class="panel-card">
+          <div id="query-panel" class="panel-card">
             <p class="panel-title" id="query-title">Interroger les donnees</p>
             <textarea id="sql-question-input" rows="4" placeholder="Quel est le revenu moyen par region ?"></textarea>
             <div class="button-stack">
@@ -135,7 +142,7 @@
             <p id="query-router-copy" class="panel-copy">Choisit automatiquement entre SQL, prediction, simulation ou copilote.</p>
           </div>
 
-          <div class="panel-card">
+          <div id="builder-panel" class="panel-card">
             <p class="panel-title" id="builder-studio-title">Studio Builder IA</p>
             <p class="panel-copy" id="builder-studio-copy">Construis les briques avancees: SQL, jointures, couche semantique, workflows, policies, observabilite et gouvernance.</p>
             <div class="button-stack">
@@ -163,7 +170,7 @@
             <button id="run-evaluation-console" class="ghost-btn" type="button">Rafraichir l evaluation</button>
           </div>
 
-          <div class="panel-card">
+          <div id="platform-panel" class="panel-card">
             <p class="panel-title" id="platform-title">Plateforme et gouvernance</p>
             <p class="panel-copy" id="platform-copy">Cree un workspace, connecte des sources, exporte des artefacts et ajoute une validation humaine.</p>
             <input id="workspace-owner-input" type="text" placeholder="Nom du builder" />
@@ -185,13 +192,13 @@
             <button id="refresh-platform" class="ghost-btn" type="button">Rafraichir la gouvernance</button>
           </div>
 
-          <div class="panel-card">
+          <div id="export-panel" class="panel-card">
             <p class="panel-title" id="export-title">Rapport executif</p>
             <p class="panel-copy" id="export-copy">Exporte une synthese HTML a partager en revue client ou management.</p>
             <button id="export-report" class="secondary-btn" type="button">Exporter le rapport</button>
           </div>
 
-          <div class="panel-card">
+          <div id="analysis-panel" class="panel-card">
             <p class="panel-title" id="analysis-title">Signal du moment</p>
             <div id="focused-analysis" class="stack">
               <div class="answer-card" id="focused-analysis-empty">Choisis une piste d'investigation pour afficher l'analyse detaillee.</div>
@@ -209,7 +216,7 @@
           </section>
 
           <section id="dashboard-tabs" class="dashboard-tabs" hidden>
-            <div class="dashboard-tab-group">
+            <div id="dashboard-tab-group" class="dashboard-tab-group">
               <button id="dashboard-tab-decision" class="ghost-btn active" type="button">Copilote de decision</button>
               <button id="dashboard-tab-builder" class="ghost-btn" type="button">Studio Builder IA</button>
               <button id="dashboard-tab-governance" class="ghost-btn" type="button">Gouvernance</button>

@@ -229,6 +229,38 @@ body {
   align-items: flex-start;
 }
 
+.hero-top-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.page-nav-link {
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.page-nav-link:hover,
+.page-nav-link.active {
+  background: linear-gradient(180deg, rgba(47, 109, 73, 0.16), rgba(47, 109, 73, 0.08));
+  border-color: rgba(47, 109, 73, 0.3);
+  color: var(--accent-strong);
+}
+
 .eyebrow {
   margin: 0 0 10px;
   font-size: 12px;
@@ -768,6 +800,7 @@ td {
 @media (max-width: 1100px) {
   .layout,
   .hero-top,
+  .hero-top-actions,
   .prediction-row,
   .builder-toolbar,
   .result-toolbar,
@@ -808,5 +841,20 @@ td {
   .dashboard-mode-summary {
     max-width: none;
     min-width: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-nav {
+    width: 100%;
+  }
+
+  .page-nav-link {
+    flex: 1 1 calc(33.333% - 8px);
+    text-align: center;
+  }
+
+  .app-shell {
+    padding: 20px 14px 48px;
   }
 }

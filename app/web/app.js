@@ -1,4 +1,5 @@
 const state = {
+  routePage: document.body.dataset.page || "decision",
   lang: "fr",
   dataset: null,
   profile: null,
@@ -43,6 +44,12 @@ const state = {
     builder: "sql",
     governance: "platform",
   },
+};
+
+const ROUTE_PATHS = {
+  decision: "/decision",
+  builder: "/builder",
+  governance: "/gouvernance",
 };
 
 const copy = {
@@ -566,6 +573,38 @@ function currentCopy() {
   return copy[state.lang];
 }
 
+function routeLockedSurface() {
+  return ROUTE_PATHS[state.routePage] ? state.routePage : null;
+}
+
+function surfaceHref(mode, sectionId = null) {
+  const path = ROUTE_PATHS[mode] || ROUTE_PATHS.decision;
+  return sectionId ? `${path}#${sectionId}` : path;
+}
+
+function syncRouteSurface() {
+  const locked = routeLockedSurface();
+  if (!locked) return;
+  state.surfaceMode = locked;
+  const hashSection = window.location.hash.replace("#", "");
+  if (!hashSection) return;
+  const configs = currentSurfaceTabConfig()[locked] || [];
+  const matching = configs.find((tab) => tab.sections.includes(hashSection));
+  if (matching) {
+    state.surfaceSubtabs[locked] = matching.key;
+  }
+}
+
+function renderPageNav() {
+  const c = currentCopy();
+  $("nav-decision").textContent = c.surfaceDecision;
+  $("nav-builder").textContent = c.surfaceBuilder;
+  $("nav-governance").textContent = c.surfaceGovernance;
+  $("nav-decision").classList.toggle("active", state.surfaceMode === "decision");
+  $("nav-builder").classList.toggle("active", state.surfaceMode === "builder");
+  $("nav-governance").classList.toggle("active", state.surfaceMode === "governance");
+}
+
 function setStatus(message, isError = false) {
   const node = $("status");
   node.textContent = message;
@@ -958,6 +997,21 @@ function renderModeSummary() {
   $("dashboard-mode-copy").textContent = current.copy;
 }
 
+function applyRouteLayout() {
+  const locked = routeLockedSurface();
+  const visiblePanels = {
+    decision: ["persona-panel", "playbook-panel", "controls-panel", "copilot-panel", "export-panel", "analysis-panel"],
+    builder: ["persona-panel", "playbook-panel", "controls-panel", "query-panel", "builder-panel", "export-panel"],
+    governance: ["persona-panel", "playbook-panel", "controls-panel", "platform-panel", "export-panel"],
+  };
+  const allowed = new Set(visiblePanels[state.surfaceMode] || visiblePanels.decision);
+  ["persona-panel", "playbook-panel", "controls-panel", "copilot-panel", "query-panel", "builder-panel", "platform-panel", "export-panel", "analysis-panel"].forEach((panelId) => {
+    $(panelId).hidden = !(allowed.has(panelId));
+  });
+  $("surface-mode-row").hidden = Boolean(locked);
+  $("dashboard-tab-group").hidden = Boolean(locked);
+}
+
 function currentSurfaceTabConfig() {
   const c = currentCopy();
   return {
@@ -1034,6 +1088,15 @@ function switchSurface(mode, sectionId = null) {
   }
   render();
   window.setTimeout(() => focusSection(sectionId), 80);
+}
+
+function goToSurface(mode, sectionId = null) {
+  const locked = routeLockedSurface();
+  if (locked && mode !== locked) {
+    window.location.href = surfaceHref(mode, sectionId);
+    return;
+  }
+  switchSurface(mode, sectionId);
 }
 
 function focusCurrentSubtab() {
@@ -1849,10 +1912,13 @@ function renderPlatformOverview() {
 }
 
 function render() {
+  syncRouteSurface();
   renderStaticCopy();
+  renderPageNav();
   renderWorkflow();
   renderPersonaBrief();
   renderModeSummary();
+  applyRouteLayout();
   const hasData = Boolean(state.dataset && state.profile && state.investigation);
   $("empty-state").hidden = hasData;
   $("dashboard-tabs").hidden = !hasData;
@@ -2675,7 +2741,7 @@ function selectMarketProfile(profile) {
 }
 
 function selectSurfaceMode(mode) {
-  switchSurface(mode);
+  goToSurface(mode);
 }
 
 async function applyPlaybook(playbook) {
@@ -2687,7 +2753,7 @@ async function applyPlaybook(playbook) {
       ? "Faut-il augmenter le prix sur les segments premium ?"
       : "Should we increase price on premium segments?";
     setStatus(c.playbookPricingStatus);
-    switchSurface("decision", "section-decision-summary");
+    goToSurface("decision", "section-decision-summary");
   } else if (playbook === "growth") {
     state.marketProfile = "revenue";
     $("workflow-goal-select").value = "marketing_optimization";
@@ -2695,14 +2761,14 @@ async function applyPlaybook(playbook) {
       ? "Compare le revenu et le pipeline qualifie par region"
       : "Compare revenue and qualified pipeline by region";
     setStatus(c.playbookGrowthStatus);
-    switchSurface("builder", "section-query");
+    goToSurface("builder", "section-query");
   } else {
     state.marketProfile = "analytics";
     $("approval-title-input").value = state.lang === "fr"
       ? "Validation du workflow executive"
       : "Executive workflow approval";
     setStatus(c.playbookExecStatus);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   }
 }
 
@@ -2797,6 +2863,12 @@ function bindDynamicEvents() {
   });
 }
 
+function focusInitialRouteTarget() {
+  const target = window.location.hash.replace("#", "");
+  if (!target) return;
+  window.setTimeout(() => focusSection(target), 120);
+}
+
 async function init() {
   await refreshHealth();
   await refreshDatasets();
@@ -2805,6 +2877,7 @@ async function init() {
   await refreshPlatformOverview();
   bindEvents();
   render();
+  focusInitialRouteTarget();
 }
 
 init();
