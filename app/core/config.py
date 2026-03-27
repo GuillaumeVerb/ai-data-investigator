@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "AI Data Investigator"
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4o-mini"
+    openai_timeout_seconds: float = 12.0
     auto_start_local_api: bool = True
     anomaly_contamination: float = 0.08
     max_preview_rows: int = 10

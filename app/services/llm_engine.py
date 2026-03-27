@@ -13,7 +13,11 @@ def _client() -> Optional[OpenAI]:
     settings = get_settings()
     if not settings.openai_api_key:
         return None
-    return OpenAI(api_key=settings.openai_api_key)
+    return OpenAI(
+        api_key=settings.openai_api_key,
+        timeout=settings.openai_timeout_seconds,
+        max_retries=1,
+    )
 
 
 def llm_status() -> Dict[str, Any]:

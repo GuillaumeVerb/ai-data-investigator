@@ -756,6 +756,45 @@ function setStatus(message, isError = false) {
   node.classList.toggle("error", isError);
 }
 
+function setButtonBusy(buttonId, isBusy, busyLabel = null) {
+  const button = $(buttonId);
+  if (!button) return;
+  if (isBusy) {
+    if (!button.dataset.defaultLabel) {
+      button.dataset.defaultLabel = button.textContent;
+    }
+    button.disabled = true;
+    if (busyLabel) {
+      button.textContent = busyLabel;
+    }
+    return;
+  }
+  button.disabled = false;
+  if (button.dataset.defaultLabel) {
+    button.textContent = button.dataset.defaultLabel;
+  }
+}
+
+function renderCopilotInlineMessage(message) {
+  const content = `<div class="answer-card">${message}</div>`;
+  if ($("copilot-answer-inline")) {
+    $("copilot-answer-inline").innerHTML = content;
+  }
+  if ($("copilot-answer")) {
+    $("copilot-answer").innerHTML = content;
+  }
+}
+
+function renderQueryInlineMessage(message) {
+  const content = `<div class="answer-card">${message}</div>`;
+  if ($("query-result-inline")) {
+    $("query-result-inline").innerHTML = content;
+  }
+  if ($("query-result")) {
+    $("query-result").innerHTML = content;
+  }
+}
+
 async function api(path, options = {}) {
   const response = await fetch(path, options);
   if (!response.ok) {
@@ -2284,26 +2323,17 @@ async function askCopilot(questionOverride = null) {
   const c = currentCopy();
   if (!state.dataset) {
     setStatus(c.noData, true);
-    if ($("copilot-answer-inline")) {
-      $("copilot-answer-inline").innerHTML = `<div class="answer-card">${c.noData}</div>`;
-    }
-    if ($("copilot-answer")) {
-      $("copilot-answer").innerHTML = `<div class="answer-card">${c.noData}</div>`;
-    }
+    renderCopilotInlineMessage(c.noData);
     return;
   }
   const question = (questionOverride || $("question-input").value).trim();
   if (!question) return;
   try {
+    setButtonBusy("ask-copilot", true, c.copilotLoading);
     const startedAt = performance.now();
     $("question-input").value = question;
     setStatus(c.copilotLoading);
-    if ($("copilot-answer-inline")) {
-      $("copilot-answer-inline").innerHTML = `<div class="answer-card">${c.copilotLoading}</div>`;
-    }
-    if ($("copilot-answer")) {
-      $("copilot-answer").innerHTML = `<div class="answer-card">${c.copilotLoading}</div>`;
-    }
+    renderCopilotInlineMessage(c.copilotLoading);
     const payload = {
       dataset_id: state.dataset.dataset_id,
       question,
@@ -2322,6 +2352,9 @@ async function askCopilot(questionOverride = null) {
     goToSurface("decision", "section-copilot");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
+    renderCopilotInlineMessage(`${c.connectError} ${error.message}`);
+  } finally {
+    setButtonBusy("ask-copilot", false);
   }
 }
 
@@ -2354,26 +2387,17 @@ async function runSqlQuery(questionOverride = null) {
   const c = currentCopy();
   if (!state.dataset) {
     setStatus(c.noData, true);
-    if ($("query-result-inline")) {
-      $("query-result-inline").innerHTML = `<div class="answer-card">${c.noData}</div>`;
-    }
-    if ($("query-result")) {
-      $("query-result").innerHTML = `<div class="answer-card">${c.noData}</div>`;
-    }
+    renderQueryInlineMessage(c.noData);
     return;
   }
   const question = (questionOverride || $("sql-question-input").value).trim();
   if (!question) return;
   try {
+    setButtonBusy("run-sql-query", true, c.queryLoading);
     const startedAt = performance.now();
     $("sql-question-input").value = question;
     setStatus(c.queryLoading);
-    if ($("query-result-inline")) {
-      $("query-result-inline").innerHTML = `<div class="answer-card">${c.queryLoading}</div>`;
-    }
-    if ($("query-result")) {
-      $("query-result").innerHTML = `<div class="answer-card">${c.queryLoading}</div>`;
-    }
+    renderQueryInlineMessage(c.queryLoading);
     const additionalDatasetIds = (state.datasets || [])
       .map((dataset) => dataset.dataset_id)
       .filter((datasetId) => datasetId !== state.dataset.dataset_id);
@@ -2409,6 +2433,9 @@ async function runSqlQuery(questionOverride = null) {
     goToSurface("builder", "section-query");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
+    renderQueryInlineMessage(`${c.connectError} ${error.message}`);
+  } finally {
+    setButtonBusy("run-sql-query", false);
   }
 }
 

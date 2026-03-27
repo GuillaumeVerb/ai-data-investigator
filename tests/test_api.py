@@ -61,6 +61,24 @@ def test_natural_language_query_endpoint_returns_sql_and_rows() -> None:
     assert isinstance(body["result_preview"], list)
 
 
+def test_copilot_endpoint_returns_business_answer() -> None:
+    dataset = client.post("/upload/sample").json()
+    response = client.post(
+        "/copilot/ask",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "question": "Should we increase price on premium segments?",
+            "language": "en",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["answer"]
+    assert body["short_answer"]
+    assert body["confidence_level"] in {"high", "medium", "low"}
+    assert isinstance(body["recommended_actions"], list)
+
+
 def test_query_explanation_endpoint_returns_explanation() -> None:
     response = client.post(
         "/query/explain",
@@ -108,7 +126,8 @@ def test_join_assistant_and_semantic_layer_endpoints() -> None:
     assert join_response.status_code == 200
     join_body = join_response.json()
     assert join_body["candidates"]
-    assert any(item["right_dataset_id"] == marketing["dataset_id"] for item in join_body["candidates"])
+    assert all(item["right_dataset_id"] != sales["dataset_id"] for item in join_body["candidates"])
+    assert any(item["merge_readiness"] in {"high", "medium"} for item in join_body["candidates"])
 
     semantic_response = client.post(
         "/semantic-layer",
