@@ -794,6 +794,10 @@ textarea {
   padding: 14px 16px;
 }
 
+.advanced-group {
+  margin-top: 14px;
+}
+
 .builder-group summary {
   font-size: 1rem;
 }

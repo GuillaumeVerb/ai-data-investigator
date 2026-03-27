@@ -705,14 +705,14 @@ function routeTheme() {
         state.lang === "fr" ? "Prep agent" : "Prep agent",
         state.lang === "fr" ? "Workflow builder" : "Workflow builder",
       ],
-      controlsTitle: state.lang === "fr" ? "Charger des datasets a builder" : "Load datasets to build with",
+      controlsTitle: state.lang === "fr" ? "Charger une base de travail" : "Load a working dataset",
       controlsCopy: state.lang === "fr"
-        ? "Charge une demo ou importe un CSV avant de lancer SQL, jointures, prep agent et workflow."
-        : "Load a demo or upload a CSV before launching SQL, joins, prep agents, and workflows.",
+        ? "Charge une demo ou importe un CSV avant d'interroger les donnees et de lancer les ateliers recommandes."
+        : "Load a demo or upload a CSV before querying the data and launching the recommended builder actions.",
       emptyTitle: state.lang === "fr" ? "Charge un dataset pour activer le studio builder." : "Load a dataset to activate the builder studio.",
       emptyCopy: state.lang === "fr"
-        ? "Tu pourras ensuite poser des questions SQL, construire les briques et observer le routage."
-        : "You will then be able to ask SQL questions, build modules, and observe routing.",
+        ? "Tu pourras ensuite generer du SQL, preparer les donnees et lancer les actions Builder recommandees."
+        : "You will then be able to generate SQL, prepare data, and launch the recommended Builder actions.",
       workflowVisible: false,
     },
     governance: {
@@ -739,14 +739,14 @@ function routeTheme() {
         state.lang === "fr" ? "Exports" : "Exports",
         state.lang === "fr" ? "Validations humaines" : "Human approvals",
       ],
-      controlsTitle: state.lang === "fr" ? "Charger ou connecter une source" : "Load or connect a source",
+      controlsTitle: state.lang === "fr" ? "Charger ou connecter une source de travail" : "Load or connect a working source",
       controlsCopy: state.lang === "fr"
-        ? "Charge une demo ou connecte une source avant de configurer le workspace et les validations."
-        : "Load a demo or connect a source before configuring the workspace and approvals.",
+        ? "Charge une demo ou connecte une source avant de creer un projet, exporter un artefact ou demander une validation."
+        : "Load a demo or connect a source before creating a project, exporting an artifact, or requesting approval.",
       emptyTitle: state.lang === "fr" ? "Charge un dataset ou connecte une source pour activer la gouvernance." : "Load a dataset or connect a source to activate governance.",
       emptyCopy: state.lang === "fr"
-        ? "Tu verras ensuite les projets, connecteurs, artefacts exportes et validations humaines."
-        : "You will then see projects, connectors, exported artifacts, and human approvals.",
+        ? "Tu verras ensuite les projets, les connecteurs, les exports et les validations humaines."
+        : "You will then see projects, connectors, exports, and human approvals.",
       workflowVisible: false,
     },
   };
@@ -1261,6 +1261,7 @@ function applyRouteLayout() {
   });
   $("surface-mode-row").hidden = Boolean(locked);
   $("dashboard-tab-group").hidden = Boolean(locked);
+  $("dashboard-tabs").hidden = Boolean(locked);
 }
 
 function currentSurfaceTabConfig() {
