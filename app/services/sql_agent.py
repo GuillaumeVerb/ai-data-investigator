@@ -104,6 +104,17 @@ def _fallback_sql(
 
     preferred_metric = "revenue" if "revenue" in numeric_columns else numeric_columns[0] if numeric_columns else primary_df.columns[0]
     preferred_group = "region" if "region" in categorical_columns else categorical_columns[0] if categorical_columns else None
+    explicit_group_map = {
+        "region": ["region", "région", "par region", "par région", "by region"],
+        "channel": ["channel", "canal", "par canal", "by channel"],
+        "product": ["product", "produit", "par produit", "by product"],
+        "customer_segment": ["segment", "customer segment", "par segment", "by segment"],
+    }
+    for column, tokens in explicit_group_map.items():
+        if column in categorical_columns and any(token in lowered for token in tokens):
+            preferred_group = column
+            break
+    grouped_question = any(token in lowered for token in ["par ", "by ", "group", "région", "region", "segment", "canal", "channel"])
 
     if len(tables) > 1:
         for table_name, df in tables.items():
@@ -139,6 +150,18 @@ def _fallback_sql(
             f"This fallback groups the data by {preferred_group} and compares average {preferred_metric}."
             if language == "en"
             else f"Ce fallback regroupe les donnees par {preferred_group} et compare la moyenne de {preferred_metric}."
+        )
+        return sql, explanation, [primary_table]
+
+    if preferred_group and grouped_question:
+        sql = (
+            f"SELECT {preferred_group}, SUM({preferred_metric}) AS total_{preferred_metric} "
+            f"FROM {primary_table} GROUP BY {preferred_group} ORDER BY total_{preferred_metric} DESC"
+        )
+        explanation = (
+            f"This fallback groups the data by {preferred_group} and compares total {preferred_metric}."
+            if language == "en"
+            else f"Ce fallback regroupe les donnees par {preferred_group} et compare le total de {preferred_metric}."
         )
         return sql, explanation, [primary_table]
 

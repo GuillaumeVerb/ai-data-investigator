@@ -61,6 +61,22 @@ def test_natural_language_query_endpoint_returns_sql_and_rows() -> None:
     assert isinstance(body["result_preview"], list)
 
 
+def test_french_query_fallback_groups_revenue_by_region() -> None:
+    dataset = client.post("/upload/sample").json()
+    response = client.post(
+        "/query",
+        json={
+            "dataset_id": dataset["dataset_id"],
+            "question": "revenu par région ?",
+            "language": "fr",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "group by region" in body["sql"].lower()
+    assert "total_revenue" in body["sql"].lower()
+
+
 def test_copilot_endpoint_returns_business_answer() -> None:
     dataset = client.post("/upload/sample").json()
     response = client.post(
