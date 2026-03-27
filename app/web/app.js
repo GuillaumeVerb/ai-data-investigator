@@ -1134,9 +1134,9 @@ function renderModeSummary() {
 function applyRouteLayout() {
   const locked = routeLockedSurface();
   const visiblePanels = {
-    decision: ["persona-panel", "playbook-panel", "controls-panel", "copilot-panel", "export-panel", "analysis-panel"],
-    builder: ["persona-panel", "controls-panel", "query-panel", "builder-panel", "export-panel"],
-    governance: ["persona-panel", "controls-panel", "platform-panel", "export-panel"],
+    decision: ["controls-panel", "copilot-panel"],
+    builder: ["controls-panel", "query-panel", "builder-panel"],
+    governance: ["controls-panel", "platform-panel"],
   };
   const allowed = new Set(visiblePanels[state.surfaceMode] || visiblePanels.decision);
   ["persona-panel", "playbook-panel", "controls-panel", "copilot-panel", "query-panel", "builder-panel", "platform-panel", "export-panel", "analysis-panel"].forEach((panelId) => {
