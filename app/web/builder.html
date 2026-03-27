@@ -154,29 +154,55 @@
           <div id="builder-panel" class="panel-card">
             <p class="panel-title" id="builder-studio-title">Studio Builder IA</p>
             <p class="panel-copy" id="builder-studio-copy">Construis les briques avancees: SQL, jointures, couche semantique, workflows, policies, observabilite et gouvernance.</p>
-            <div class="button-stack">
-              <button id="run-join-assistant" class="secondary-btn" type="button">Analyser les jointures</button>
-              <button id="run-semantic-layer" class="ghost-btn" type="button">Construire la couche semantique</button>
-              <button id="run-prep-agent" class="ghost-btn" type="button">Lancer le prep agent</button>
+            <div class="builder-group-list">
+              <details class="details-block builder-group" open>
+                <summary>1. Preparer les donnees</summary>
+                <p class="panel-copy">Commence par comprendre comment relier, typer et structurer les donnees avant d'orchestrer un workflow plus avance.</p>
+                <div class="button-stack">
+                  <button id="run-join-assistant" class="secondary-btn" type="button">Analyser les jointures</button>
+                  <button id="run-semantic-layer" class="ghost-btn" type="button">Construire la couche semantique</button>
+                  <button id="run-prep-agent" class="ghost-btn" type="button">Lancer le prep agent</button>
+                </div>
+              </details>
+
+              <details class="details-block builder-group">
+                <summary>2. Optimiser et tester</summary>
+                <p class="panel-copy">Choisis un objectif, puis lance les briques quantitatives et experimentales adaptees.</p>
+                <div class="builder-inline-field">
+                  <label class="small-meta" for="optimizer-objective-select">Objectif d'optimisation</label>
+                  <select id="optimizer-objective-select">
+                    <option value="maximize_prediction">Maximiser la prediction</option>
+                    <option value="maximize_efficiency">Maximiser l efficience</option>
+                  </select>
+                </div>
+                <div class="button-stack">
+                  <button id="run-quant-optimizer" class="secondary-btn" type="button">Lancer l optimizer</button>
+                  <button id="run-constraint-solver" class="ghost-btn" type="button">Lancer le constraint solver</button>
+                  <button id="run-experiment-designer" class="ghost-btn" type="button">Construire les experiments</button>
+                </div>
+              </details>
+
+              <details class="details-block builder-group">
+                <summary>3. Orchestrer et gouverner</summary>
+                <p class="panel-copy">Construit un workflow orienté cas d'usage, puis complète-le avec policy, KPI, orchestration et evaluation.</p>
+                <div class="builder-inline-field">
+                  <label class="small-meta" for="workflow-goal-select">Cas d'usage cible</label>
+                  <select id="workflow-goal-select">
+                    <option value="pricing_decision">Decision tarifaire</option>
+                    <option value="diagnosis">Diagnostic</option>
+                    <option value="marketing_optimization">Optimisation marketing</option>
+                    <option value="segment_prioritization">Priorisation segment</option>
+                  </select>
+                </div>
+                <div class="button-stack">
+                  <button id="run-workflow-builder" class="primary-btn" type="button">Construire le workflow</button>
+                  <button id="run-policy-engine" class="ghost-btn" type="button">Lancer le policy engine</button>
+                  <button id="run-semantic-kpi-registry" class="ghost-btn" type="button">Construire le registre KPI</button>
+                  <button id="run-orchestration-view" class="ghost-btn" type="button">Voir l orchestration</button>
+                  <button id="run-evaluation-console" class="ghost-btn" type="button">Rafraichir l evaluation</button>
+                </div>
+              </details>
             </div>
-            <select id="optimizer-objective-select">
-              <option value="maximize_prediction">Maximiser la prediction</option>
-              <option value="maximize_efficiency">Maximiser l efficience</option>
-            </select>
-            <button id="run-quant-optimizer" class="secondary-btn" type="button">Lancer l optimizer</button>
-            <button id="run-constraint-solver" class="ghost-btn" type="button">Lancer le constraint solver</button>
-            <button id="run-experiment-designer" class="ghost-btn" type="button">Construire les experiments</button>
-            <button id="run-policy-engine" class="ghost-btn" type="button">Lancer le policy engine</button>
-            <button id="run-semantic-kpi-registry" class="ghost-btn" type="button">Construire le registre KPI</button>
-            <button id="run-orchestration-view" class="ghost-btn" type="button">Voir l orchestration</button>
-            <select id="workflow-goal-select">
-              <option value="pricing_decision">Decision tarifaire</option>
-              <option value="diagnosis">Diagnostic</option>
-              <option value="marketing_optimization">Optimisation marketing</option>
-              <option value="segment_prioritization">Priorisation segment</option>
-            </select>
-            <button id="run-workflow-builder" class="primary-btn" type="button">Construire le workflow</button>
-            <button id="run-evaluation-console" class="ghost-btn" type="button">Rafraichir l evaluation</button>
           </div>
 
           <div id="platform-panel" class="panel-card">

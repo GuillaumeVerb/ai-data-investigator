@@ -757,6 +757,33 @@ textarea {
   font-weight: 600;
 }
 
+.builder-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.builder-group {
+  padding: 14px 16px;
+}
+
+.builder-group summary {
+  font-size: 1rem;
+}
+
+.builder-group .panel-copy {
+  margin: 10px 0 14px;
+}
+
+.builder-inline-field {
+  margin-bottom: 14px;
+}
+
+.builder-inline-field .small-meta {
+  display: block;
+  margin-bottom: 8px;
+}
+
 .table-wrap {
   overflow: auto;
   margin-top: 12px;
