@@ -1,5 +1,6 @@
 const state = {
   routePage: document.body.dataset.page || "decision",
+  routePresetApplied: false,
   lang: "fr",
   dataset: null,
   profile: null,
@@ -50,6 +51,12 @@ const ROUTE_PATHS = {
   decision: "/decision",
   builder: "/builder",
   governance: "/gouvernance",
+};
+
+const ROUTE_DEFAULT_PROFILES = {
+  decision: "revenue",
+  builder: "builder",
+  governance: "analytics",
 };
 
 const copy = {
@@ -582,10 +589,120 @@ function surfaceHref(mode, sectionId = null) {
   return sectionId ? `${path}#${sectionId}` : path;
 }
 
+function routeTheme() {
+  const c = currentCopy();
+  const themes = {
+    decision: {
+      heroEyebrow: state.lang === "fr" ? "Copilote de decision" : "Decision copilot",
+      heroCopy: state.lang === "fr"
+        ? "Une interface dirigeant pour comprendre ce qui change, tester des scenarios et recommander une action claire avec niveau de confiance."
+        : "An executive layer to understand what changed, test scenarios, and recommend a clear next action with confidence.",
+      audienceTitle: state.lang === "fr" ? "Revenue, pricing et croissance" : "Revenue, pricing, and growth teams",
+      audienceCopy: state.lang === "fr"
+        ? "Pour les equipes qui doivent arbitrer vite entre prix, demande, campagne et priorites commerciales."
+        : "Built for teams that need to arbitrate quickly between pricing, demand, campaigns, and revenue priorities.",
+      valueTitle: state.lang === "fr" ? "Investiguer, simuler, decider" : "Investigate, simulate, decide",
+      valueCopy: state.lang === "fr"
+        ? "La page met l accent sur les signaux, la simulation, la recommandation et l evidence pack."
+        : "This page prioritizes signals, simulation, recommendation, and the evidence pack.",
+      modeTitle: state.lang === "fr" ? "Vue metier prioritaire" : "Primary business view",
+      modeCopy: state.lang === "fr"
+        ? "Le flux va du chargement des donnees a la decision recommandee."
+        : "The flow goes from loading data to a recommended decision.",
+      usecases: [
+        c.heroUsecase1,
+        c.heroUsecase2,
+        c.heroUsecase3,
+        state.lang === "fr" ? "Recommandation board-ready" : "Board-ready recommendation",
+      ],
+      controlsTitle: state.lang === "fr" ? "Demarrer une analyse metier" : "Start a business analysis",
+      controlsCopy: state.lang === "fr"
+        ? "Charge une demo ou importe un CSV pour obtenir une lecture executive du signal, du risque et de la prochaine action."
+        : "Load a demo or upload a CSV to get an executive read on signal, risk, and next action.",
+      emptyTitle: state.lang === "fr" ? "Charge un dataset pour activer la vue decision." : "Load a dataset to activate the decision view.",
+      emptyCopy: state.lang === "fr"
+        ? "Tu verras ensuite la synthese de decision, les insights, les scenarios et les actions recommandees."
+        : "You will then see the decision summary, insights, scenarios, and recommended actions.",
+      workflowVisible: true,
+    },
+    builder: {
+      heroEyebrow: state.lang === "fr" ? "Studio Builder IA" : "AI Builder Studio",
+      heroCopy: state.lang === "fr"
+        ? "Une page outillage pour construire des workflows decisionnels avec SQL, agents, preparation, orchestration et evaluation."
+        : "A builder page for assembling decision workflows with SQL, agents, preparation, orchestration, and evaluation.",
+      audienceTitle: state.lang === "fr" ? "Consultants IA et builders" : "AI consultants and builders",
+      audienceCopy: state.lang === "fr"
+        ? "Pour demonstrer rapidement un accelerateur de copilotes analytiques et gouvernes."
+        : "Designed to quickly demonstrate an accelerator for governed analytical copilots.",
+      valueTitle: state.lang === "fr" ? "Interroger, assembler, observer" : "Query, assemble, observe",
+      valueCopy: state.lang === "fr"
+        ? "La page met l accent sur SQL, les briques builder, le routage et l orchestration."
+        : "This page focuses on SQL, builder modules, routing, and orchestration.",
+      modeTitle: state.lang === "fr" ? "Vue builder prioritaire" : "Primary builder view",
+      modeCopy: state.lang === "fr"
+        ? "Le flux va de la question SQL au workflow et aux agents."
+        : "The flow goes from SQL questions to workflows and agents.",
+      usecases: [
+        state.lang === "fr" ? "SQL genere" : "Generated SQL",
+        state.lang === "fr" ? "Jointures assistees" : "Guided joins",
+        state.lang === "fr" ? "Prep agent" : "Prep agent",
+        state.lang === "fr" ? "Workflow builder" : "Workflow builder",
+      ],
+      controlsTitle: state.lang === "fr" ? "Charger des datasets a builder" : "Load datasets to build with",
+      controlsCopy: state.lang === "fr"
+        ? "Charge une demo ou importe un CSV avant de lancer SQL, jointures, prep agent et workflow."
+        : "Load a demo or upload a CSV before launching SQL, joins, prep agents, and workflows.",
+      emptyTitle: state.lang === "fr" ? "Charge un dataset pour activer le studio builder." : "Load a dataset to activate the builder studio.",
+      emptyCopy: state.lang === "fr"
+        ? "Tu pourras ensuite poser des questions SQL, construire les briques et observer le routage."
+        : "You will then be able to ask SQL questions, build modules, and observe routing.",
+      workflowVisible: false,
+    },
+    governance: {
+      heroEyebrow: state.lang === "fr" ? "Gouvernance des copilotes" : "Copilot governance",
+      heroCopy: state.lang === "fr"
+        ? "Une page plateforme pour cadrer projets, connecteurs, artefacts, validations humaines et reutilisation des workflows."
+        : "A platform page to manage projects, connectors, artifacts, human approvals, and reusable workflows.",
+      audienceTitle: state.lang === "fr" ? "Equipe data et analytics" : "Data and analytics teams",
+      audienceCopy: state.lang === "fr"
+        ? "Pour montrer la couche gouvernance sans noyer le lecteur dans le detail analytique."
+        : "A focused governance layer without overwhelming the reader with analytical detail.",
+      valueTitle: state.lang === "fr" ? "Connecter, valider, tracer" : "Connect, approve, trace",
+      valueCopy: state.lang === "fr"
+        ? "La page met l accent sur la gouvernance des runs, des connecteurs et des exports."
+        : "This page prioritizes governance of runs, connectors, and exported artifacts.",
+      modeTitle: state.lang === "fr" ? "Vue gouvernance prioritaire" : "Primary governance view",
+      modeCopy: state.lang === "fr"
+        ? "Le flux va du projet a la validation humaine."
+        : "The flow goes from project setup to human approval.",
+      usecases: [
+        state.lang === "fr" ? "Workspaces" : "Workspaces",
+        state.lang === "fr" ? "Connecteurs" : "Connectors",
+        state.lang === "fr" ? "Exports" : "Exports",
+        state.lang === "fr" ? "Validations humaines" : "Human approvals",
+      ],
+      controlsTitle: state.lang === "fr" ? "Charger ou connecter une source" : "Load or connect a source",
+      controlsCopy: state.lang === "fr"
+        ? "Charge une demo ou connecte une source avant de configurer le workspace et les validations."
+        : "Load a demo or connect a source before configuring the workspace and approvals.",
+      emptyTitle: state.lang === "fr" ? "Charge un dataset ou connecte une source pour activer la gouvernance." : "Load a dataset or connect a source to activate governance.",
+      emptyCopy: state.lang === "fr"
+        ? "Tu verras ensuite les projets, connecteurs, artefacts exportes et validations humaines."
+        : "You will then see projects, connectors, exported artifacts, and human approvals.",
+      workflowVisible: false,
+    },
+  };
+  return themes[state.surfaceMode] || themes.decision;
+}
+
 function syncRouteSurface() {
   const locked = routeLockedSurface();
   if (!locked) return;
   state.surfaceMode = locked;
+  if (!state.routePresetApplied) {
+    state.marketProfile = ROUTE_DEFAULT_PROFILES[locked] || state.marketProfile;
+    state.routePresetApplied = true;
+  }
   const hashSection = window.location.hash.replace("#", "");
   if (!hashSection) return;
   const configs = currentSurfaceTabConfig()[locked] || [];
@@ -774,26 +891,27 @@ function classifyQuestion(question) {
 
 function renderStaticCopy() {
   const c = currentCopy();
+  const theme = routeTheme();
   const baselineMode = $("baseline-mode-select")?.value || "reference_row";
   const referenceIndex = $("reference-index-input")?.value || "0";
   const workflowGoal = $("workflow-goal-select")?.value || "pricing_decision";
   const optimizerGoal = $("optimizer-objective-select")?.value || "maximize_prediction";
   document.documentElement.lang = state.lang;
-  $("hero-eyebrow").textContent = c.heroEyebrow;
-  $("hero-copy").textContent = c.heroCopy;
+  $("hero-eyebrow").textContent = theme.heroEyebrow;
+  $("hero-copy").textContent = theme.heroCopy;
   $("positioning-audience-kicker").textContent = c.heroAudienceKicker;
-  $("positioning-audience-title").textContent = c.heroAudienceTitle;
-  $("positioning-audience-copy").textContent = c.heroAudienceCopy;
+  $("positioning-audience-title").textContent = theme.audienceTitle;
+  $("positioning-audience-copy").textContent = theme.audienceCopy;
   $("positioning-value-kicker").textContent = c.heroValueKicker;
-  $("positioning-value-title").textContent = c.heroValueTitle;
-  $("positioning-value-copy").textContent = c.heroValueCopy;
+  $("positioning-value-title").textContent = theme.valueTitle;
+  $("positioning-value-copy").textContent = theme.valueCopy;
   $("positioning-mode-kicker").textContent = c.heroModeKicker;
-  $("positioning-mode-title").textContent = c.heroModeTitle;
-  $("positioning-mode-copy").textContent = c.heroModeCopy;
-  $("hero-usecase-1").textContent = c.heroUsecase1;
-  $("hero-usecase-2").textContent = c.heroUsecase2;
-  $("hero-usecase-3").textContent = c.heroUsecase3;
-  $("hero-usecase-4").textContent = c.heroUsecase4;
+  $("positioning-mode-title").textContent = theme.modeTitle;
+  $("positioning-mode-copy").textContent = theme.modeCopy;
+  $("hero-usecase-1").textContent = theme.usecases[0];
+  $("hero-usecase-2").textContent = theme.usecases[1];
+  $("hero-usecase-3").textContent = theme.usecases[2];
+  $("hero-usecase-4").textContent = theme.usecases[3];
   $("persona-title").textContent = c.personaTitle;
   $("persona-copy").textContent = c.personaCopy;
   $("persona-revenue").textContent = c.personaRevenue;
@@ -810,8 +928,8 @@ function renderStaticCopy() {
   $("playbook-pricing").textContent = c.playbookPricing;
   $("playbook-growth").textContent = c.playbookGrowth;
   $("playbook-exec").textContent = c.playbookExec;
-  $("controls-title").textContent = c.controlsTitle;
-  $("controls-copy").textContent = c.controlsCopy;
+  $("controls-title").textContent = theme.controlsTitle;
+  $("controls-copy").textContent = theme.controlsCopy;
   $("query-title").textContent = c.queryTitle;
   $("sql-question-input").placeholder = c.queryPlaceholder;
   $("run-sql-query").textContent = c.queryRun;
@@ -852,8 +970,8 @@ function renderStaticCopy() {
   $("load-marketing").textContent = c.marketingDemo;
   $("upload-label").textContent = c.upload;
   $("empty-eyebrow").textContent = c.ready;
-  $("empty-title").textContent = c.emptyTitle;
-  $("empty-copy").textContent = c.emptyCopy;
+  $("empty-title").textContent = theme.emptyTitle;
+  $("empty-copy").textContent = theme.emptyCopy;
   $("decision-kicker").textContent = c.decisionKicker;
   $("decision-title").textContent = c.decisionTitle;
   $("decision-subtitle").textContent = c.decisionSubtitle;
@@ -937,6 +1055,12 @@ function renderStaticCopy() {
 
 function renderWorkflow() {
   const c = currentCopy();
+  if (!routeTheme().workflowVisible) {
+    $("workflow-strip").hidden = true;
+    $("workflow-steps").innerHTML = "";
+    return;
+  }
+  $("workflow-strip").hidden = false;
   const steps = [
     { key: "load", label: c.workflowLoad, complete: Boolean(state.dataset), active: !state.dataset },
     { key: "insights", label: c.workflowInsights, complete: Boolean(state.investigation), active: Boolean(state.dataset && !state.training) },
@@ -1001,8 +1125,8 @@ function applyRouteLayout() {
   const locked = routeLockedSurface();
   const visiblePanels = {
     decision: ["persona-panel", "playbook-panel", "controls-panel", "copilot-panel", "export-panel", "analysis-panel"],
-    builder: ["persona-panel", "playbook-panel", "controls-panel", "query-panel", "builder-panel", "export-panel"],
-    governance: ["persona-panel", "playbook-panel", "controls-panel", "platform-panel", "export-panel"],
+    builder: ["persona-panel", "controls-panel", "query-panel", "builder-panel", "export-panel"],
+    governance: ["persona-panel", "controls-panel", "platform-panel", "export-panel"],
   };
   const allowed = new Set(visiblePanels[state.surfaceMode] || visiblePanels.decision);
   ["persona-panel", "playbook-panel", "controls-panel", "copilot-panel", "query-panel", "builder-panel", "platform-panel", "export-panel", "analysis-panel"].forEach((panelId) => {
