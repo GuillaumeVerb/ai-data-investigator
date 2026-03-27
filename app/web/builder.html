@@ -57,60 +57,39 @@
         </div>
         <div class="positioning-grid">
           <article class="positioning-card">
-            <p class="small-meta" id="positioning-audience-kicker">Pour qui</p>
-            <strong id="positioning-audience-title">Revenue, pricing, croissance et consultants IA</strong>
-            <p id="positioning-audience-copy" class="panel-copy">
-              Pour les equipes qui doivent transformer des exports metier en recommandations claires et defendables.
+            <p class="small-meta">A quoi sert cette page</p>
+            <strong>Construire et tester les briques avancees</strong>
+            <p class="panel-copy">
+              Ici tu interroges les donnees en SQL, prepares les jeux de donnees et lances les ateliers IA utiles au workflow.
             </p>
           </article>
           <article class="positioning-card">
-            <p class="small-meta" id="positioning-value-kicker">Ce que ca fait</p>
-            <strong id="positioning-value-title">Investigue, simule et decide avec preuves</strong>
-            <p id="positioning-value-copy" class="panel-copy">
-              Le produit combine diagnostic, SQL, simulation, guardrails et evidence pack dans un meme workflow.
-            </p>
-          </article>
-          <article class="positioning-card">
-            <p class="small-meta" id="positioning-mode-kicker">Deux modes</p>
-            <strong id="positioning-mode-title">Copilote de decision + Studio Builder IA</strong>
-            <p id="positioning-mode-copy" class="panel-copy">
-              Une couche simple pour decider, une couche avancee pour builder, gouverner et exporter des copilotes.
+            <p class="small-meta">Quand venir ici</p>
+            <strong>Quand la page Copilote ne suffit plus</strong>
+            <p class="panel-copy">
+              Utilise cette page pour explorer, builder et verifier, pas pour faire une lecture executive rapide.
             </p>
           </article>
         </div>
       </header>
 
-      <section id="workflow-strip" class="workflow-strip">
-        <div id="workflow-steps" class="workflow-steps"></div>
-      </section>
-
       <div class="layout">
         <aside class="control-panel">
-          <div id="persona-panel" class="panel-card">
-            <p class="panel-title" id="persona-title">Parcours produit</p>
-            <p class="panel-copy" id="persona-copy">Choisis le profil acheteur et la couche produit a mettre en avant pendant la demo.</p>
-            <div class="button-stack">
-              <div class="mode-chip-row">
-                <button id="persona-revenue" class="ghost-btn active" type="button">Revenue / Pricing</button>
-                <button id="persona-builder" class="ghost-btn" type="button">Builder IA</button>
-                <button id="persona-analytics" class="ghost-btn" type="button">Equipe data</button>
+          <div class="panel-card quickstart-panel">
+            <p class="panel-title">Par quoi commencer</p>
+            <div class="guide-list">
+              <div class="guide-step">
+                <strong>1. Charge une demo ou un CSV</strong>
+                <p>Le SQL et les ateliers ont besoin d'un dataset actif.</p>
               </div>
-              <div id="surface-mode-row" class="mode-chip-row">
-                <button id="surface-decision" class="ghost-btn active" type="button">Copilote de decision</button>
-                <button id="surface-builder" class="ghost-btn" type="button">Studio Builder IA</button>
-                <button id="surface-governance" class="ghost-btn" type="button">Gouvernance</button>
+              <div class="guide-step">
+                <strong>2. Pose une question metier</strong>
+                <p>Commence par `Generer le SQL` pour voir rapidement si la donnee repond a la question.</p>
               </div>
-            </div>
-            <div id="persona-brief" class="answer-card"></div>
-          </div>
-
-          <div id="playbook-panel" class="panel-card">
-            <p class="panel-title" id="playbook-title">Playbooks demo</p>
-            <p class="panel-copy" id="playbook-copy">Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.</p>
-            <div class="button-stack">
-              <button id="playbook-pricing" class="secondary-btn" type="button">Decision tarifaire</button>
-              <button id="playbook-growth" class="ghost-btn" type="button">Optimisation croissance</button>
-              <button id="playbook-exec" class="ghost-btn" type="button">Revue de direction</button>
+              <div class="guide-step">
+                <strong>3. Lance un atelier IA si besoin</strong>
+                <p>Utilise ensuite les ateliers pour joindre, preparer, optimiser ou orchestrer.</p>
+              </div>
             </div>
           </div>
 
@@ -124,16 +103,6 @@
             <label class="upload-label" id="upload-label" for="file-input">Importer un CSV</label>
             <input id="file-input" type="file" accept=".csv" />
             <p id="status" class="status-line">Aucune donnee chargee.</p>
-          </div>
-
-          <div id="copilot-panel" class="panel-card">
-            <p class="panel-title" id="copilot-title">Copilote</p>
-            <textarea id="question-input" rows="5" placeholder="Faut-il augmenter le prix ? Quel segment prioriser ?"></textarea>
-            <button id="ask-copilot" class="primary-btn" type="button">Interroger le copilote</button>
-            <div id="copilot-feedback" class="inline-feedback stack">
-              <div class="small-meta" id="copilot-feedback-label">Reponse du copilote</div>
-              <div id="copilot-answer-inline" class="stack"></div>
-            </div>
           </div>
 
           <div id="query-panel" class="panel-card">
@@ -205,40 +174,6 @@
             </div>
           </div>
 
-          <div id="platform-panel" class="panel-card">
-            <p class="panel-title" id="platform-title">Plateforme et gouvernance</p>
-            <p class="panel-copy" id="platform-copy">Cree un workspace, connecte des sources, exporte des artefacts et ajoute une validation humaine.</p>
-            <input id="workspace-owner-input" type="text" placeholder="Nom du builder" />
-            <button id="create-user" class="ghost-btn" type="button">Creer l utilisateur</button>
-            <input id="project-name-input" type="text" placeholder="Nom du projet" />
-            <button id="create-project" class="ghost-btn" type="button">Creer le projet</button>
-            <input id="connector-name-input" type="text" placeholder="Nom du connecteur" />
-            <input id="connector-url-input" type="text" placeholder="URL CSV publique ou chemin sqlite" />
-            <button id="connect-import-csv" class="secondary-btn" type="button">Connecter et importer</button>
-            <div class="button-stack">
-              <button id="export-workflow-artifact" class="ghost-btn" type="button">Exporter le workflow</button>
-              <button id="export-policy-artifact" class="ghost-btn" type="button">Exporter la policy</button>
-            </div>
-            <input id="approval-title-input" type="text" placeholder="Nom de la validation" />
-            <div class="button-stack">
-              <button id="request-approval" class="ghost-btn" type="button">Demander une validation</button>
-              <button id="approve-latest" class="ghost-btn" type="button">Approuver la derniere</button>
-            </div>
-            <button id="refresh-platform" class="ghost-btn" type="button">Rafraichir la gouvernance</button>
-          </div>
-
-          <div id="export-panel" class="panel-card">
-            <p class="panel-title" id="export-title">Rapport executif</p>
-            <p class="panel-copy" id="export-copy">Exporte une synthese HTML a partager en revue client ou management.</p>
-            <button id="export-report" class="secondary-btn" type="button">Exporter le rapport</button>
-          </div>
-
-          <div id="analysis-panel" class="panel-card">
-            <p class="panel-title" id="analysis-title">Signal du moment</p>
-            <div id="focused-analysis" class="stack">
-              <div class="answer-card" id="focused-analysis-empty">Choisis une piste d'investigation pour afficher l'analyse detaillee.</div>
-            </div>
-          </div>
         </aside>
 
         <main class="content">

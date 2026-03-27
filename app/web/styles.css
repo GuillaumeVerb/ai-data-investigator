@@ -120,6 +120,33 @@ body {
   margin-bottom: 6px;
 }
 
+.quickstart-panel {
+  background: linear-gradient(180deg, rgba(244, 248, 244, 0.96), rgba(255, 252, 247, 0.98));
+}
+
+.guide-list {
+  display: grid;
+  gap: 12px;
+}
+
+.guide-step {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.guide-step strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.guide-step p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .workflow-steps,
 .confidence-grid {
   display: grid;
