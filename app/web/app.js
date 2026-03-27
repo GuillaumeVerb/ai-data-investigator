@@ -908,6 +908,16 @@ async function refreshDatasets() {
   }
 }
 
+async function restoreLatestDataset() {
+  if (state.dataset || !state.datasets.length) return;
+  const latestDataset = state.datasets[state.datasets.length - 1];
+  try {
+    await hydrateDataset(latestDataset);
+  } catch (_error) {
+    state.dataset = null;
+  }
+}
+
 function getGuidedSimulationChanges(referenceRow) {
   const changes = {};
   if (!referenceRow) return changes;
@@ -3152,6 +3162,7 @@ function focusInitialRouteTarget() {
 async function init() {
   await refreshHealth();
   await refreshDatasets();
+  await restoreLatestDataset();
   await refreshObservability();
   await refreshEvaluationConsole();
   await refreshPlatformOverview();
