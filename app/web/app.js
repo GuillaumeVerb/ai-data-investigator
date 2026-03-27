@@ -582,7 +582,52 @@ const copy = {
   },
 };
 
-const $ = (id) => document.getElementById(id);
+const NULL_CLASSLIST = {
+  add() {},
+  remove() {},
+  toggle() {},
+  contains() {
+    return false;
+  },
+};
+
+const NULL_ELEMENT = new Proxy(
+  {
+    value: "",
+    textContent: "",
+    innerHTML: "",
+    hidden: true,
+    placeholder: "",
+    dataset: {},
+    classList: NULL_CLASSLIST,
+    style: {},
+    nextElementSibling: null,
+    addEventListener() {},
+    removeEventListener() {},
+    scrollIntoView() {},
+    focus() {},
+    click() {},
+    appendChild() {},
+    querySelectorAll() {
+      return [];
+    },
+    querySelector() {
+      return null;
+    },
+  },
+  {
+    get(target, prop) {
+      if (prop in target) return target[prop];
+      return () => {};
+    },
+    set(target, prop, value) {
+      target[prop] = value;
+      return true;
+    },
+  },
+);
+
+const $ = (id) => document.getElementById(id) || NULL_ELEMENT;
 
 function currentCopy() {
   return copy[state.lang];
@@ -3123,4 +3168,11 @@ async function init() {
   focusInitialRouteTarget();
 }
 
-init();
+init().catch((error) => {
+  console.error("Frontend init failed", error);
+  const c = currentCopy();
+  const message = `${c.connectError} ${error?.message || "Unknown frontend error."}`;
+  setStatus(message, true);
+  renderCopilotInlineMessage(message);
+  renderQueryInlineMessage(message);
+});
