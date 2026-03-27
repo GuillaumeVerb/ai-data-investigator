@@ -203,6 +203,8 @@ const copy = {
     queryHistoryTitle: "Historique des requetes",
     queryHistoryEmpty: "Les requetes SQL executees apparaitront ici.",
     queryHistoryReplay: "Relancer",
+    queryFeedbackLabel: "Resultat SQL",
+    copilotFeedbackLabel: "Reponse du copilote",
     routeSqlDone: "Question routee vers SQL.",
     routePredictionDone: "Question routee vers prediction.",
     routeSimulationDone: "Question routee vers simulation.",
@@ -252,8 +254,8 @@ const copy = {
     runOrchestrationView: "Voir l orchestration",
     optimizerPrediction: "Maximiser la prediction",
     optimizerEfficiency: "Maximiser l efficience",
-    platformTitle: "Plateforme et gouvernance",
-    platformCopy: "Cree un workspace, connecte des sources, exporte des artefacts et ajoute une validation humaine.",
+    platformTitle: "Projets, connecteurs et validations",
+    platformCopy: "Configure l espace projet, les sources de donnees, les exports et les validations humaines.",
     platformKicker: "Plateforme",
     platformResultTitle: "Espace de travail et gouvernance",
     createUser: "Creer l utilisateur",
@@ -281,8 +283,8 @@ const copy = {
     policyExported: "Policy exportee.",
     approvalRequested: "Validation demandee.",
     approvalApproved: "Validation approuvee.",
-    personaTitle: "Parcours produit",
-    personaCopy: "Choisis le profil acheteur et la couche produit a mettre en avant pendant la demo.",
+    personaTitle: "Profil de demonstration",
+    personaCopy: "Choisis le type d interlocuteur a qui tu presentes cette page pour adapter le discours.",
     personaRevenue: "Revenue / Pricing",
     personaBuilder: "Builder IA",
     personaAnalytics: "Equipe data",
@@ -459,6 +461,8 @@ const copy = {
     queryHistoryTitle: "Query history",
     queryHistoryEmpty: "Executed SQL queries will appear here.",
     queryHistoryReplay: "Replay",
+    queryFeedbackLabel: "SQL result",
+    copilotFeedbackLabel: "Copilot answer",
     routeSqlDone: "Question routed to SQL.",
     routePredictionDone: "Question routed to prediction.",
     routeSimulationDone: "Question routed to simulation.",
@@ -508,8 +512,8 @@ const copy = {
     runOrchestrationView: "View orchestration",
     optimizerPrediction: "Maximize prediction",
     optimizerEfficiency: "Maximize efficiency",
-    platformTitle: "Platform & Governance",
-    platformCopy: "Create a workspace, connect a source, export artifacts, and request human approval.",
+    platformTitle: "Projects, connectors, and approvals",
+    platformCopy: "Configure the project space, data sources, exports, and human approvals.",
     platformKicker: "Platform",
     platformResultTitle: "Workspace and governance",
     createUser: "Create user",
@@ -537,8 +541,8 @@ const copy = {
     policyExported: "Policy exported.",
     approvalRequested: "Approval requested.",
     approvalApproved: "Approval approved.",
-    personaTitle: "Product path",
-    personaCopy: "Choose the buyer profile and the product layer to highlight during the demo.",
+    personaTitle: "Demo profile",
+    personaCopy: "Choose who you are presenting this page to so the story stays clear.",
     personaRevenue: "Revenue / Pricing",
     personaBuilder: "AI Builder",
     personaAnalytics: "Analytics team",
@@ -939,6 +943,7 @@ function renderStaticCopy() {
   $("run-sql-query").textContent = c.queryRun;
   $("route-query").textContent = c.queryRoute;
   $("query-router-copy").textContent = c.queryRouterCopy;
+  if ($("query-feedback-label")) $("query-feedback-label").textContent = c.queryFeedbackLabel;
   $("builder-studio-title").textContent = c.builderStudioTitle;
   $("builder-studio-copy").textContent = c.builderStudioCopy;
   $("run-join-assistant").textContent = c.runJoinAssistant;
@@ -1000,6 +1005,7 @@ function renderStaticCopy() {
   $("prepare-decision-engine").textContent = c.prepareEngine;
   $("run-decision-engine").textContent = c.runEngine;
   $("copilot-title").textContent = c.copilotTitle;
+  if ($("copilot-feedback-label")) $("copilot-feedback-label").textContent = c.copilotFeedbackLabel;
   $("analysis-title").textContent = c.analysisTitle;
   $("focused-analysis-empty").textContent = c.focusedAnalysisEmpty;
   $("ask-copilot").textContent = c.copilotAsk;
@@ -1684,24 +1690,36 @@ function renderEvidencePack() {
 
 function renderCopilot() {
   const c = currentCopy();
+  const renderTarget = (content) => {
+    $("copilot-answer").innerHTML = content;
+    if ($("copilot-answer-inline")) {
+      $("copilot-answer-inline").innerHTML = content;
+    }
+  };
   if (!state.copilot) {
-    $("copilot-answer").innerHTML = `<div class="answer-card">${c.noAnswer}</div>`;
+    renderTarget(`<div class="answer-card">${c.noAnswer}</div>`);
     return;
   }
-  $("copilot-answer").innerHTML = `
+  renderTarget(`
     <article class="answer-card">
       <strong>${state.copilot.short_answer || state.copilot.answer}</strong>
       <p>${state.copilot.answer}</p>
       <p><strong>${c.confidence}:</strong> ${state.copilot.confidence_level} (${state.copilot.confidence_score}/100)</p>
       <p><strong>${c.nextStep}:</strong><br />${(state.copilot.suggested_next_investigation || []).join("<br />")}</p>
     </article>
-  `;
+  `);
 }
 
 function renderSqlQuery() {
   const c = currentCopy();
+  const renderTarget = (content) => {
+    $("query-result").innerHTML = content;
+    if ($("query-result-inline")) {
+      $("query-result-inline").innerHTML = content;
+    }
+  };
   if (!state.sqlQuery) {
-    $("query-result").innerHTML = `<div class="answer-card">${c.queryEmpty}</div>`;
+    renderTarget(`<div class="answer-card">${c.queryEmpty}</div>`);
     return;
   }
   const rows = state.sqlQuery.result_preview || [];
@@ -1718,7 +1736,7 @@ function renderSqlQuery() {
   const warnings = (state.sqlQuery.warnings || []).length
     ? `<article class="answer-card"><strong>${c.queryWarning}</strong><p>${state.sqlQuery.warnings.join("<br />")}</p></article>`
     : "";
-  $("query-result").innerHTML = `
+  renderTarget(`
     <article class="answer-card">
       <strong>${c.querySql}</strong>
       <pre class="sql-block">${state.sqlQuery.sql}</pre>
@@ -1730,16 +1748,22 @@ function renderSqlQuery() {
     </article>
     ${warnings}
     ${tableHtml}
-  `;
+  `);
 }
 
 function renderSqlHistory() {
   const c = currentCopy();
+  const renderTarget = (content) => {
+    $("query-history").innerHTML = content;
+    if ($("query-history-inline")) {
+      $("query-history-inline").innerHTML = content;
+    }
+  };
   if (!state.sqlHistory.length) {
-    $("query-history").innerHTML = `<div class="answer-card">${c.queryHistoryEmpty}</div>`;
+    renderTarget(`<div class="answer-card">${c.queryHistoryEmpty}</div>`);
     return;
   }
-  $("query-history").innerHTML = state.sqlHistory
+  renderTarget(state.sqlHistory
     .map(
       (item, index) => `
         <article class="history-item">
@@ -1753,7 +1777,7 @@ function renderSqlHistory() {
         </article>
       `,
     )
-    .join("");
+    .join(""));
 }
 
 function renderBuilderOps() {

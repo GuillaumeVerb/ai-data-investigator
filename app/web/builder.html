@@ -130,6 +130,10 @@
             <p class="panel-title" id="copilot-title">Copilote</p>
             <textarea id="question-input" rows="5" placeholder="Faut-il augmenter le prix ? Quel segment prioriser ?"></textarea>
             <button id="ask-copilot" class="primary-btn" type="button">Interroger le copilote</button>
+            <div id="copilot-feedback" class="inline-feedback stack">
+              <div class="small-meta" id="copilot-feedback-label">Reponse du copilote</div>
+              <div id="copilot-answer-inline" class="stack"></div>
+            </div>
           </div>
 
           <div id="query-panel" class="panel-card">
@@ -140,6 +144,11 @@
               <button id="route-query" class="ghost-btn" type="button">Router la question</button>
             </div>
             <p id="query-router-copy" class="panel-copy">Choisit automatiquement entre SQL, prediction, simulation ou copilote.</p>
+            <div id="query-feedback" class="inline-feedback stack">
+              <div class="small-meta" id="query-feedback-label">Resultat SQL</div>
+              <div id="query-result-inline" class="stack"></div>
+              <div id="query-history-inline" class="history-list"></div>
+            </div>
           </div>
 
           <div id="builder-panel" class="panel-card">
