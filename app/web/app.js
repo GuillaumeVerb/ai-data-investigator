@@ -3159,13 +3159,16 @@ function focusInitialRouteTarget() {
   window.setTimeout(() => focusSection(target), 120);
 }
 
-async function init() {
+async function bootAppData() {
   await refreshHealth();
   await refreshDatasets();
   await restoreLatestDataset();
   await refreshObservability();
   await refreshEvaluationConsole();
   await refreshPlatformOverview();
+}
+
+async function init() {
   bindEvents();
   applyHashToSurfaceState();
   window.addEventListener("hashchange", () => {
@@ -3175,8 +3178,11 @@ async function init() {
       window.setTimeout(() => focusSection(target), 80);
     }
   });
+  setStatus(currentCopy().loadingProfile);
   render();
   focusInitialRouteTarget();
+  await bootAppData();
+  render();
 }
 
 init().catch((error) => {
