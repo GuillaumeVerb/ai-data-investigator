@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
@@ -131,35 +131,33 @@ if WEB_DIR.exists():
     app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
-def render_frontend(page: str) -> HTMLResponse:
-    html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    body_tag = f'<body data-page="{page}">'
-    return HTMLResponse(html.replace("<body>", body_tag, 1))
+def frontend_file(filename: str) -> FileResponse:
+    return FileResponse(WEB_DIR / filename)
 
 
 @app.get("/", include_in_schema=False)
-def frontend() -> HTMLResponse:
-    return render_frontend("decision")
+def frontend() -> FileResponse:
+    return frontend_file("decision.html")
 
 
 @app.get("/decision", include_in_schema=False)
-def frontend_decision() -> HTMLResponse:
-    return render_frontend("decision")
+def frontend_decision() -> FileResponse:
+    return frontend_file("decision.html")
 
 
 @app.get("/builder", include_in_schema=False)
-def frontend_builder() -> HTMLResponse:
-    return render_frontend("builder")
+def frontend_builder() -> FileResponse:
+    return frontend_file("builder.html")
 
 
 @app.get("/gouvernance", include_in_schema=False)
-def frontend_governance() -> HTMLResponse:
-    return render_frontend("governance")
+def frontend_governance() -> FileResponse:
+    return frontend_file("governance.html")
 
 
 @app.get("/governance", include_in_schema=False)
-def frontend_governance_alias() -> HTMLResponse:
-    return render_frontend("governance")
+def frontend_governance_alias() -> FileResponse:
+    return frontend_file("governance.html")
 
 
 @app.get("/health")

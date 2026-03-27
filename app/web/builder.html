@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Data Investigator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  </head>
+  <body data-page="builder">
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-top">
+          <div>
+            <p class="eyebrow" id="hero-eyebrow">Studio Builder IA</p>
+            <h1 id="hero-title">Studio Builder IA</h1>
+          </div>
+          <div class="hero-top-actions">
+            <nav class="page-nav" aria-label="Navigation produit">
+              <a id="nav-decision" class="page-nav-link" href="/decision">Copilote</a>
+              <a id="nav-builder" class="page-nav-link" href="/builder">Builder</a>
+              <a id="nav-governance" class="page-nav-link" href="/gouvernance">Gouvernance</a>
+            </nav>
+            <div class="lang-switch">
+              <button id="lang-fr" class="ghost-btn active" type="button">FR</button>
+              <button id="lang-en" class="ghost-btn" type="button">EN</button>
+            </div>
+          </div>
+        </div>
+        <p id="hero-copy" class="hero-copy">
+          Une page outillage pour construire des workflows decisionnels avec SQL, agents, preparation, orchestration et evaluation.
+        </p>
+        <div class="pill-row hero-pill-row">
+          <span id="hero-usecase-1" class="pill">SQL genere</span>
+          <span id="hero-usecase-2" class="pill">Jointures assistees</span>
+          <span id="hero-usecase-3" class="pill">Prep agent</span>
+          <span id="hero-usecase-4" class="pill">Workflow builder</span>
+        </div>
+        <div id="hero-band" class="hero-band">
+          <div class="hero-chip">
+            <span class="small-meta" id="band-status-label">System</span>
+            <strong id="band-status-value">API operationnelle</strong>
+          </div>
+          <div class="hero-chip">
+            <span class="small-meta" id="band-llm-label">LLM</span>
+            <strong id="band-llm-value">OpenAI connecte</strong>
+          </div>
+          <div class="hero-chip">
+            <span class="small-meta" id="band-mode-label">Positionnement</span>
+            <strong id="band-mode-value">Accelerateur de copilotes de decision</strong>
+          </div>
+        </div>
+        <div class="positioning-grid">
+          <article class="positioning-card">
+            <p class="small-meta" id="positioning-audience-kicker">Pour qui</p>
+            <strong id="positioning-audience-title">Revenue, pricing, croissance et consultants IA</strong>
+            <p id="positioning-audience-copy" class="panel-copy">
+              Pour les equipes qui doivent transformer des exports metier en recommandations claires et defendables.
+            </p>
+          </article>
+          <article class="positioning-card">
+            <p class="small-meta" id="positioning-value-kicker">Ce que ca fait</p>
+            <strong id="positioning-value-title">Investigue, simule et decide avec preuves</strong>
+            <p id="positioning-value-copy" class="panel-copy">
+              Le produit combine diagnostic, SQL, simulation, guardrails et evidence pack dans un meme workflow.
+            </p>
+          </article>
+          <article class="positioning-card">
+            <p class="small-meta" id="positioning-mode-kicker">Deux modes</p>
+            <strong id="positioning-mode-title">Copilote de decision + Studio Builder IA</strong>
+            <p id="positioning-mode-copy" class="panel-copy">
+              Une couche simple pour decider, une couche avancee pour builder, gouverner et exporter des copilotes.
+            </p>
+          </article>
+        </div>
+      </header>
+
+      <section id="workflow-strip" class="workflow-strip">
+        <div id="workflow-steps" class="workflow-steps"></div>
+      </section>
+
+      <div class="layout">
+        <aside class="control-panel">
+          <div id="persona-panel" class="panel-card">
+            <p class="panel-title" id="persona-title">Parcours produit</p>
+            <p class="panel-copy" id="persona-copy">Choisis le profil acheteur et la couche produit a mettre en avant pendant la demo.</p>
+            <div class="button-stack">
+              <div class="mode-chip-row">
+                <button id="persona-revenue" class="ghost-btn active" type="button">Revenue / Pricing</button>
+                <button id="persona-builder" class="ghost-btn" type="button">Builder IA</button>
+                <button id="persona-analytics" class="ghost-btn" type="button">Equipe data</button>
+              </div>
+              <div id="surface-mode-row" class="mode-chip-row">
+                <button id="surface-decision" class="ghost-btn active" type="button">Copilote de decision</button>
+                <button id="surface-builder" class="ghost-btn" type="button">Studio Builder IA</button>
+                <button id="surface-governance" class="ghost-btn" type="button">Gouvernance</button>
+              </div>
+            </div>
+            <div id="persona-brief" class="answer-card"></div>
+          </div>
+
+          <div id="playbook-panel" class="panel-card">
+            <p class="panel-title" id="playbook-title">Playbooks demo</p>
+            <p class="panel-copy" id="playbook-copy">Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.</p>
+            <div class="button-stack">
+              <button id="playbook-pricing" class="secondary-btn" type="button">Decision tarifaire</button>
+              <button id="playbook-growth" class="ghost-btn" type="button">Optimisation croissance</button>
+              <button id="playbook-exec" class="ghost-btn" type="button">Revue de direction</button>
+            </div>
+          </div>
+
+          <div id="controls-panel" class="panel-card">
+            <p class="panel-title" id="controls-title">Demarrer</p>
+            <p class="panel-copy" id="controls-copy">Charge une demo ou importe un CSV pour lancer l'investigation.</p>
+            <div class="button-stack">
+              <button id="load-sales" class="primary-btn" type="button">Charger la demo ventes</button>
+              <button id="load-marketing" class="secondary-btn" type="button">Charger la demo marketing</button>
+            </div>
+            <label class="upload-label" id="upload-label" for="file-input">Importer un CSV</label>
+            <input id="file-input" type="file" accept=".csv" />
+            <p id="status" class="status-line">Aucune donnee chargee.</p>
+          </div>
+
+          <div id="copilot-panel" class="panel-card">
+            <p class="panel-title" id="copilot-title">Copilote</p>
+            <textarea id="question-input" rows="5" placeholder="Faut-il augmenter le prix ? Quel segment prioriser ?"></textarea>
+            <button id="ask-copilot" class="primary-btn" type="button">Interroger le copilote</button>
+          </div>
+
+          <div id="query-panel" class="panel-card">
+            <p class="panel-title" id="query-title">Interroger les donnees</p>
+            <textarea id="sql-question-input" rows="4" placeholder="Quel est le revenu moyen par region ?"></textarea>
+            <div class="button-stack">
+              <button id="run-sql-query" class="secondary-btn" type="button">Generer le SQL</button>
+              <button id="route-query" class="ghost-btn" type="button">Router la question</button>
+            </div>
+            <p id="query-router-copy" class="panel-copy">Choisit automatiquement entre SQL, prediction, simulation ou copilote.</p>
+          </div>
+
+          <div id="builder-panel" class="panel-card">
+            <p class="panel-title" id="builder-studio-title">Studio Builder IA</p>
+            <p class="panel-copy" id="builder-studio-copy">Construis les briques avancees: SQL, jointures, couche semantique, workflows, policies, observabilite et gouvernance.</p>
+            <div class="button-stack">
+              <button id="run-join-assistant" class="secondary-btn" type="button">Analyser les jointures</button>
+              <button id="run-semantic-layer" class="ghost-btn" type="button">Construire la couche semantique</button>
+              <button id="run-prep-agent" class="ghost-btn" type="button">Lancer le prep agent</button>
+            </div>
+            <select id="optimizer-objective-select">
+              <option value="maximize_prediction">Maximiser la prediction</option>
+              <option value="maximize_efficiency">Maximiser l efficience</option>
+            </select>
+            <button id="run-quant-optimizer" class="secondary-btn" type="button">Lancer l optimizer</button>
+            <button id="run-constraint-solver" class="ghost-btn" type="button">Lancer le constraint solver</button>
+            <button id="run-experiment-designer" class="ghost-btn" type="button">Construire les experiments</button>
+            <button id="run-policy-engine" class="ghost-btn" type="button">Lancer le policy engine</button>
+            <button id="run-semantic-kpi-registry" class="ghost-btn" type="button">Construire le registre KPI</button>
+            <button id="run-orchestration-view" class="ghost-btn" type="button">Voir l orchestration</button>
+            <select id="workflow-goal-select">
+              <option value="pricing_decision">Decision tarifaire</option>
+              <option value="diagnosis">Diagnostic</option>
+              <option value="marketing_optimization">Optimisation marketing</option>
+              <option value="segment_prioritization">Priorisation segment</option>
+            </select>
+            <button id="run-workflow-builder" class="primary-btn" type="button">Construire le workflow</button>
+            <button id="run-evaluation-console" class="ghost-btn" type="button">Rafraichir l evaluation</button>
+          </div>
+
+          <div id="platform-panel" class="panel-card">
+            <p class="panel-title" id="platform-title">Plateforme et gouvernance</p>
+            <p class="panel-copy" id="platform-copy">Cree un workspace, connecte des sources, exporte des artefacts et ajoute une validation humaine.</p>
+            <input id="workspace-owner-input" type="text" placeholder="Nom du builder" />
+            <button id="create-user" class="ghost-btn" type="button">Creer l utilisateur</button>
+            <input id="project-name-input" type="text" placeholder="Nom du projet" />
+            <button id="create-project" class="ghost-btn" type="button">Creer le projet</button>
+            <input id="connector-name-input" type="text" placeholder="Nom du connecteur" />
+            <input id="connector-url-input" type="text" placeholder="URL CSV publique ou chemin sqlite" />
+            <button id="connect-import-csv" class="secondary-btn" type="button">Connecter et importer</button>
+            <div class="button-stack">
+              <button id="export-workflow-artifact" class="ghost-btn" type="button">Exporter le workflow</button>
+              <button id="export-policy-artifact" class="ghost-btn" type="button">Exporter la policy</button>
+            </div>
+            <input id="approval-title-input" type="text" placeholder="Nom de la validation" />
+            <div class="button-stack">
+              <button id="request-approval" class="ghost-btn" type="button">Demander une validation</button>
+              <button id="approve-latest" class="ghost-btn" type="button">Approuver la derniere</button>
+            </div>
+            <button id="refresh-platform" class="ghost-btn" type="button">Rafraichir la gouvernance</button>
+          </div>
+
+          <div id="export-panel" class="panel-card">
+            <p class="panel-title" id="export-title">Rapport executif</p>
+            <p class="panel-copy" id="export-copy">Exporte une synthese HTML a partager en revue client ou management.</p>
+            <button id="export-report" class="secondary-btn" type="button">Exporter le rapport</button>
+          </div>
+
+          <div id="analysis-panel" class="panel-card">
+            <p class="panel-title" id="analysis-title">Signal du moment</p>
+            <div id="focused-analysis" class="stack">
+              <div class="answer-card" id="focused-analysis-empty">Choisis une piste d'investigation pour afficher l'analyse detaillee.</div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="content">
+          <section id="empty-state" class="panel-card empty-state">
+            <p class="eyebrow" id="empty-eyebrow">Ready for demo</p>
+            <h2 id="empty-title">Charge un dataset pour afficher la synthese decisionnelle.</h2>
+            <p id="empty-copy">
+              L'interface affichera ensuite les insights, le signal principal, un chart cle et le copilote.
+            </p>
+          </section>
+
+          <section id="dashboard-tabs" class="dashboard-tabs" hidden>
+            <div id="dashboard-tab-group" class="dashboard-tab-group">
+              <button id="dashboard-tab-decision" class="ghost-btn active" type="button">Copilote de decision</button>
+              <button id="dashboard-tab-builder" class="ghost-btn" type="button">Studio Builder IA</button>
+              <button id="dashboard-tab-governance" class="ghost-btn" type="button">Gouvernance</button>
+            </div>
+            <div id="dashboard-mode-summary" class="dashboard-mode-summary">
+              <span class="small-meta" id="dashboard-mode-label">Vue active</span>
+              <strong id="dashboard-mode-title">Copilote de decision</strong>
+              <p id="dashboard-mode-copy" class="panel-copy">Vue dirigeant pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.</p>
+            </div>
+          </section>
+
+          <section id="content-tabs" class="content-tabs" hidden></section>
+
+          <section id="dashboard" class="dashboard" hidden>
+            <section id="section-decision-summary" class="decision-shell surface-decision">
+              <div class="section-head">
+                <p class="eyebrow" id="decision-kicker">Synthese de decision</p>
+                <h2 id="decision-title">Synthese decisionnelle</h2>
+                <p id="decision-subtitle" class="section-copy">
+                  Les 5 messages a retenir pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.
+                </p>
+              </div>
+              <div id="decision-cards" class="decision-grid"></div>
+            </section>
+
+            <section id="section-confidence" class="panel-card surface-decision">
+              <div class="section-head">
+                <p class="eyebrow" id="confidence-kicker">Confiance</p>
+                <h2 id="confidence-title">Confiance et limites</h2>
+              </div>
+              <div id="confidence-grid" class="confidence-grid"></div>
+            </section>
+
+            <section id="section-snapshot" class="panel-card surface-decision surface-builder surface-governance">
+              <div class="section-head">
+                <p class="eyebrow" id="snapshot-kicker">Vue business</p>
+                <h2 id="snapshot-title">Vue d'ensemble</h2>
+              </div>
+              <div id="dataset-metrics" class="metric-grid"></div>
+              <details class="details-block">
+                <summary id="preview-summary">Apercu des donnees</summary>
+                <div class="table-wrap">
+                  <table id="preview-table"></table>
+                </div>
+              </details>
+            </section>
+
+            <section id="section-insights" class="panel-card surface-decision">
+              <div class="section-head">
+                <p class="eyebrow" id="insights-kicker">Ce qui compte maintenant</p>
+                <h2 id="insights-title">Insights prioritaires</h2>
+              </div>
+              <div id="insights-grid" class="insight-grid"></div>
+            </section>
+
+            <section id="section-suggestions" class="panel-card surface-decision">
+              <div class="section-head">
+                <p class="eyebrow" id="suggestions-kicker">Pistes d investigation</p>
+                <h2 id="suggestions-title">Ou investiguer ensuite</h2>
+              </div>
+              <div id="suggestions-grid" class="suggestion-grid"></div>
+            </section>
+
+            <section id="section-charts" class="panel-card surface-decision">
+              <div class="section-head">
+                <p class="eyebrow" id="chart-kicker">Graphiques cles</p>
+                <h2 id="chart-title">Signal principal</h2>
+              </div>
+              <div class="chart-grid">
+                <div>
+                  <div id="chart-story" class="story-box"></div>
+                  <div id="chart-host" class="chart-host"></div>
+                </div>
+                <div>
+                  <div id="chart-story-secondary" class="story-box"></div>
+                  <div id="chart-host-secondary" class="chart-host"></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="section-prediction" class="panel-card surface-decision surface-builder">
+              <div class="section-head">
+                <p class="eyebrow" id="prediction-kicker">Prediction</p>
+                <h2 id="prediction-title">Moteur predictif</h2>
+              </div>
+              <div class="prediction-row">
+                <select id="target-select"></select>
+                <button id="train-model" class="secondary-btn" type="button">Entrainer le modele</button>
+              </div>
+              <div id="training-summary" class="stack"></div>
+            </section>
+
+            <section id="section-simulation" class="panel-card surface-decision surface-builder">
+              <div class="section-head">
+                <p class="eyebrow" id="simulation-kicker">Simulation de scenario</p>
+                <h2 id="simulation-title">Simulation guidee</h2>
+              </div>
+              <div class="prediction-row">
+                <button id="run-guided-simulation" class="secondary-btn" type="button">Lancer le scenario guide</button>
+                <div id="simulation-status" class="small-meta"></div>
+              </div>
+              <div id="simulation-summary" class="stack"></div>
+            </section>
+
+            <section id="section-engine" class="panel-card surface-decision surface-builder">
+              <div class="section-head">
+                <p class="eyebrow" id="engine-kicker">Moteur de decision</p>
+                <h2 id="engine-title">Moteur de decision</h2>
+                <p id="engine-copy" class="section-copy">Compare deux scenarios, visualise le risque et fais remonter la meilleure action.</p>
+              </div>
+              <div class="builder-toolbar">
+                <select id="baseline-mode-select"></select>
+                <input id="reference-index-input" type="number" min="0" step="1" value="0" />
+                <button id="prepare-decision-engine" class="secondary-btn" type="button">Preparer les controles</button>
+              </div>
+              <div id="decision-builder" class="stack"></div>
+              <button id="run-decision-engine" class="primary-btn" type="button">Lancer le moteur de decision</button>
+              <div id="decision-result" class="stack"></div>
+            </section>
+
+            <section id="section-actions" class="panel-card surface-decision">
+              <div class="section-head">
+                <p class="eyebrow" id="actions-kicker">Actions recommandees</p>
+                <h2 id="actions-title">Actions recommandees</h2>
+              </div>
+              <div id="actions-grid" class="insight-grid"></div>
+            </section>
+
+            <section id="section-copilot" class="panel-card surface-decision">
+              <div class="section-head">
+                <p class="eyebrow" id="copilot-result-kicker">Reponse du copilote</p>
+                <h2 id="copilot-result-title">Reponse du copilote</h2>
+              </div>
+              <div id="copilot-answer" class="stack"></div>
+            </section>
+
+            <section id="section-query" class="panel-card surface-builder">
+              <div class="section-head">
+                <p class="eyebrow" id="query-kicker">AI Builder</p>
+                <h2 id="query-result-title">Question metier vers SQL</h2>
+              </div>
+              <div class="result-toolbar">
+                <button id="explain-sql" class="ghost-btn" type="button">Expliquer ce SQL</button>
+                <button id="export-query-csv" class="ghost-btn" type="button">Exporter CSV</button>
+              </div>
+              <div id="query-result" class="stack"></div>
+              <div class="section-head history-head">
+                <p class="eyebrow" id="query-history-kicker">Historique</p>
+                <h3 id="query-history-title">Historique des requetes</h3>
+              </div>
+              <div id="query-history" class="history-list"></div>
+              <div class="section-head history-head">
+                <p class="eyebrow" id="builder-ops-kicker">Operations du builder</p>
+                <h3 id="builder-ops-title">Pilotage AI Builder</h3>
+              </div>
+              <div id="builder-ops" class="metric-grid"></div>
+            </section>
+
+            <section id="section-builder-studio" class="panel-card surface-builder">
+              <div class="section-head">
+                <p class="eyebrow" id="builder-studio-kicker">Studio Builder IA</p>
+                <h2 id="builder-studio-result-title">Briques du builder</h2>
+              </div>
+              <div id="builder-studio-grid" class="suggestion-grid builder-grid">
+                <div id="join-assistant-result" class="stack"></div>
+                <div id="semantic-layer-result" class="stack"></div>
+                <div id="prep-agent-result" class="stack"></div>
+                <div id="workflow-builder-result" class="stack"></div>
+                <div id="quant-optimizer-result" class="stack"></div>
+                <div id="observability-result" class="stack"></div>
+                <div id="constraint-solver-result" class="stack"></div>
+                <div id="experiment-designer-result" class="stack"></div>
+                <div id="evaluation-console-result" class="stack"></div>
+                <div id="policy-engine-result" class="stack"></div>
+                <div id="semantic-kpi-registry-result" class="stack"></div>
+                <div id="orchestration-view-result" class="stack"></div>
+              </div>
+            </section>
+
+            <section id="section-platform" class="panel-card surface-builder surface-governance">
+              <div class="section-head">
+                <p class="eyebrow" id="platform-kicker">Plateforme</p>
+                <h2 id="platform-result-title">Espace de travail et gouvernance</h2>
+              </div>
+              <div id="platform-overview-grid" class="suggestion-grid builder-grid">
+                <div id="workspace-result" class="stack"></div>
+                <div id="connector-platform-result" class="stack"></div>
+                <div id="artifact-export-result" class="stack"></div>
+                <div id="approval-result" class="stack"></div>
+              </div>
+            </section>
+
+            <section id="section-evidence" class="panel-card surface-decision surface-builder surface-governance">
+              <div class="section-head">
+                <p class="eyebrow" id="evidence-kicker">Pack de preuves</p>
+                <h2 id="evidence-title">Pack de preuves</h2>
+              </div>
+              <details class="details-block">
+                <summary id="evidence-summary">Afficher les signaux utilises</summary>
+                <div id="evidence-pack" class="evidence-grid"></div>
+              </details>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
