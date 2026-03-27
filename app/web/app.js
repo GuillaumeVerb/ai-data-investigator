@@ -593,6 +593,7 @@ function routeTheme() {
   const c = currentCopy();
   const themes = {
     decision: {
+      heroTitle: "AI Data Investigator",
       heroEyebrow: state.lang === "fr" ? "Copilote de decision" : "Decision copilot",
       heroCopy: state.lang === "fr"
         ? "Une interface dirigeant pour comprendre ce qui change, tester des scenarios et recommander une action claire avec niveau de confiance."
@@ -626,6 +627,7 @@ function routeTheme() {
       workflowVisible: true,
     },
     builder: {
+      heroTitle: state.lang === "fr" ? "Studio Builder IA" : "AI Builder Studio",
       heroEyebrow: state.lang === "fr" ? "Studio Builder IA" : "AI Builder Studio",
       heroCopy: state.lang === "fr"
         ? "Une page outillage pour construire des workflows decisionnels avec SQL, agents, preparation, orchestration et evaluation."
@@ -659,6 +661,7 @@ function routeTheme() {
       workflowVisible: false,
     },
     governance: {
+      heroTitle: state.lang === "fr" ? "Gouvernance des copilotes" : "Copilot Governance",
       heroEyebrow: state.lang === "fr" ? "Gouvernance des copilotes" : "Copilot governance",
       heroCopy: state.lang === "fr"
         ? "Une page plateforme pour cadrer projets, connecteurs, artefacts, validations humaines et reutilisation des workflows."
@@ -897,6 +900,7 @@ function renderStaticCopy() {
   const workflowGoal = $("workflow-goal-select")?.value || "pricing_decision";
   const optimizerGoal = $("optimizer-objective-select")?.value || "maximize_prediction";
   document.documentElement.lang = state.lang;
+  $("hero-title").textContent = theme.heroTitle;
   $("hero-eyebrow").textContent = theme.heroEyebrow;
   $("hero-copy").textContent = theme.heroCopy;
   $("positioning-audience-kicker").textContent = c.heroAudienceKicker;
@@ -1148,8 +1152,6 @@ function currentSurfaceTabConfig() {
     builder: [
       { key: "sql", label: c.tabSql, sections: ["section-query"] },
       { key: "studio", label: c.tabStudio, sections: ["section-builder-studio"] },
-      { key: "modeling", label: c.tabModeling, sections: ["section-prediction", "section-simulation", "section-engine"] },
-      { key: "platform", label: c.tabPlatform, sections: ["section-platform"] },
     ],
     governance: [
       { key: "platform", label: c.tabPlatform, sections: ["section-platform"] },
@@ -2126,7 +2128,7 @@ async function trainModel() {
     state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().trainingDone);
     await prepareDecisionEngine();
-    switchSurface("decision", "section-prediction");
+    goToSurface("decision", "section-prediction");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -2150,7 +2152,7 @@ async function runGuidedSimulation() {
     state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().simulationReady);
     renderSimulation();
-    switchSurface("decision", "section-simulation");
+    goToSurface("decision", "section-simulation");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -2176,7 +2178,7 @@ async function prepareDecisionEngine() {
     setStatus(currentCopy().decisionReady);
     renderDecisionBuilder();
     renderDecisionResult();
-    switchSurface("decision", "section-engine");
+    goToSurface("decision", "section-engine");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -2203,7 +2205,7 @@ async function runDecisionEngine() {
     });
     setStatus(currentCopy().decisionReady);
     renderDecisionResult();
-    switchSurface("decision", "section-engine");
+    goToSurface("decision", "section-engine");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -2254,7 +2256,7 @@ async function askCopilot(questionOverride = null) {
     state.builderOps.lastLatencyMs = Math.round(performance.now() - startedAt);
     setStatus(currentCopy().askDone);
     render();
-    switchSurface("decision", "section-copilot");
+    goToSurface("decision", "section-copilot");
   } catch (error) {
     setStatus(`${currentCopy().connectError} ${error.message}`, true);
   }
@@ -2279,7 +2281,7 @@ async function exportReport() {
     });
     downloadHtml(`${report.title || "ai-data-investigator-report"}.html`, report.html_content);
     setStatus(c.exportReady);
-    switchSurface("decision", "section-evidence");
+    goToSurface("decision", "section-evidence");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2325,7 +2327,7 @@ async function runSqlQuery(questionOverride = null) {
     renderSqlQuery();
     renderSqlHistory();
     renderObservability();
-    switchSurface("builder", "section-query");
+    goToSurface("builder", "section-query");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2360,7 +2362,7 @@ async function explainCurrentSql() {
     renderSqlQuery();
     renderSqlHistory();
     renderBuilderOps();
-    switchSurface("builder", "section-query");
+    goToSurface("builder", "section-query");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2381,7 +2383,7 @@ function replaySqlHistory(index) {
   state.builderOps.usedTables = entry.used_tables || [];
   renderSqlQuery();
   renderBuilderOps();
-  switchSurface("builder", "section-query");
+  goToSurface("builder", "section-query");
 }
 
 async function routeQuestion() {
@@ -2433,7 +2435,7 @@ async function runJoinAssistant() {
     await refreshObservability();
     renderJoinAssistant();
     renderObservability();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2452,7 +2454,7 @@ async function runSemanticLayer() {
     await refreshObservability();
     renderSemanticLayer();
     renderObservability();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2471,7 +2473,7 @@ async function runPrepAgent() {
     await refreshObservability();
     renderPrepAgent();
     renderObservability();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2495,7 +2497,7 @@ async function runWorkflowBuilder() {
     await refreshObservability();
     renderWorkflowBuilder();
     renderObservability();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2519,7 +2521,7 @@ async function runQuantOptimizer() {
     await refreshObservability();
     renderQuantOptimizer();
     renderObservability();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2562,7 +2564,7 @@ async function createWorkspaceUser() {
     await refreshPlatformOverview();
     renderPlatformOverview();
     setStatus(c.userCreated);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2582,7 +2584,7 @@ async function createWorkspaceProject() {
     await refreshPlatformOverview();
     renderPlatformOverview();
     setStatus(c.projectCreated);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2621,7 +2623,7 @@ async function connectAndImportCsv() {
     renderPlatformOverview();
     await hydrateDataset(dataset);
     setStatus(c.connectorImported);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2646,7 +2648,7 @@ async function exportWorkflowArtifact() {
     await refreshPlatformOverview();
     renderPlatformOverview();
     setStatus(c.workflowExported);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2670,7 +2672,7 @@ async function exportPolicyArtifact() {
     await refreshPlatformOverview();
     renderPlatformOverview();
     setStatus(c.policyExported);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2700,7 +2702,7 @@ async function requestHumanApproval() {
     await refreshPlatformOverview();
     renderPlatformOverview();
     setStatus(c.approvalRequested);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2723,7 +2725,7 @@ async function approveLatestRequest() {
     await refreshPlatformOverview();
     renderPlatformOverview();
     setStatus(c.approvalApproved);
-    switchSurface("governance", "section-platform");
+    goToSurface("governance", "section-platform");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2749,7 +2751,7 @@ async function runConstraintSolver() {
     renderConstraintSolver();
     renderObservability();
     renderEvaluationConsole();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2774,7 +2776,7 @@ async function runExperimentDesigner() {
     renderExperimentDesigner();
     renderObservability();
     renderEvaluationConsole();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2785,7 +2787,7 @@ async function runEvaluationConsole() {
   await refreshEvaluationConsole();
   setStatus(c.evaluationConsoleTitle);
   renderEvaluationConsole();
-  switchSurface("builder", "section-builder-studio");
+  goToSurface("builder", "section-builder-studio");
 }
 
 async function runPolicyEngine() {
@@ -2807,7 +2809,7 @@ async function runPolicyEngine() {
     renderPolicyEngine();
     renderObservability();
     renderEvaluationConsole();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2831,7 +2833,7 @@ async function runSemanticKpiRegistry() {
     renderSemanticKpiRegistry();
     renderObservability();
     renderEvaluationConsole();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
@@ -2850,7 +2852,7 @@ async function runOrchestrationView() {
     });
     setStatus(c.orchestrationViewTitle);
     renderOrchestrationView();
-    switchSurface("builder", "section-builder-studio");
+    goToSurface("builder", "section-builder-studio");
   } catch (error) {
     setStatus(`${c.connectError} ${error.message}`, true);
   }
