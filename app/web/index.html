@@ -51,7 +51,7 @@
         <div class="positioning-grid">
           <article class="positioning-card">
             <p class="small-meta" id="positioning-audience-kicker">Pour qui</p>
-            <strong id="positioning-audience-title">Revenue, pricing, growth et consultants IA</strong>
+            <strong id="positioning-audience-title">Revenue, pricing, croissance et consultants IA</strong>
             <p id="positioning-audience-copy" class="panel-copy">
               Pour les equipes qui doivent transformer des exports metier en recommandations claires et defendables.
             </p>
@@ -65,7 +65,7 @@
           </article>
           <article class="positioning-card">
             <p class="small-meta" id="positioning-mode-kicker">Deux modes</p>
-            <strong id="positioning-mode-title">Decision Copilot + AI Builder Studio</strong>
+            <strong id="positioning-mode-title">Copilote de decision + Studio Builder IA</strong>
             <p id="positioning-mode-copy" class="panel-copy">
               Une couche simple pour decider, une couche avancee pour builder, gouverner et exporter des copilotes.
             </p>
@@ -103,7 +103,7 @@
             <div class="button-stack">
               <button id="playbook-pricing" class="secondary-btn" type="button">Decision tarifaire</button>
               <button id="playbook-growth" class="ghost-btn" type="button">Optimisation croissance</button>
-              <button id="playbook-exec" class="ghost-btn" type="button">Revue executive</button>
+              <button id="playbook-exec" class="ghost-btn" type="button">Revue de direction</button>
             </div>
           </div>
 
@@ -137,7 +137,7 @@
 
           <div class="panel-card">
             <p class="panel-title" id="builder-studio-title">Studio Builder IA</p>
-            <p class="panel-copy" id="builder-studio-copy">Construis les briques avancees: SQL, jointures, semantic layer, workflow, policies, observability et gouvernance.</p>
+            <p class="panel-copy" id="builder-studio-copy">Construis les briques avancees: SQL, jointures, couche semantique, workflows, policies, observabilite et gouvernance.</p>
             <div class="button-stack">
               <button id="run-join-assistant" class="secondary-btn" type="button">Analyser les jointures</button>
               <button id="run-semantic-layer" class="ghost-btn" type="button">Construire la couche semantique</button>
@@ -155,9 +155,9 @@
             <button id="run-orchestration-view" class="ghost-btn" type="button">Voir l orchestration</button>
             <select id="workflow-goal-select">
               <option value="pricing_decision">Decision tarifaire</option>
-              <option value="diagnosis">Diagnosis</option>
-              <option value="marketing_optimization">Marketing optimization</option>
-              <option value="segment_prioritization">Segment prioritization</option>
+              <option value="diagnosis">Diagnostic</option>
+              <option value="marketing_optimization">Optimisation marketing</option>
+              <option value="segment_prioritization">Priorisation segment</option>
             </select>
             <button id="run-workflow-builder" class="primary-btn" type="button">Construire le workflow</button>
             <button id="run-evaluation-console" class="ghost-btn" type="button">Rafraichir l evaluation</button>
@@ -217,9 +217,11 @@
             <div id="dashboard-mode-summary" class="dashboard-mode-summary">
               <span class="small-meta" id="dashboard-mode-label">Vue active</span>
               <strong id="dashboard-mode-title">Copilote de decision</strong>
-              <p id="dashboard-mode-copy" class="panel-copy">Lecture executive pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.</p>
+              <p id="dashboard-mode-copy" class="panel-copy">Vue dirigeant pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.</p>
             </div>
           </section>
+
+          <section id="content-tabs" class="content-tabs" hidden></section>
 
           <section id="dashboard" class="dashboard" hidden>
             <section id="section-decision-summary" class="decision-shell surface-decision">
@@ -235,7 +237,7 @@
 
             <section id="section-confidence" class="panel-card surface-decision">
               <div class="section-head">
-                <p class="eyebrow" id="confidence-kicker">Confidence</p>
+                <p class="eyebrow" id="confidence-kicker">Confiance</p>
                 <h2 id="confidence-title">Confiance et limites</h2>
               </div>
               <div id="confidence-grid" class="confidence-grid"></div>
@@ -265,8 +267,8 @@
 
             <section id="section-suggestions" class="panel-card surface-decision">
               <div class="section-head">
-                <p class="eyebrow" id="suggestions-kicker">Investigation suggestions</p>
-                <h2 id="suggestions-title">Where to investigate next</h2>
+                <p class="eyebrow" id="suggestions-kicker">Pistes d investigation</p>
+                <h2 id="suggestions-title">Ou investiguer ensuite</h2>
               </div>
               <div id="suggestions-grid" class="suggestion-grid"></div>
             </section>
@@ -360,7 +362,7 @@
               </div>
               <div id="query-history" class="history-list"></div>
               <div class="section-head history-head">
-                <p class="eyebrow" id="builder-ops-kicker">Operations builder</p>
+                <p class="eyebrow" id="builder-ops-kicker">Operations du builder</p>
                 <h3 id="builder-ops-title">Pilotage AI Builder</h3>
               </div>
               <div id="builder-ops" class="metric-grid"></div>

@@ -57,6 +57,35 @@ body {
   backdrop-filter: blur(18px);
 }
 
+.content-tabs {
+  position: sticky;
+  top: 106px;
+  z-index: 3;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding: 10px 2px 4px;
+  background: linear-gradient(180deg, rgba(251, 247, 240, 0.96), rgba(251, 247, 240, 0.72));
+  backdrop-filter: blur(10px);
+}
+
+.content-tab-btn {
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.content-tab-btn.active {
+  background: rgba(47, 109, 73, 0.12);
+  border-color: rgba(47, 109, 73, 0.28);
+  color: var(--accent-strong);
+}
+
 .dashboard-tab-group {
   display: flex;
   gap: 10px;

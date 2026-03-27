@@ -38,6 +38,11 @@ const state = {
   latestApproval: null,
   marketProfile: "revenue",
   surfaceMode: "decision",
+  surfaceSubtabs: {
+    decision: "overview",
+    builder: "sql",
+    governance: "platform",
+  },
 };
 
 const copy = {
@@ -45,17 +50,17 @@ const copy = {
     heroEyebrow: "Copilote de decision IA",
     heroCopy: "Un accelerateur de copilotes de decision pour transformer des donnees metier en diagnostics, simulations et recommandations defendables.",
     heroAudienceKicker: "Pour qui",
-    heroAudienceTitle: "Revenue, pricing, growth et consultants IA",
+    heroAudienceTitle: "Revenue, pricing, croissance et consultants IA",
     heroAudienceCopy: "Pour les equipes qui doivent expliquer vite ce qui change, tester des scenarios et recommander une action claire.",
     heroValueKicker: "Ce que ca fait",
     heroValueTitle: "Investigue, simule et decide avec preuves",
     heroValueCopy: "Le produit combine analyse, SQL, scenarios, guardrails, evidence pack et exports dans un meme workflow.",
     heroModeKicker: "Deux modes",
-    heroModeTitle: "Decision Copilot + AI Builder Studio",
+    heroModeTitle: "Copilote de decision + Studio Builder IA",
     heroModeCopy: "Une couche simple pour decider, une couche avancee pour builder, gouverner et exporter des copilotes.",
     heroUsecase1: "Decision tarifaire",
     heroUsecase2: "Investigation revenue",
-    heroUsecase3: "Optimisation growth",
+    heroUsecase3: "Optimisation de la croissance",
     heroUsecase4: "Workflows AI Builder",
     controlsTitle: "Lancer une analyse",
     controlsCopy: "Charge une demo revenue ou importe un CSV pour activer un copilote de decision complet.",
@@ -136,7 +141,7 @@ const copy = {
     impact: "Impact",
     why: "Pourquoi c'est important",
     investigate: "Investiguer",
-    suggestionsKicker: "Investigation suggestions",
+    suggestionsKicker: "Pistes d investigation",
     suggestionsTitle: "Ou investiguer ensuite",
     actionsKicker: "Actions recommandees",
     actionsTitle: "Actions recommandees",
@@ -188,15 +193,15 @@ const copy = {
     routePredictionDone: "Question routee vers prediction.",
     routeSimulationDone: "Question routee vers simulation.",
     routeCopilotDone: "Question routee vers copilote.",
-    builderOpsKicker: "Operations builder",
+    builderOpsKicker: "Operations du builder",
     builderOpsTitle: "Pilotage AI Builder",
     builderRoute: "Dernier routage",
     builderLatency: "Latence",
     builderTables: "Tables utilisees",
     builderQueries: "Requetes",
     builderRouteEmpty: "Aucune action routee pour le moment.",
-    builderStudioTitle: "AI Builder Studio",
-    builderStudioCopy: "Construis les briques avancees: SQL, jointures, semantic layer, workflow, policies, observability et gouvernance.",
+    builderStudioTitle: "Studio Builder IA",
+    builderStudioCopy: "Construis les briques avancees: SQL, jointures, couche semantique, workflows, policies, observabilite et gouvernance.",
     builderStudioKicker: "Studio Builder IA",
     builderStudioResultTitle: "Briques du builder",
     runJoinAssistant: "Analyser les jointures",
@@ -274,20 +279,28 @@ const copy = {
     playbookCopy: "Applique un angle de demo concret pour guider la narration et pre-remplir les actions utiles.",
     playbookPricing: "Decision tarifaire",
     playbookGrowth: "Optimisation croissance",
-    playbookExec: "Revue executive",
-    personaRevenueBrief: "Ideal pour un lead revenue, pricing ou growth qui veut comprendre quoi faire ensuite et pourquoi.",
-    personaBuilderBrief: "Ideal pour un consultant ou AI builder qui veut montrer les briques SQL, workflow, policy et gouvernance.",
+    playbookExec: "Revue de direction",
+    personaRevenueBrief: "Ideal pour un lead revenue, pricing ou croissance qui veut comprendre quoi faire ensuite et pourquoi.",
+    personaBuilderBrief: "Ideal pour un consultant ou builder IA qui veut montrer les briques SQL, workflow, policy et gouvernance.",
     personaAnalyticsBrief: "Ideal pour une equipe data qui veut voir la couche gouvernance, les artefacts et la reutilisation du systeme.",
     playbookPricingStatus: "Playbook pricing charge.",
-    playbookGrowthStatus: "Playbook growth charge.",
-    playbookExecStatus: "Playbook executive charge.",
+    playbookGrowthStatus: "Playbook croissance charge.",
+    playbookExecStatus: "Playbook direction charge.",
     modeSummaryLabel: "Vue active",
     modeSummaryDecisionTitle: "Copilote de decision",
-    modeSummaryDecisionCopy: "Lecture executive pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.",
+    modeSummaryDecisionCopy: "Vue dirigeant pour comprendre quoi faire, pourquoi, et avec quel niveau de confiance.",
     modeSummaryBuilderTitle: "Studio Builder IA",
     modeSummaryBuilderCopy: "Vue outillage pour montrer SQL, workflows, experimentation, observabilite et orchestration.",
     modeSummaryGovernanceTitle: "Gouvernance",
     modeSummaryGovernanceCopy: "Vue plateforme pour montrer projets, connecteurs, exports, validations humaines et traçabilite.",
+    tabOverview: "Vue d ensemble",
+    tabInsights: "Insights",
+    tabModeling: "Modele et scenarios",
+    tabActions: "Actions et copilote",
+    tabSql: "SQL et routage",
+    tabStudio: "Briques builder",
+    tabPlatform: "Plateforme",
+    tabEvidence: "Preuves et donnees",
   },
   en: {
     heroEyebrow: "AI decision copilot",
@@ -536,6 +549,14 @@ const copy = {
     modeSummaryBuilderCopy: "Builder layer to demo SQL, workflows, experimentation, observability, and orchestration.",
     modeSummaryGovernanceTitle: "Governance",
     modeSummaryGovernanceCopy: "Platform layer to demo projects, connectors, exports, approvals, and traceability.",
+    tabOverview: "Overview",
+    tabInsights: "Insights",
+    tabModeling: "Prediction and scenarios",
+    tabActions: "Actions and copilot",
+    tabSql: "SQL and routing",
+    tabStudio: "Builder modules",
+    tabPlatform: "Platform",
+    tabEvidence: "Evidence and data",
   },
 };
 
@@ -937,7 +958,49 @@ function renderModeSummary() {
   $("dashboard-mode-copy").textContent = current.copy;
 }
 
+function currentSurfaceTabConfig() {
+  const c = currentCopy();
+  return {
+    decision: [
+      { key: "overview", label: c.tabOverview, sections: ["section-decision-summary", "section-confidence", "section-snapshot"] },
+      { key: "insights", label: c.tabInsights, sections: ["section-insights", "section-suggestions", "section-charts"] },
+      { key: "modeling", label: c.tabModeling, sections: ["section-prediction", "section-simulation", "section-engine"] },
+      { key: "actions", label: c.tabActions, sections: ["section-actions", "section-copilot", "section-evidence"] },
+    ],
+    builder: [
+      { key: "sql", label: c.tabSql, sections: ["section-query"] },
+      { key: "studio", label: c.tabStudio, sections: ["section-builder-studio"] },
+      { key: "modeling", label: c.tabModeling, sections: ["section-prediction", "section-simulation", "section-engine"] },
+      { key: "platform", label: c.tabPlatform, sections: ["section-platform"] },
+    ],
+    governance: [
+      { key: "platform", label: c.tabPlatform, sections: ["section-platform"] },
+      { key: "evidence", label: c.tabEvidence, sections: ["section-snapshot", "section-evidence"] },
+    ],
+  };
+}
+
+function renderContentTabs() {
+  const configs = currentSurfaceTabConfig()[state.surfaceMode] || [];
+  $("content-tabs").innerHTML = configs
+    .map(
+      (tab) => `
+        <button
+          class="content-tab-btn ${state.surfaceSubtabs[state.surfaceMode] === tab.key ? "active" : ""}"
+          type="button"
+          data-surface-tab="${tab.key}"
+        >
+          ${tab.label}
+        </button>
+      `,
+    )
+    .join("");
+}
+
 function applySurfaceMode() {
+  const configs = currentSurfaceTabConfig()[state.surfaceMode] || [];
+  const activeTab = state.surfaceSubtabs[state.surfaceMode];
+  const allowedSections = new Set((configs.find((tab) => tab.key === activeTab)?.sections || []));
   document.querySelectorAll("#dashboard > section").forEach((section) => {
     if (!section.id) return;
     const allowed =
@@ -946,7 +1009,7 @@ function applySurfaceMode() {
         : state.surfaceMode === "builder"
           ? section.classList.contains("surface-builder")
           : section.classList.contains("surface-governance");
-    section.hidden = !allowed;
+    section.hidden = !(allowed && allowedSections.has(section.id));
   });
 }
 
@@ -962,8 +1025,22 @@ function focusSection(sectionId = null) {
 
 function switchSurface(mode, sectionId = null) {
   state.surfaceMode = mode;
+  if (sectionId) {
+    const configs = currentSurfaceTabConfig()[mode] || [];
+    const matching = configs.find((tab) => tab.sections.includes(sectionId));
+    if (matching) {
+      state.surfaceSubtabs[mode] = matching.key;
+    }
+  }
   render();
   window.setTimeout(() => focusSection(sectionId), 80);
+}
+
+function focusCurrentSubtab() {
+  const configs = currentSurfaceTabConfig()[state.surfaceMode] || [];
+  const activeTab = state.surfaceSubtabs[state.surfaceMode];
+  const firstSection = configs.find((tab) => tab.key === activeTab)?.sections?.[0];
+  focusSection(firstSection || null);
 }
 
 function renderDecisionCards() {
@@ -1779,10 +1856,12 @@ function render() {
   const hasData = Boolean(state.dataset && state.profile && state.investigation);
   $("empty-state").hidden = hasData;
   $("dashboard-tabs").hidden = !hasData;
+  $("content-tabs").hidden = !hasData;
   $("dashboard").hidden = !hasData;
   if (!hasData) {
     return;
   }
+  renderContentTabs();
   renderDecisionCards();
   renderConfidence();
   renderDatasetMetrics();
@@ -2702,6 +2781,13 @@ function bindDynamicEvents() {
   });
   document.querySelectorAll(".history-replay-btn").forEach((button) => {
     button.onclick = () => replaySqlHistory(Number(button.dataset.historyIndex));
+  });
+  document.querySelectorAll(".content-tab-btn").forEach((button) => {
+    button.onclick = () => {
+      state.surfaceSubtabs[state.surfaceMode] = button.dataset.surfaceTab;
+      render();
+      focusCurrentSubtab();
+    };
   });
   document.querySelectorAll('input[type="range"][data-control-type="slider"]').forEach((input) => {
     input.oninput = () => {
